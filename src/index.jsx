@@ -1,15 +1,14 @@
-import * as React from "react"
-import * as ReactDOM from "react-dom"
-import {
-  BrowserRouter,
-  Routes,
-} from "react-router-dom";
+import * as React from "react";
+import * as ReactDOM from "react-dom";
+import { BrowserRouter, Routes } from "react-router-dom";
 import * as reactRouterDom from "react-router-dom";
 
-
-import SuperTokens, { SuperTokensWrapper, getSuperTokensRoutesForReactRouterDom } from "./lib/ts";
-import Passwordless from "./lib/ts/recipe/passwordless"
-import Session from "./lib/ts/recipe/session"
+import SuperTokens, {
+  SuperTokensWrapper,
+  getSuperTokensRoutesForReactRouterDom,
+} from "./lib/ts";
+import Passwordless from "./lib/ts/recipe/passwordless";
+import Session from "./lib/ts/recipe/session";
 
 SuperTokens.init({
   appInfo: {
@@ -25,7 +24,7 @@ SuperTokens.init({
     }),
     Session.init(),
   ],
-})
+});
 
 ReactDOM.render(
   <React.StrictMode>

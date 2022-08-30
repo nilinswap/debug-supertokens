@@ -8,6 +8,7 @@
     "npm": "^8"
   },
   "devDependencies": {
+    "parcel-bundler": "^1.12.4",
     "@babel/core": "7.12.1",
     "@babel/plugin-transform-react-jsx": "^7.16.0",
     "@babel/preset-env": "7.12.1",
@@ -90,7 +91,7 @@
     "prep-test-app": "./test/prepTestApp.sh $SRC",
     "build-check": "cd lib && npx tsc -p tsconfig.json --noEmit && cd ../test/with-typescript && npx tsc -p tsconfig.json",
     "tsc": "cd lib && npx tsc -p tsconfig.json",
-    "build": "rm -rf build && cd src && npx tsc -p ../tsconfig.json",
+    "build": "rm -rf build && cd src && npx tsc -p ../tsconfig.json && cd .. && parcel build index.html",
     "watch": "cd lib && npx tsc -w -p tsconfig_dev.json",
     "pretty": "npx pretty-quick .",
     "build-pretty": "npm run build && npm run pretty && npm run pretty",
