@@ -12,10 +12,10 @@ import Session from "./lib/ts/recipe/session";
 
 SuperTokens.init({
   appInfo: {
-    appName: "utr",
-    apiDomain: "http://localhost:3000",
-    websiteDomain: "http://utr.corp.linkedin.com",
-    apiBasePath: "/auth",
+    appName: "debug-st",
+    apiDomain: "http://localhost:4321",
+    websiteDomain: "http://localhost:1234",
+    apiBasePath: "/auth/api",
     websiteBasePath: "/auth",
   },
   recipeList: [
@@ -27,17 +27,15 @@ SuperTokens.init({
 });
 
 ReactDOM.render(
-  <React.StrictMode>
-    <SuperTokensWrapper>
-      <BrowserRouter>
-        <h1>Hello World</h1>
-        <Routes>
-          {/* This renders the login UI on the /auth route*/}
-          {getSuperTokensRoutesForReactRouterDom(reactRouterDom)}
-          {/*Your app routes */}
-        </Routes>
-      </BrowserRouter>
-    </SuperTokensWrapper>
-  </React.StrictMode>,
+  <SuperTokensWrapper>
+    <BrowserRouter>
+      <h1>Hello World</h1>
+      <Routes>
+        {/* This renders the login UI on the /auth route*/}
+        {getSuperTokensRoutesForReactRouterDom(reactRouterDom)}
+        {/*Your app routes */}
+      </Routes>
+    </BrowserRouter>
+  </SuperTokensWrapper>,
   document.getElementById("root")
 );

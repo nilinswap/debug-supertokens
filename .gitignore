@@ -16,3 +16,5 @@ build/
 supertokens-auth-react-*.tgz
 dist/
 .cache/
+__pycache__
+.venv
