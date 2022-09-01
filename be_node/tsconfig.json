@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "rootDir": "./",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "noEmit": false, //make it true and dist will not be generated on startdev
+    "strict": true,
+    "jsx": "preserve",
+    "skipLibCheck": true
+  },
+  "include": ["./src"]
+}
