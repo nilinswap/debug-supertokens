@@ -20,5 +20,5 @@ only supports supertokens-auth-react for now.
 
 ## Play
 
-go to http://localhost:1234/auth and see if the login shows up. 
+go to http://localhost:1234/inner 
 

@@ -30,6 +30,7 @@ SuperTokens.init({
 ReactDOM.render(
   <SuperTokensWrapper>
     <BrowserRouter>
+      <h1 style={{width: '100%', textAlign: 'center'}}>Debug ST (rn!)</h1>
       <Routes>
         {/* This renders the login UI on the /auth route*/}
         {getSuperTokensRoutesForReactRouterDom(reactRouterDom)}
