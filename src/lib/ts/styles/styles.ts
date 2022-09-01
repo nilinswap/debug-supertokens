@@ -88,6 +88,7 @@ export const swingIn: Keyframes = keyframes`
   }
 `;
 
+// READCODE BURI: this is the default styles for the form. 
 export function getDefaultStyles(palette: NormalisedPalette): NormalisedDefaultStyles {
     return {
         container: {

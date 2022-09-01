@@ -111,7 +111,7 @@ const SessionAuth: React.FC<PropsWithChildren<SessionAuthProps>> = ({
   }, []);
 
   const setInitialContextAndMaybeRedirect = useCallback(
-    // READCODE BURI: this method is called when user data from api is recieved.
+    // READCODE BURI: this method is called after user data from api is recieved.
     async (toSetContext: SessionContextType) => {
       if (toSetContext.loading === true) {
         // We should not be updating the context to loading
@@ -164,6 +164,7 @@ const SessionAuth: React.FC<PropsWithChildren<SessionAuthProps>> = ({
     // we return here cause addEventListener returns a function that removes
     // the listener, and this function will be called by useEffect when
     // onHandleEvent changes or if the component is unmounting.
+    // READCODE BURI: this events are raised by fetch.js in supertokens-website's lib/ts/fetch.ts and it is caught here, context is set (if settable otherwise redirect appropriately) and on redirection happens. 
     return session.current!.addEventListener(onHandleEvent);
   }, [props]);
 

@@ -74,6 +74,7 @@ export default class Passwordless extends AuthRecipe<
         if (this.config.signInUpFeature.disableDefaultUI !== true) {
             const normalisedFullPath = this.config.appInfo.websiteBasePath.appendPath(new NormalisedURLPath("/"));
             features[normalisedFullPath.getAsStringDangerous()] = {
+                // READCODE BURI: this is where we register on what path the auth widget should show up in. 
                 matches: matchRecipeIdUsingQueryParams(this.config.recipeId),
                 component: (props) => this.getFeatureComponent("signInUp", props),
             };

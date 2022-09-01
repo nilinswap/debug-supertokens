@@ -34,6 +34,8 @@ type FieldState = {
     value: string;
 };
 
+
+// READCODE BURI: this is where the basic form html is found
 export const FormBase: React.FC<FormBaseProps<any>> = (props) => {
     const { footer, buttonLabel, showLabels, validateOnBlur, formFields } = props;
 
@@ -123,6 +125,7 @@ export const FormBase: React.FC<FormBaseProps<any>> = (props) => {
                 let result;
                 let generalError: STGeneralError | undefined;
                 try {
+                    // READCODE BURI: this is where the api call is made.
                     result = await props.callAPI(apiFields, (id, value) => fieldUpdates.push({ id, value }));
                 } catch (e) {
                     if (STGeneralError.isThisError(e)) {
