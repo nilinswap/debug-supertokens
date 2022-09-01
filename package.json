@@ -77,7 +77,7 @@
   },
   "scripts": {
     "init": "bash ./init.sh",
-    "start": "npm-run-all --parallel front server watch",
+    "start": "parcel index.html",
     "start-react-16": "npm-run-all --parallel front-react-16 server watch",
     "front": "(cd ./examples/for-tests/ && BROWSER=none PORT=3031 npm run start)",
     "front-react-16": "(cd ./examples/for-tests-react-16/ && BROWSER=none PORT=3031 npm run start)",

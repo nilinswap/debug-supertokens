@@ -1,5 +1,8 @@
 # Debug-ST
 
+Debug supertokens now!!
+only supports supertokens-auth-react for now.
+
 ## Setup
 
 ### Frontend
