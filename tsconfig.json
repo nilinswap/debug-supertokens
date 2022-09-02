@@ -22,5 +22,8 @@
     "module": "CommonJS",
         "types": ["node", "react", "@emotion/react/types/css-prop"]
     },
+    "exclude": [
+        "be_node"
+    ],
     "compileOnSave": true
 }
