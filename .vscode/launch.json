@@ -1,32 +1,28 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch Program",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}/src/index.ts",
-            "preLaunchTask": "tsc: build - tsconfig.json",
-            "outFiles": [
-                "${workspaceFolder}/build/**/*.js"
-            ]
-        },
-        {
-          "type": "chrome",
-          "request": "launch",
-          "name": "Launch Chrome against localhost",
-          "url": "http://localhost:1234",
-          "webRoot": "${workspaceFolder}",
-          "breakOnLoad": true,
-          "sourceMapPathOverrides": {
-            "../*": "${webRoot}/*"
-          }
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Launch Chrome against localhost for frontend debugging",
+      "url": "http://localhost:1234",
+      "webRoot": "${workspaceFolder}",
+      "sourceMapPathOverrides": {
+        "../*": "${webRoot}/*"
+      }
+    },
+    {
+      "type": "node",
+      "name": "Launch Backend Program",
+      "cwd": "${workspaceFolder}/be_node",
+      "program": "${workspaceFolder}/be_node/src/app.ts",
+      "preLaunchTask": "npm: tsc - be_node",
+      "request": "launch",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
 }
