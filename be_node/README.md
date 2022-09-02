@@ -11,5 +11,4 @@
 
 [] Learn how to work with pg pool and overall model structure
 
-
 [] Travis

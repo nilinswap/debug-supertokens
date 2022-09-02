@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { middleware } from "../lib/supertokens-node/lib/ts/framework/express"
+import { middleware } from "../lib/supertokens-node/lib/ts/framework/express";
 
 import supertokens from "../lib/supertokens-node/lib/ts";
 import Session from "../lib/supertokens-node/lib/ts/recipe/session";
@@ -19,45 +19,52 @@ supertokens.init({
     apiDomain: "http://localhost:4321",
     websiteDomain: "http://localhost:1234",
     apiBasePath: "/auth/api",
-    websiteBasePath: "/auth"
+    websiteBasePath: "/auth",
   },
   recipeList: [
     Passwordless.init({
       flowType: "USER_INPUT_CODE",
-      contactMethod: "EMAIL_OR_PHONE"
+      contactMethod: "EMAIL_OR_PHONE",
     }),
-    Session.init() // initializes session features
-  ]
+    Session.init(), // initializes session features
+  ],
 });
 
 let app = express();
 
-app.use(cors({
-  origin: "http://localhost:1234",
-  allowedHeaders: ["content-type", ...supertokens.getAllCORSHeaders()],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: "http://localhost:1234",
+    allowedHeaders: ["content-type", ...supertokens.getAllCORSHeaders()],
+    credentials: true,
+  })
+);
 
 // IMPORTANT: CORS should be before the below line.
 app.use(middleware());
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
-})
-
-app.listen(4321, () => {
-  console.log("Server started on port 4321");
-}).on("error", (err) => {
-  console.log(err);
-}).on("listening", () => {
-  console.log("Server is listening");
-}).on("close", () => {
-  console.log("Server is closed");
-}).on("connection", () => {
-  console.log("Server is connected");
-}).on("disconnect", () => {
-  console.log("Server is disconnected");
 });
 
+app
+  .listen(4321, () => {
+    console.log("Server started on port 4321");
+  })
+  .on("error", (err) => {
+    console.log(err);
+  })
+  .on("listening", () => {
+    console.log("Server is listening");
+  })
+  .on("close", () => {
+    console.log("Server is closed");
+  })
+  .on("connection", () => {
+    console.log("Server is connected");
+  })
+  .on("disconnect", () => {
+    console.log("Server is disconnected");
+  });
 
-export default app
+export default app;

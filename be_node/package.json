@@ -11,6 +11,7 @@
     "test": "TEST_MODE=testing npx mocha --timeout 500000",
     "build-check": "cd lib && npx tsc -p tsconfig.json --noEmit && cd ../test/with-typescript && npx tsc -p tsconfig.json --noEmit",
     "build": "cd lib/supertokens-node/lib && rm -rf build && npx tsc -p tsconfig.json && cd ../test/with-typescript && npx tsc -p tsconfig.json --noEmit && cd ../.. && npm run post-build",
+    "tsc": "npx tsc -p tsconfig.json",
     "pretty": "npx pretty-quick .",
     "post-build": "node add-ts-no-check.js",
     "build-pretty": "npm run build && npm run pretty && npm run pretty",

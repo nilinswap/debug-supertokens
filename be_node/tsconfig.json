@@ -10,7 +10,8 @@
     "noEmit": false, //make it true and dist will not be generated on startdev
     "strict": true,
     "jsx": "preserve",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "sourceMap": true
   },
   "include": ["./src"]
 }

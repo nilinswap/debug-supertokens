@@ -1,96 +1,96 @@
-import { expect, server, BASE_URL } from "./setup"
-import mongoose from "mongoose"
+import { expect, server, BASE_URL } from "./setup";
+import mongoose from "mongoose";
 
 describe("Index page test", () => {
-  it("gets base url", done => {
+  it("gets base url", (done) => {
     server
       .get(`${BASE_URL}/`)
       .expect(200)
       .end((err: any, res: any) => {
-        expect(res.status).to.equal(200)
+        expect(res.status).to.equal(200);
         expect(res.body.message).to.equal(
           "Test Environment variable is coming across."
-        )
-        done()
-      })
-  })
-})
+        );
+        done();
+      });
+  });
+});
 
-var COOKIES: string = ""
+var COOKIES: string = "";
 describe("test add user", () => {
-  it("adds user", done => {
+  it("adds user", (done) => {
     const data = {
       email: "mariamlass@gm.in",
       first_name: "Mariam",
       last_name: "Lass",
       password: "password",
-    }
+    };
     server
       .post(`${BASE_URL}/register`)
       .send(data)
       .expect(200)
       .end((_err: any, res: any) => {
-        expect(res.status).to.equal(200)
-        expect(res.body.status).to.equal("success")
-        expect(res.body.data.row_count).to.equal(1)
-        expect(res.header).to.have.property("set-cookie")
-        let cookie = res.header["set-cookie"].pop().split(";")[0]
-        console.log("cookie", cookie)
-        COOKIES = cookie
+        expect(res.status).to.equal(200);
+        expect(res.body.status).to.equal("success");
+        expect(res.body.data.row_count).to.equal(1);
+        expect(res.header).to.have.property("set-cookie");
+        let cookie = res.header["set-cookie"].pop().split(";")[0];
+        console.log("cookie", cookie);
+        COOKIES = cookie;
         //  res.header["set-cookie"]
         //   .map(function (r: string) {
         //     return r.replace("; path=/; httponly", "")
         //   })
         //   .join("; ")
-        console.log("COOKIES", COOKIES)
-        let key = cookie.split("=")[0]
-        expect(key).to.equal("connect.sid")
-        done()
-      })
-  })
-  it("get cart", done => {
-    let req = server.get(`${BASE_URL}/cart/`)
-    req.cookies = COOKIES
+        console.log("COOKIES", COOKIES);
+        let key = cookie.split("=")[0];
+        expect(key).to.equal("connect.sid");
+        done();
+      });
+  });
+  it("get cart", (done) => {
+    let req = server.get(`${BASE_URL}/cart/`);
+    req.cookies = COOKIES;
     req.expect(200).end((_err: any, res: any) => {
-      expect(res.status).to.equal(200)
-      expect(res.body.data.products).to.have.lengthOf(2)
-      expect(res.body.data.products).contains(1)
-      expect(res.body.data.products).contains(2)
-      done()
-    })
-  })
-})
+      expect(res.status).to.equal(200);
+      expect(res.body.data.products).to.have.lengthOf(2);
+      expect(res.body.data.products).contains(1);
+      expect(res.body.data.products).contains(2);
+      done();
+    });
+  });
+});
 
 describe("test user", () => {
-  it("login user", done => {
+  it("login user", (done) => {
     const data = {
       email: "mariamlass@gm.in",
       password: "password",
-    }
+    };
     server
       .post(`${BASE_URL}/login`)
       .send(data)
       .expect(200)
       .end((_err: any, res: any) => {
-        expect(res.status).to.equal(200)
-        expect(res.body.status).to.equal("success")
-        const user = res.body.data.user
+        expect(res.status).to.equal(200);
+        expect(res.body.status).to.equal("success");
+        const user = res.body.data.user;
 
-        expect(user.email).to.equal("mariamlass@gm.in")
-        expect(user.first_name).to.equal("Mariam")
-        expect(user.last_name).to.equal("Lass")
-        expect(user.phone).to.equal("0000000000")
-        done()
-      })
-  })
+        expect(user.email).to.equal("mariamlass@gm.in");
+        expect(user.first_name).to.equal("Mariam");
+        expect(user.last_name).to.equal("Lass");
+        expect(user.phone).to.equal("0000000000");
+        done();
+      });
+  });
   afterEach(async () => {
     try {
-      await mongoose.connection.close()
+      await mongoose.connection.close();
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
-  })
-})
+  });
+});
 
 // describe("test get artifacts", () => {
 //   it("get artifacts", done => {
