@@ -7,20 +7,12 @@
     {
       "type": "chrome",
       "request": "launch",
-      "name": "Launch Chrome against localhost",
+      "name": "Launch Chrome against localhost for frontend debugging",
       "url": "http://localhost:1234",
       "webRoot": "${workspaceFolder}",
       "sourceMapPathOverrides": {
         "../*": "${webRoot}/*"
       }
-    },
-    {
-      "type": "node",
-      "name": "js-Launch Program",
-      "cwd": "${workspaceFolder}/be_node",
-      "program": "${workspaceFolder}/be_node/src/app.ts",
-      "request": "launch",
-      "skipFiles": ["<node_internals>/**"]
     },
     {
       "type": "node",
