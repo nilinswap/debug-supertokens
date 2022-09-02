@@ -1,7 +1,7 @@
 # Debug-ST
 
 Debug [supertokens](https://github.com/supertokens) now!!
-only supports supertokens-auth-react for now.
+only supports supertokens-auth-react and supertokens-node for now.
 
 ## Setup
 
