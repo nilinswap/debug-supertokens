@@ -1,10 +1,10 @@
 import express from "express";
 import cors from "cors";
-import { middleware } from "supertokens-node/framework/express";
+import { middleware } from "../lib/supertokens-node/lib/ts/framework/express"
 
-import supertokens from "supertokens-node";
-import Session from "supertokens-node/recipe/session";
-import Passwordless from "supertokens-node/recipe/passwordless";
+import supertokens from "../lib/supertokens-node/lib/ts";
+import Session from "../lib/supertokens-node/lib/ts/recipe/session";
+import Passwordless from "../lib/supertokens-node/lib/ts/recipe/passwordless";
 
 supertokens.init({
   framework: "express",
