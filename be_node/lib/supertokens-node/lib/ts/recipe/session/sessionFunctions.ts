@@ -341,7 +341,7 @@ export async function refreshSession(
             });
         }
     }
-
+    // READCODE BUNI: here is where the core is called to refresh the session.
     let response = await helpers.querier.sendPostRequest(new NormalisedURLPath("/recipe/session/refresh"), requestBody);
     if (response.status === "OK") {
         delete response.status;

@@ -69,6 +69,7 @@ export default class SuperTokens {
 
         this.isInServerlessEnv = config.isInServerlessEnv === undefined ? false : config.isInServerlessEnv;
 
+        // READCODE BUNI: this is ensures that the recipe "classes" are loaded. later we call methods on them. these are based on init method input
         this.recipeModules = config.recipeList.map((func) => {
             return func(this.appInfo, this.isInServerlessEnv);
         });
@@ -323,6 +324,7 @@ export default class SuperTokens {
     };
 
     middleware = async (request: BaseRequest, response: BaseResponse): Promise<boolean> => {
+        // READCODE BUNI: this is where request handling starts
         logDebugMessage("middleware: Started");
         let path = this.appInfo.apiGatewayPath.appendPath(new NormalisedURLPath(request.getOriginalURL()));
         let method: HTTPMethod = normaliseHttpMethod(request.getMethod());
@@ -343,6 +345,8 @@ export default class SuperTokens {
             requestRID = undefined;
         }
         if (requestRID !== undefined) {
+            // READCODE BUNI: Here use use requestRID to find which recipe to call method on. It is like implmenting abstraction (concept of abstract class) across the app (frontend and backend)
+
             let matchedRecipe: RecipeModule | undefined = undefined;
 
             // we loop through all recipe modules to find the one with the matching rId
@@ -375,6 +379,7 @@ export default class SuperTokens {
 
             logDebugMessage("middleware: Request being handled by recipe. ID is: " + id);
 
+            // READCODE BUNI: this is where exact request handling happens
             // give task to the matched recipe
             let requestHandled = await matchedRecipe.handleAPIRequest(id, request, response, path, method);
             if (!requestHandled) {

@@ -5,6 +5,7 @@ import Session from "../../session";
 export default function getAPIImplementation(): APIInterface {
     return {
         consumeCodePOST: async function (input) {
+            // READCODE BUNI: this is where we call consume api. with otp, that is what they call userInputCode
             let response = await input.options.recipeImplementation.consumeCode(
                 "deviceId" in input
                     ? {
@@ -19,7 +20,8 @@ export default function getAPIImplementation(): APIInterface {
                           userContext: input.userContext,
                       }
             );
-
+        
+            // READCODE BUNI: if response.status is not ok like otp expired etc, then don't call createNewSession and don't set cookie. 
             if (response.status !== "OK") {
                 return response;
             }
@@ -35,6 +37,8 @@ export default function getAPIImplementation(): APIInterface {
             };
         },
         createCodePOST: async function (input) {
+            //READCODE BUNI: this is where create otp code. of course, it is done from the backend. we get the response from backend with otp but we don't send otp to the frontend. 
+            
             let response = await input.options.recipeImplementation.createCode(
                 "email" in input
                     ? {
@@ -101,6 +105,7 @@ export default function getAPIImplementation(): APIInterface {
                 });
             } else {
                 logDebugMessage(`Sending passwordless login email to ${(input as any).email}`);
+                //READCODE BUNI: this is where we send email
                 await input.options.emailDelivery.ingredientInterfaceImpl.sendEmail({
                     type: "PASSWORDLESS_LOGIN",
                     email: (input as any).email!,

@@ -117,7 +117,8 @@ export default function getRecipeInterface(
             userId: string;
             accessTokenPayload?: any;
             sessionData?: any;
-        }): Promise<Session> {
+            }): Promise<Session> {
+            // READCODE BUNI: this is where the create session api for core is called is called. and below it is where we set cookies
             let response = await SessionFunctions.createNewSession(helpers, userId, accessTokenPayload, sessionData);
             attachCreateOrRefreshSessionResponseToExpressRes(config, res, response);
             return new Session(
@@ -243,6 +244,7 @@ export default function getRecipeInterface(
         },
 
         refreshSession: async function ({ req, res }: { req: BaseRequest; res: BaseResponse }): Promise<Session> {
+            // READCODE BUNI: this gets hit if it is without jwt
             logDebugMessage("refreshSession: Started");
             let inputIdRefreshToken = getIdRefreshTokenFromCookie(req);
             if (inputIdRefreshToken === undefined) {
@@ -273,6 +275,7 @@ export default function getRecipeInterface(
                     antiCsrfToken,
                     getRidFromHeader(req) !== undefined
                 );
+                // READCODE BUNI: this is where set-cookie is done
                 attachCreateOrRefreshSessionResponseToExpressRes(config, res, response);
                 logDebugMessage("refreshSession: Success!");
                 return new Session(
@@ -292,6 +295,7 @@ export default function getRecipeInterface(
                         logDebugMessage(
                             "refreshSession: Clearing cookies because of UNAUTHORISED or TOKEN_THEFT_DETECTED response"
                         );
+                        // READCODE BUNI: this is where the cookie is cleared for 401. 
                         clearSessionFromCookie(config, res);
                     }
                     throw err;

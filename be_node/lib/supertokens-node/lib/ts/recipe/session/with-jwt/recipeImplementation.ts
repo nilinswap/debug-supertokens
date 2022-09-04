@@ -111,7 +111,8 @@ export default function (
             req: BaseRequest;
             res: BaseResponse;
             userContext: any;
-        }): Promise<SessionContainerInterface> {
+            }): Promise<SessionContainerInterface> {
+            // READCODE BUNI: Deep down, here is where we handle refreshtoken logic. 
             let accessTokenValidityInSeconds = Math.ceil((await this.getAccessTokenLifeTimeMS({ userContext })) / 1000);
 
             // Refresh session first because this will create a new access token

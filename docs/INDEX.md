@@ -95,7 +95,7 @@ I still don't understand how it is working with two tsconfig but honestly, I am 
 
 [how nodejs is resolved](https://www.bennadel.com/blog/2169-where-does-node-js-and-require-look-for-modules.htm)
 
-Probably an overall disadvantage of this whole process is a very bloated up. like this project is already 1.64 gb because of so many node_modules and .venv. this problem can be fixed by using workspaces and now that I understand the problem, I should use workspaces from next time, or in fact, modify this to use workspaces. 
+Probably an overall disadvantage of this whole process is a very bloated up. like this project is already 1.64 gb because of so many node_modules and .venv. this problem can be fixed by using workspaces and now that I understand the problem, I should use workspaces from next time, or in fact, modify this to use workspaces or use 'baseURL' and 'path' to pin down where node_modules path. 
 
 Further, I should understand following concepts well.
 
