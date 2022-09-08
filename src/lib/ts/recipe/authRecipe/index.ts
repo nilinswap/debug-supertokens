@@ -22,7 +22,8 @@ import RecipeModule from "../recipeModule";
 import { NormalisedConfig, GetRedirectionURLContext, OnHandleEventContext } from "./types";
 import { getCurrentNormalisedUrlPath, getNormalisedUserContext } from "../../utils";
 
-export default abstract class AuthRecipe<
+export default abstract class
+    AuthRecipe<
     T,
     Action,
     R,
@@ -36,6 +37,7 @@ export default abstract class AuthRecipe<
         if (context.action === "SIGN_IN_AND_UP") {
             return `${this.config.appInfo.websiteBasePath.getAsStringDangerous()}?rid=${this.config.recipeId}`;
         } else if (context.action === "SUCCESS") {
+            // READCODE BURI: it comes here when otp is a succes and we are ready to redirect to path
             return context.redirectToPath === undefined ? "/" : context.redirectToPath;
         } else {
             throw new Error("Should never come here");

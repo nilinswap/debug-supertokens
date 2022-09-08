@@ -71,6 +71,7 @@ export default class Passwordless extends AuthRecipe<
 
     getFeatures = (): RecipeFeatureComponentMap => {
         const features: RecipeFeatureComponentMap = {};
+        // READCODE BURI sysq(this is random id to follow a thread): exact component that must be rendered on auth is extracted here.
         if (this.config.signInUpFeature.disableDefaultUI !== true) {
             const normalisedFullPath = this.config.appInfo.websiteBasePath.appendPath(new NormalisedURLPath("/"));
             features[normalisedFullPath.getAsStringDangerous()] = {
@@ -79,6 +80,7 @@ export default class Passwordless extends AuthRecipe<
                 component: (props) => this.getFeatureComponent("signInUp", props),
             };
         }
+        // READCODE BURI: this is where we are adding <your auth page path>/ and <your auth page path>/verify
         if (this.config.linkClickedScreenFeature.disableDefaultUI !== true) {
             const normalisedFullPath = this.config.appInfo.websiteBasePath.appendPath(new NormalisedURLPath("/verify"));
             features[normalisedFullPath.getAsStringDangerous()] = {

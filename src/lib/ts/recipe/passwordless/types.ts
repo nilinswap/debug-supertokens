@@ -124,6 +124,7 @@ export type PasswordlessFeatureBaseConfig = {
 
 export type SignInUpFeatureConfigInput = {
     disableDefaultUI?: boolean;
+    // READCODE BURI: set gap for resend otp. this is 15 sec by default. this is set by the config that we init supertokens with. it is extraced by normalise-config() methods like normalisePasswordlessConfig 
     resendEmailOrSMSGapInSeconds?: number;
 
     /*

@@ -82,7 +82,8 @@ const SignInUpTheme: React.FC<SignInUpProps & { activeScreen: SignInUpScreens }>
                             <EmailForm {...commonProps} />
                         ) : activeScreen === SignInUpScreens.PhoneForm ? (
                             <PhoneForm {...commonProps} />
-                        ) : activeScreen === SignInUpScreens.EmailOrPhoneForm ? (
+                                    ) : activeScreen === SignInUpScreens.EmailOrPhoneForm ? (
+                                            // READCODE BURI sysq: on auth page for passwordless, we come here before the component for taking email is rendered
                             <EmailOrPhoneForm {...commonProps} />
                         ) : activeScreen === SignInUpScreens.UserInputCodeForm ? (
                             <UserInputCodeForm
@@ -100,39 +101,41 @@ const SignInUpTheme: React.FC<SignInUpProps & { activeScreen: SignInUpScreens }>
 };
 
 function SignInUpThemeWrapper(props: SignInUpProps): JSX.Element {
-    const hasFont = hasFontDefined(props.config.rootStyle);
+  const hasFont = hasFontDefined(props.config.rootStyle);
 
-    const activeScreen = getActiveScreen(props);
+  const activeScreen = getActiveScreen(props);
 
-    let activeStyle;
-    if (activeScreen === SignInUpScreens.CloseTab) {
-        activeStyle = props.config.signInUpFeature.closeTabScreenStyle;
-    } else if (activeScreen === SignInUpScreens.LinkSent) {
-        activeStyle = props.config.signInUpFeature.linkSentScreenStyle;
-    } else if (activeScreen === SignInUpScreens.UserInputCodeForm) {
-        activeStyle = props.config.signInUpFeature.userInputCodeFormStyle;
-    } else if (activeScreen === SignInUpScreens.EmailForm) {
-        activeStyle = props.config.signInUpFeature.emailOrPhoneFormStyle;
-    } else if (activeScreen === SignInUpScreens.PhoneForm) {
-        activeStyle = props.config.signInUpFeature.emailOrPhoneFormStyle;
-    } else if (activeScreen === SignInUpScreens.EmailOrPhoneForm) {
-        activeStyle = props.config.signInUpFeature.emailOrPhoneFormStyle;
-    }
-
-    return (
-        <UserContextWrapper userContext={props.userContext}>
-            <ThemeBase loadDefaultFont={!hasFont}>
-                <StyleProvider
-                    rawPalette={props.config.palette}
-                    defaultPalette={defaultPalette}
-                    styleFromInit={activeStyle}
-                    rootStyleFromInit={props.config.rootStyle}
-                    getDefaultStyles={getStyles}>
-                    <SignInUpTheme {...props} activeScreen={activeScreen!} />
-                </StyleProvider>
-            </ThemeBase>
-        </UserContextWrapper>
-    );
+  let activeStyle;
+  // READCODE BURI: here config is read to chose based on non-default style that is inputed in config
+  if (activeScreen === SignInUpScreens.CloseTab) {
+    activeStyle = props.config.signInUpFeature.closeTabScreenStyle;
+  } else if (activeScreen === SignInUpScreens.LinkSent) {
+    activeStyle = props.config.signInUpFeature.linkSentScreenStyle;
+  } else if (activeScreen === SignInUpScreens.UserInputCodeForm) {
+    activeStyle = props.config.signInUpFeature.userInputCodeFormStyle;
+  } else if (activeScreen === SignInUpScreens.EmailForm) {
+    activeStyle = props.config.signInUpFeature.emailOrPhoneFormStyle;
+  } else if (activeScreen === SignInUpScreens.PhoneForm) {
+    activeStyle = props.config.signInUpFeature.emailOrPhoneFormStyle;
+  } else if (activeScreen === SignInUpScreens.EmailOrPhoneForm) {
+    activeStyle = props.config.signInUpFeature.emailOrPhoneFormStyle;
+  }
+  // READCODE BURI: In default case for SignInUpScreens, it is always below one that is executed
+  return (
+    <UserContextWrapper userContext={props.userContext}>
+      <ThemeBase loadDefaultFont={!hasFont}>
+        <StyleProvider
+          rawPalette={props.config.palette}
+          defaultPalette={defaultPalette}
+          styleFromInit={activeStyle}
+          rootStyleFromInit={props.config.rootStyle}
+          getDefaultStyles={getStyles}
+        >
+          <SignInUpTheme {...props} activeScreen={activeScreen!} />
+        </StyleProvider>
+      </ThemeBase>
+    </UserContextWrapper>
+  );
 }
 
 export default SignInUpThemeWrapper;

@@ -60,7 +60,7 @@ export const FormBase: React.FC<FormBaseProps<any>> = (props) => {
                 if (field === undefined) {
                     return [...os, update({ id, value: "" })];
                 }
-
+    
                 return os.filter((f) => f !== field).concat(update(field));
             });
         },
@@ -102,8 +102,10 @@ export const FormBase: React.FC<FormBaseProps<any>> = (props) => {
 
     const onFormSubmit = useCallback(
         async (e: FormEvent): Promise<void> => {
-            // Prevent default event propagation.
+            // Prevent default event propagation. 
             e.preventDefault();
+
+            // READCODE BURI sysq: it is the common form for enter email form and submit otp form. this is run on both therefore
 
             // Set loading state.
             setIsLoading(true);
@@ -151,11 +153,12 @@ export const FormBase: React.FC<FormBaseProps<any>> = (props) => {
                 } else {
                     // If successful
                     if (result.status === "OK") {
-                        setIsLoading(false);
-                        props.clearError();
-                        if (props.onSuccess !== undefined) {
-                            props.onSuccess(result);
-                        }
+                      setIsLoading(false);
+                      props.clearError();
+                      // READCODE BURI sysq: onSuccess is undefined for enter-email form. somehow createCode from `src/lib/ts/recipe/passwordless/components/features/signInAndUp/index.tsx` takes care of it. 
+                      if (props.onSuccess !== undefined) {
+                        props.onSuccess(result);
+                      }
                     }
 
                     // If field error.

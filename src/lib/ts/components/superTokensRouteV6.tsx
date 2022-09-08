@@ -31,6 +31,7 @@ export function getSuperTokensRoutesForReactRouterDomV6(supertokensInstance: Sup
 
     const Route = routerInfo.router.Route;
     const pathsToFeatureComponentWithRecipeIdMap = supertokensInstance.getPathsToFeatureComponentWithRecipeIdMap();
+    // READCODE BURI: here is where we return the routes that will extend
     return Object.keys(pathsToFeatureComponentWithRecipeIdMap).map((path) => {
         path = path === "" ? "/" : path;
         return (

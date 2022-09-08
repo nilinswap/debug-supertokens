@@ -26,8 +26,8 @@ S1.SC2. There is a backend core called supertokens-core. -> unimplemented()
 
 What behaviour are we going to understand?
 
-- the component which has PasswordlessAuth wrapper around it, would not be opened without auth. other routes are allowed to be opened
-- /auth would lead to the signinup page. so technically, authed component redirects to /auth.
+- the component which has PasswordlessAuth wrapper around it, would not be opened without auth. other routes are allowed to be opened - done
+- /auth would lead to the signinup page. so technically, authed component redirects to /auth. - done
 - you can enter your email-id and on click of submit button, you are awaited for the response from backend to tell it was successful to send otp. You are redirected to accept_otp page
 - you enter otp and you are redirected to the page which you landed on the first time you came. so redirectTo was preserved in the whole process. Your cookies are set with sRefreshToken and sAccessToken. 
 - Next time, you go to authed page, you are not asked for auth. 
@@ -40,6 +40,8 @@ Below are components to understand for this
 
 S1.SAR2.STN3 - singleton pattern -> use of supertokens.init to initialize config and even config values are singletoned
 S1.SAR2.RTL3 - redirection to auth if wrapper wraps the component otherwise just render
+S1.SAR2.ER3 - extending routes with auth routes
+S1.SAR2.sysq3 - Components and onSubmit
 
 ## S1.SN2 supertokens-node
 
@@ -65,13 +67,37 @@ Notice we just define supertokens.init(...) but we don't seem to use it anywhere
 ## S1.SAR2.RTL3
 
 See src/lib/ts/recipe/session/sessionAuth.tsx 's setInitialContextAndMaybeRedirect() - there we are calling redirectToLogin() if the session does not exist otherwise we are returning the children under auth HLC. SessionAuth is the nth-level inner component of actual  HLC that we use in index.tsx (`PasswordlessAuth`)
-```
+``` react
 <SessionContext.Provider value={{ ...actualContext, isDefault: false }}>
   {children}
 </SessionContext.Provider>
 ```
 
+## S1.SAR2.ER3
 
+So if you go deep, you find `src/lib/ts/components/superTokensRouteV6.tsx` 
+``` react
+return (
+    <Route
+        key={`st-${path}`}
+        path={path}
+        element={<RoutingComponent supertokensInstance={supertokensInstance} path={path} />}
+    />
+);
+```
+these paths are appended on top of config's websitePath. like for passwordless recipe it is / and /verify and you can find that happening in 
+`src/lib/ts/recipe/passwordless/recipe.tsx` in getFeatures() method.
+
+here, this `Route` is imported in index.tsx and passed deep down all the way to the bottom until superTokensRouteV6 where it is used. why is it done?
+
+
+## S1.SAR2.sysq3
+
+It tells the process of rendering right component on /auth (based on recipe) and where onSubmit is handled and how onSubmit redirects to enter-otp page (for passwordless) and how the onSubmit of that is handled and how onSubmit redirects to the final path. 
+
+search the code by `sysq` to see that thread. 
+
+I swear there is something wrong with this codebase. it is super convoluted.
 
 
 
@@ -177,8 +203,36 @@ Promise<
     >;
 ```
 how based on status, types are differing. ts allows that, wow.
+- submit handlers start with setLoading(true) and ends with setLoading(false)
+- FormBase.tsx is dynamic but code could have been cleaner. I am growing to understand that 
+names play a very important role on how readable the code is. At meta level, e.g. you must have given a lot of thought into naming this little variable but that is not enough if does not fit well with the overall function name and even whole module. Like variable is an element in the expression of the idea that module aims to represent so it can't just be named with a different mind set that other things are named. right? 
+-  notice how there is if and an else but since componentName can only be two, else is actually else if. still this is not caught during runtime but rather at compile time. that is buggy, don't you think?
 
-
+```react
+        componentName: "signInUp" | "linkClickedScreen",
+        props: FeatureBaseProps & { redirectOnSessionExists?: boolean; userContext?: any }
+    ): JSX.Element => {
+        if (componentName === "signInUp") {
+            if (props.redirectOnSessionExists !== false) {
+                return (
+                    <UserContextWrapper userContext={props.userContext}>
+                        <AuthWidgetWrapper<
+                            GetRedirectionURLContext,
+                            PreAndPostAPIHookAction,
+                            OnHandleEventContext,
+                            NormalisedConfig
+                        >
+                            authRecipe={this}
+                            history={props.history}>
+                            <SignInUp recipe={this} {...props} />
+                        </AuthWidgetWrapper>
+                    </UserContextWrapper>
+                );
+            } else {
+              .
+              .
+              .
+```
 
 
 ### Active Questions
