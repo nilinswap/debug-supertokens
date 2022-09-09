@@ -25,7 +25,7 @@ export default function getRecipeImplementation(recipeInput: {
     return {
         createCode: async function (input) {
             const response = await webJsImplementation.createCode.bind(this)(input);
-
+            
             if (response.status === "OK") {
                 recipeInput.onHandleEvent({
                     action: "PASSWORDLESS_CODE_SENT",

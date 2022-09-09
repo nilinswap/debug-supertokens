@@ -386,6 +386,7 @@ function getModifiedRecipeImplementation(
 
       const res = await originalImpl.consumeCode(input);
 
+      // READCODE BURI sysq: here res is the response from api call on consumeCode - {status: 'OK', user: {email: 'nilinswap@gmail.com', id: 'f7004ce2-63d6-4d63-b395-bf6d13e9e358', timeJoined: 1661678041972}, createdNewUser: true, preAuthSessionId: '0kJxbAGJQ1292n5hgzvGg9l2lCPE4hE54JKHiQFKjpw=', fetchResponse: Response}
       if (res.status === "RESTART_FLOW_ERROR") {
         await originalImpl.clearLoginAttemptInfo({
           userContext: input.userContext,

@@ -41,7 +41,7 @@ export default abstract class RecipeModule<
         history?: any,
         queryParams?: Record<string, string>
     ): Promise<void> => {
-        //READCODE BURI: there is where you redirect to /auth or whatever redirecturl is. 
+        //READCODE BURI: this function is where you redirect to /auth or whatever redirecturl is. 
         let redirectUrl = await this.getRedirectUrl(context);
         redirectUrl = appendQueryParamsToURL(redirectUrl, queryParams);
 

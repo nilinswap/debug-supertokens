@@ -127,8 +127,10 @@ export const FormBase: React.FC<FormBaseProps<any>> = (props) => {
                 let result;
                 let generalError: STGeneralError | undefined;
                 try {
-                    // READCODE BURI: this is where the api call is made.
-                    result = await props.callAPI(apiFields, (id, value) => fieldUpdates.push({ id, value }));
+                  // READCODE BURI: this is where the api call is made. it calls api based on RecipeInterface's state value. i.e. if it createCode, consumeCode
+                  result = await props.callAPI(apiFields, (id, value) =>
+                    fieldUpdates.push({ id, value })
+                  );
                 } catch (e) {
                     if (STGeneralError.isThisError(e)) {
                         generalError = e;

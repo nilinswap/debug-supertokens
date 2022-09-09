@@ -32,9 +32,9 @@ What behaviour are we going to understand?
 - you enter otp and you are redirected to the page which you landed on the first time you came. so redirectTo was preserved in the whole process. Your cookies are set with sRefreshToken and sAccessToken. 
 - Next time, you go to authed page, you are not asked for auth. 
 - if it is an okay response but stale otp response, frontend is handling it to show wrong otp. 
-- regularly /refresh the refresh token
-- if you are logged out, it remembers my email id and asks me if I want to go ahead. 
-- there are different themes that I can select. 
+- regularly /refresh the refresh token - not done
+- if you are logged out, it remembers my email id and asks me if I want to go ahead. - not done
+- there are different themes that I can select. - not done
 
 Below are components to understand for this
 
@@ -42,6 +42,7 @@ S1.SAR2.STN3 - singleton pattern -> use of supertokens.init to initialize config
 S1.SAR2.RTL3 - redirection to auth if wrapper wraps the component otherwise just render
 S1.SAR2.ER3 - extending routes with auth routes
 S1.SAR2.sysq3 - Components and onSubmit
+S1.SAR2.SES3 - read from session and decide if one wants to send to auth or just deliver the children 
 
 ## S1.SN2 supertokens-node
 
@@ -88,6 +89,8 @@ return (
 these paths are appended on top of config's websitePath. like for passwordless recipe it is / and /verify and you can find that happening in 
 `src/lib/ts/recipe/passwordless/recipe.tsx` in getFeatures() method.
 
+We decide when to resend code and when to refresh login attempt (RESTART_FLOW) in src/lib/ts/recipe/passwordless/components/features/signInAndUp/index.tsx only under differnt state handling like consumeCode.
+
 here, this `Route` is imported in index.tsx and passed deep down all the way to the bottom until superTokensRouteV6 where it is used. why is it done?
 
 
@@ -100,7 +103,9 @@ search the code by `sysq` to see that thread.
 I swear there is something wrong with this codebase. it is super convoluted.
 
 
+## S1.SAR2.SES3
 
+We wrap our authed components in PasswordlessAuth which is an hlc that leads to SessionAuth in  `src/lib/ts/recipe/session/sessionAuth.tsx` has everything related to how session-exists is checked and what to do next.
 
 
 
