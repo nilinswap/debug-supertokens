@@ -176,7 +176,7 @@ export default class Recipe extends RecipeModule {
             emailDelivery: this.emailDelivery,
             smsDelivery: this.smsDelivery,
         };
-        // READCODE BUNI: this is where we decide which API to call. createCode is send otp
+        // READCODE BUNI MW3 AL3: this is where we decide which API to call. createCode is send otp
         if (id === CONSUME_CODE_API) {
             return await consumeCodeAPI(this.apiImpl, options);
         } else if (id === CREATE_CODE_API) {

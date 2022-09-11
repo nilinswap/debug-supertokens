@@ -324,11 +324,11 @@ export default class SuperTokens {
     };
 
     middleware = async (request: BaseRequest, response: BaseResponse): Promise<boolean> => {
-        // READCODE BUNI: this is where request handling starts
         logDebugMessage("middleware: Started");
         let path = this.appInfo.apiGatewayPath.appendPath(new NormalisedURLPath(request.getOriginalURL()));
         let method: HTTPMethod = normaliseHttpMethod(request.getMethod());
 
+        // READCODE BUNI MW3: See we match for path to start with apiBasePath 
         // if the prefix of the URL doesn't match the base path, we skip
         if (!path.startsWith(this.appInfo.apiBasePath)) {
             logDebugMessage(
@@ -365,6 +365,7 @@ export default class SuperTokens {
             }
             logDebugMessage("middleware: Matched with recipe ID: " + matchedRecipe.getRecipeId());
 
+            // READCODE BUNI: for a recipe, if the path is the one that is expected. this is checked below.
             let id = matchedRecipe.returnAPIIdIfCanHandleRequest(path, method);
             if (id === undefined) {
                 logDebugMessage(
@@ -379,7 +380,7 @@ export default class SuperTokens {
 
             logDebugMessage("middleware: Request being handled by recipe. ID is: " + id);
 
-            // READCODE BUNI: this is where exact request handling happens
+            // READCODE BUNI MW3: this is where exact request handling happens. we pas the response and it writes response with body inplace (yeah, it is bad right)
             // give task to the matched recipe
             let requestHandled = await matchedRecipe.handleAPIRequest(id, request, response, path, method);
             if (!requestHandled) {

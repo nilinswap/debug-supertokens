@@ -156,6 +156,7 @@ export const middleware = () => {
         const response = new ExpressResponse(res);
         try {
             supertokens = SuperTokens.getInstanceOrThrowError();
+            // READCODE BUNI MW3: express's middlware is called 
             const result = await supertokens.middleware(request, response);
             if (!result) {
                 return next();

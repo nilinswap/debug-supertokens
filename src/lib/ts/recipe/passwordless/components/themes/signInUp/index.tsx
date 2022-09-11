@@ -131,7 +131,7 @@ function SignInUpThemeWrapper(props: SignInUpProps): JSX.Element {
           rootStyleFromInit={props.config.rootStyle}
           getDefaultStyles={getStyles}
         >
-          <SignInUpTheme {...props} activeScreen={activeScreen!} />
+            <SignInUpTheme {...props} activeScreen={activeScreen!} />
         </StyleProvider>
       </ThemeBase>
     </UserContextWrapper>

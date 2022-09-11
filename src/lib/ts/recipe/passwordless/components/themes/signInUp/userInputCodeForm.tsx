@@ -129,30 +129,43 @@ export const UserInputCodeForm = withOverride(
                     onSuccess={props.onSuccess}
                     buttonLabel={"PWLESS_SIGN_IN_UP_CONTINUE_BUTTON"}
                     callAPI={async (formFields) => {
-                        const userInputCode = formFields.find((field) => field.id === "userInputCode")?.value;
-                        if (userInputCode === undefined || userInputCode.length === 0) {
-                            throw new STGeneralError("GENERAL_ERROR_OTP_UNDEFINED");
-                        }
-                        const response = await props.recipeImplementation.consumeCode({
-                            deviceId: props.loginAttemptInfo.deviceId,
-                            preAuthSessionId: props.loginAttemptInfo.preAuthSessionId,
-                            userInputCode,
-                            userContext,
+                      const userInputCode = formFields.find(
+                        (field) => field.id === "userInputCode"
+                      )?.value;
+                      if (
+                        userInputCode === undefined ||
+                        userInputCode.length === 0
+                      ) {
+                        throw new STGeneralError("GENERAL_ERROR_OTP_UNDEFINED");
+                      }
+                      // READCODE BURI: this is the where we call supertokens-web-js's lib/ts/recipe/passwordless/recipeImplementation.ts's consumeCode where we call the actual apis. 
+                      const response =
+                        await props.recipeImplementation.consumeCode({
+                          deviceId: props.loginAttemptInfo.deviceId,
+                          preAuthSessionId:
+                            props.loginAttemptInfo.preAuthSessionId,
+                          userInputCode,
+                          userContext,
                         });
 
-                        if (response.status === "OK" || response.status === "RESTART_FLOW_ERROR") {
-                            return response;
-                        }
+                      if (
+                        response.status === "OK" ||
+                        response.status === "RESTART_FLOW_ERROR"
+                      ) {
+                        return response;
+                      }
 
-                        if (response.status === "INCORRECT_USER_INPUT_CODE_ERROR") {
-                            throw new STGeneralError("GENERAL_ERROR_OTP_INVALID");
-                        }
+                      if (
+                        response.status === "INCORRECT_USER_INPUT_CODE_ERROR"
+                      ) {
+                        throw new STGeneralError("GENERAL_ERROR_OTP_INVALID");
+                      }
 
-                        if (response.status === "EXPIRED_USER_INPUT_CODE_ERROR") {
-                            throw new STGeneralError("GENERAL_ERROR_OTP_EXPIRED");
-                        }
+                      if (response.status === "EXPIRED_USER_INPUT_CODE_ERROR") {
+                        throw new STGeneralError("GENERAL_ERROR_OTP_EXPIRED");
+                      }
 
-                        throw new STGeneralError("SOMETHING_WENT_WRONG_ERROR");
+                      throw new STGeneralError("SOMETHING_WENT_WRONG_ERROR");
                     }}
                     validateOnBlur={false}
                     showLabels={true}

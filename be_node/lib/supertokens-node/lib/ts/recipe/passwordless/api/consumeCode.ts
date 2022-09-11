@@ -74,6 +74,7 @@ export default async function consumeCode(apiImplementation: APIInterface, optio
     );
 
     if (result.status === "OK") {
+        // READCODE BUNI AL3: we delete session object and send everything else in response (including userInfo)
         delete (result as any).session;
     }
 

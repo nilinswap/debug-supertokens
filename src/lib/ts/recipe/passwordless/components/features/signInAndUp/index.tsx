@@ -148,24 +148,29 @@ export const useFeatureReducer = (
             return;
         }
         async function load() {
-            let error: string | undefined = undefined;
-            const errorQueryParam = getQueryParams("error");
-            const messageQueryParam = getQueryParams("message");
-            if (errorQueryParam !== null) {
-                if (errorQueryParam === "signin") {
-                    error = "SOMETHING_WENT_WRONG_ERROR";
-                } else if (errorQueryParam === "restart_link") {
-                    error = "ERROR_SIGN_IN_UP_LINK";
-                } else if (errorQueryParam === "custom" && messageQueryParam !== null) {
-                    error = messageQueryParam;
-                }
+          let error: string | undefined = undefined;
+          const errorQueryParam = getQueryParams("error");
+          const messageQueryParam = getQueryParams("message");
+          if (errorQueryParam !== null) {
+            if (errorQueryParam === "signin") {
+              error = "SOMETHING_WENT_WRONG_ERROR";
+            } else if (errorQueryParam === "restart_link") {
+              error = "ERROR_SIGN_IN_UP_LINK";
+            } else if (
+              errorQueryParam === "custom" &&
+              messageQueryParam !== null
+            ) {
+              error = messageQueryParam;
             }
-            const loginAttemptInfo = await getLoginAttemptInfo({
-                recipeImplementation: recipeImpl!,
-                userContext,
-            });
-            // No need to check if the component is unmounting, since this has no effect then.
-            dispatch({ type: "load", loginAttemptInfo, error });
+          }
+          // READCODE BURI KEB3: it gets loginAttemptInfo and email happens to be a part of it. How it gets I really don't know there is device id part of login info. why? - probably because it wants to sandbox auth from different devices.
+          const loginAttemptInfo = await getLoginAttemptInfo({
+            recipeImplementation: recipeImpl!,
+            userContext,
+          });
+          // READCODE BURI KEB3: it is the only place where load is dispatched. this runs on onLoad right? so it sets the state and that state with login info is passed on to children. 
+          // No need to check if the component is unmounting, since this has no effect then.
+          dispatch({ type: "load", loginAttemptInfo, error });
         }
         if (state.loaded === false) {
             void load();

@@ -25,7 +25,8 @@ export default function getAPIInterface(): APIInterface {
             verifySessionOptions: VerifySessionOptions | undefined;
             options: APIOptions;
             userContext: any;
-        }): Promise<SessionContainerInterface | undefined> {
+            }): Promise<SessionContainerInterface | undefined> {
+            // READCODE BUNI MW3: It comes here for both authed api and to just verify session and refersh it in refresh-flow
             let method = normaliseHttpMethod(options.req.getMethod());
             if (method === "options" || method === "trace") {
                 return undefined;
@@ -34,7 +35,7 @@ export default function getAPIInterface(): APIInterface {
             let incomingPath = new NormalisedURLPath(options.req.getOriginalURL());
 
             let refreshTokenPath = options.config.refreshTokenPath;
-
+         // READCODE BUNI MW3: below if else differs the request that is using this function for refreshing token or authing the api.
             if (incomingPath.equals(refreshTokenPath) && method === "post") {
                 return await options.recipeImplementation.refreshSession({
                     req: options.req,

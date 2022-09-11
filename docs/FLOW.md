@@ -16,7 +16,17 @@ to highlight
 
 S1.SAR2. for frontend, We inited a supertokens instance. we wrapped our main app with `SuperTokensWrapper` and extended routes `{getSuperTokensRoutesForReactRouterDom(reactRouterDom)}`  and wrap the component that wants auth with `PasswordlessAuth`.
 
-S1.SN2. for backend, we inited a supertokens instance. we then allowed our domain for cors and we added a middleware. 
+S1.SN2. for backend, we inited a supertokens instance. we then allowed our domain for cors and we added a middleware.
+if we want to secure a backend api, we add verifySession middleware. 
+
+```
+
+app.post("/like-comment", verifySession(), (req: SessionRequest, res) => {
+    let userId = req.session!.getUserId();
+    //....
+});
+
+```
 
 S1.SC2. There is a backend core called supertokens-core. -> unimplemented()
 
@@ -32,8 +42,8 @@ What behaviour are we going to understand?
 - you enter otp and you are redirected to the page which you landed on the first time you came. so redirectTo was preserved in the whole process. Your cookies are set with sRefreshToken and sAccessToken. 
 - Next time, you go to authed page, you are not asked for auth. 
 - if it is an okay response but stale otp response, frontend is handling it to show wrong otp. 
+- if I am logged out, it remembers my email id and asks me if I want to go ahead. 
 - regularly /refresh the refresh token - not done
-- if you are logged out, it remembers my email id and asks me if I want to go ahead. - not done
 - there are different themes that I can select. - not done
 
 Below are components to understand for this
@@ -43,6 +53,7 @@ S1.SAR2.RTL3 - redirection to auth if wrapper wraps the component otherwise just
 S1.SAR2.ER3 - extending routes with auth routes
 S1.SAR2.sysq3 - Components and onSubmit
 S1.SAR2.SES3 - read from session and decide if one wants to send to auth or just deliver the children 
+S1.SAR2.KEB3 - If I am logged out, it knows the email from before when I come back to it and asks me just send otp to the email. 
 
 ## S1.SN2 supertokens-node
 
@@ -50,7 +61,7 @@ What behaviour are we going to understand?
 
 - Frontend going to call few apis served by backend sdk
 - there are two cookies for auth access_token or AT (it is `sAccessToken`) and refresh_token or RT (it is `sRefreshToken`)
-- all the requests go through middleware.
+- all the requests to backend goes through middleware. it is caught by this middleware to process if it is a request to /auth/api or if the api itself is authed. e.g pages call requests in /auth/api etc.
 - Session Check Logic
   - If requests have fresh AT and RT, you are allowed into /inner.
   - If requests have fresh RT but stale AT, on hit of any request or say page reload - /session/refresh is called which sets new values for AT and RT. 
@@ -58,6 +69,15 @@ What behaviour are we going to understand?
 - Auth Logic
   - When I hit /inner, I am redirected to /auth with redirectTo as /inner with signinup form. on entering email-id, /signinup/code is hit. in the back, it sends otp to email address and and after it, in the front it redirects to accept otp page. 
   - when I enter otp, it hits /signinup/consume. in the back, verifies otp and creates session and sets cookies and in the front, I am redirected to /inner 
+
+S1.SN2.MW3 - all requests to `/auth/api` goes through the middleware. or unless of course, you have authed your api. 
+
+S1.SN2.RSL3 - Refresh Session logic. So it refreshes the token when you visit the page (even unauthed) after some time. it calls /session/refresh. If there is refresh_token is stale, it clears cookies and it is a case of log-out.
+
+S1.SN2.AL3 - on hit of `/signinup/code` it creates code by calling the core api and sends an email and sends a response OK so that website can redirect to next page. On hit of `/signinup/consume` it takes the otp, calls the backend api to verify and then sets cookie properly. 
+
+I don't know why actual api calls are made from another library supertokens-web-js.
+
 
 # Level 3
 
@@ -108,6 +128,65 @@ I swear there is something wrong with this codebase. it is super convoluted.
 We wrap our authed components in PasswordlessAuth which is an hlc that leads to SessionAuth in  `src/lib/ts/recipe/session/sessionAuth.tsx` has everything related to how session-exists is checked and what to do next.
 
 
+## S1.SAR2.KEB3
+
+Search by READCODE BURI KEB3: it uses getLoginAttemptInfo to get contact info and passes it as prop to children. 
+
+## S1.SAR2.AAPIC3
+
+Actual api calls are made from inside another library supertokens-web-js. So callAPI from inside of formBase calls recipeImplementation.consumeCode or recipeImplementation.createCode whose implementation is actually in supertokens-web-js  `lib/ts/recipe/passwordless/recipeImplementation.ts` (for passwordless) (evidence - src/lib/ts/recipe/session/recipe.ts's imports). so actual api calls are made from inside that lib
+```react 
+const { jsonBody, fetchResponse } = await querier.post<{
+                status: "OK";
+                deviceId: string;
+                preAuthSessionId: string;
+                flowType: PasswordlessFlowType;
+            }>(
+                "/signinup/code",
+                { body: JSON.stringify(bodyObj) },
+                Querier.preparePreAPIHook({
+                    recipePreAPIHook: recipeImplInput.preAPIHook,
+                    action: "PASSWORDLESS_CREATE_CODE",
+                    userContext: input.userContext,
+                    options: input.options,
+                }),
+                Querier.preparePostAPIHook({
+                    recipePostAPIHook: recipeImplInput.postAPIHook,
+                    action: "PASSWORDLESS_CREATE_CODE",
+                    userContext: input.userContext,
+                })
+            );
+```
+a snipped from lib/ts/recipe/passwordless/recipeImplementation.ts
+
+
+
+
+
+----------------------------------------
+
+## S1.SN2.MW3
+(NOTE: we are sticking to passwordless recipe here)
+So frontend is wired to use backend apis by calling api domain with /auth/api (we set this in two inits). all the requests to backend goes through middleware. it is caught by this middleware to process if it is a request to /auth/api or if the api itself is authed. e.g pages call requests in /auth/api etc. 
+
+
+if RT and AT are fresh, we don't verify if they are correct by making a backend call. we such guts because httponly flag is true so we don't need to worry about XSS attacks.
+In the frontend, if the cookie is expired browser doesn't send the cookie with request but how about backend (i.e. api auth)? probably cookie expiry must be handled explicitly. that part I haven't figured out. 
+accessToken has to be absent for getSession to call /session/verify.
+
+we attach session to req object in case of authed api. 
+
+
+## S1.SN2.RSL3
+
+So Frontend calls `/auth/api/session/refresh` when AT or RT expired. with recipe id - session. 
+
+
+
+## S1.SN2.AL3
+
+
+
 
 ## auth apis that frontend calls
 
@@ -148,8 +227,8 @@ Access-Control-Allow-Origin: http://localhost:1234
 }
 ```
 
-    - response has set-cookie headers for sFrontToken, sIdRefreshToken and sAccessToken
-    - it also has user info.
+  - response has set-cookie headers for sFrontToken, sIdRefreshToken and sAccessToken
+  - it also has user info.
 
 ```json
 {

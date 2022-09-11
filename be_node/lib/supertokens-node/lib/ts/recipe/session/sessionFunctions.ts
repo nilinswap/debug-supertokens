@@ -92,6 +92,7 @@ export async function getSession(
             /**
              * get access token info using existing signingKey
              */
+            // READCODE BUNI: for jwt payload verification
             accessTokenInfo = await getInfoFromAccessToken(
                 accessToken,
                 key.publicKey,
@@ -211,6 +212,7 @@ export async function getSession(
         !handShakeInfo.accessTokenBlacklistingEnabled &&
         accessTokenInfo.parentRefreshTokenHash1 === undefined
     ) {
+        // READCODE BUNI MW3: in normal cases when RT and AT are both there and fresh, we return session without a backend api call. why have this confidence because cookies are set httpOnly.
         return {
             session: {
                 handle: accessTokenInfo.sessionHandle,
@@ -234,6 +236,7 @@ export async function getSession(
         enableAntiCsrf: handShakeInfo.antiCsrf === "VIA_TOKEN",
     };
 
+    // READCODE BUNI MW3: but why do we verify only when AT is not there. What if AT is not valid anymore? 
     let response = await helpers.querier.sendPostRequest(new NormalisedURLPath("/recipe/session/verify"), requestBody);
     if (response.status === "OK") {
         helpers.updateJwtSigningPublicKeyInfo(
@@ -341,7 +344,7 @@ export async function refreshSession(
             });
         }
     }
-    // READCODE BUNI: here is where the core is called to refresh the session.
+    // READCODE BUNI RSL3: here is where the core is called to refresh the session. so we don't rely on supertokens-web-js or another lib for calling refresh session api. we directly call from backend server
     let response = await helpers.querier.sendPostRequest(new NormalisedURLPath("/recipe/session/refresh"), requestBody);
     if (response.status === "OK") {
         delete response.status;

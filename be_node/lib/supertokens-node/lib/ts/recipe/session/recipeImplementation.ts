@@ -145,6 +145,7 @@ export default function getRecipeInterface(
             logDebugMessage("getSession: request method: " + req.getMethod());
             let doAntiCsrfCheck = options !== undefined ? options.antiCsrfCheck : undefined;
 
+            // READCODE BUNI MW3: this getSession is called from inside `be_node/lib/supertokens-node/lib/ts/recipe/session/api/implementation.ts`'s verifySession when the flow is to auth an express api.
             let idRefreshToken = getIdRefreshTokenFromCookie(req);
             if (idRefreshToken === undefined) {
                 // we do not clear cookies here because of a
@@ -158,7 +159,7 @@ export default function getRecipeInterface(
                     // to be optional. So we return undefined.
                     return undefined;
                 }
-
+                // READCODE BUNI MW3: if refreshToken doesn't exist, we return error unauthorised.
                 logDebugMessage("getSession: UNAUTHORISED because idRefreshToken from cookies is undefined");
                 throw new STError({
                     message: "Session does not exist. Are you sending the session tokens in the request as cookies?",
@@ -167,6 +168,7 @@ export default function getRecipeInterface(
             }
             let accessToken = getAccessTokenFromCookie(req);
             if (accessToken === undefined) {
+                // READCODE BUNI MW3: handle no access token case
                 // maybe the access token has expired.
                 /**
                  * Based on issue: #156 (spertokens-node)
@@ -197,7 +199,7 @@ export default function getRecipeInterface(
                     doAntiCsrfCheck = normaliseHttpMethod(req.getMethod()) !== "get";
                 }
                 logDebugMessage("getSession: Value of doAntiCsrfCheck is: " + doAntiCsrfCheck);
-
+                // READCODE BUNI MW3: call SessionFunctions.getSession
                 let response = await SessionFunctions.getSession(
                     helpers,
                     accessToken,
@@ -212,6 +214,7 @@ export default function getRecipeInterface(
                         response.accessToken.expiry,
                         response.session.userDataInJWT
                     );
+                    // READCODE BUNI MW3: we attach accesstoken to response. 
                     attachAccessTokenToCookie(config, res, response.accessToken.token, response.accessToken.expiry);
                     accessToken = response.accessToken.token;
                 }
@@ -244,7 +247,7 @@ export default function getRecipeInterface(
         },
 
         refreshSession: async function ({ req, res }: { req: BaseRequest; res: BaseResponse }): Promise<Session> {
-            // READCODE BUNI: this gets hit if it is without jwt
+            // READCODE BUNI RSL3: this gets hit if it is without jwt
             logDebugMessage("refreshSession: Started");
             let inputIdRefreshToken = getIdRefreshTokenFromCookie(req);
             if (inputIdRefreshToken === undefined) {
@@ -275,7 +278,7 @@ export default function getRecipeInterface(
                     antiCsrfToken,
                     getRidFromHeader(req) !== undefined
                 );
-                // READCODE BUNI: this is where set-cookie is done
+                // READCODE BUNI RSL3: this is where set-cookie is done
                 attachCreateOrRefreshSessionResponseToExpressRes(config, res, response);
                 logDebugMessage("refreshSession: Success!");
                 return new Session(
@@ -295,7 +298,7 @@ export default function getRecipeInterface(
                         logDebugMessage(
                             "refreshSession: Clearing cookies because of UNAUTHORISED or TOKEN_THEFT_DETECTED response"
                         );
-                        // READCODE BUNI: this is where the cookie is cleared for 401. 
+                        // READCODE BUNI RSL3: this is where the cookie is cleared for 401. 
                         clearSessionFromCookie(config, res);
                     }
                     throw err;
