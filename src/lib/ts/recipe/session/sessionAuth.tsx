@@ -85,7 +85,7 @@ const SessionAuth: React.FC<PropsWithChildren<SessionAuthProps>> = ({
 
     const sessionExists = await session.current.doesSessionExist({
       userContext,
-    }); // READCODE BURI: Somehow finds out if the session exists or not.
+    }); // READCODE BURI RTL3: Somehow finds out if the session exists or not.
 
     if (sessionExists === false) {
       // READCODE BURI: If the session does not exist, return empty payload
@@ -97,7 +97,7 @@ const SessionAuth: React.FC<PropsWithChildren<SessionAuthProps>> = ({
       };
     }
 
-    // READCODE BURI: If the session exists, get the access token payload securely by calling api.
+    // READCODE BURI RTL3 SES3: If the session exists, get the access token payload securely by calling api.
     return {
       doesSessionExist: true,
       accessTokenPayload: await session.current.getAccessTokenPayloadSecurely({
@@ -111,17 +111,17 @@ const SessionAuth: React.FC<PropsWithChildren<SessionAuthProps>> = ({
   }, []);
 
   const setInitialContextAndMaybeRedirect = useCallback(
-    // READCODE BURI: this method is called after user data from api is recieved.
+    // READCODE BURI RTL3: this method is called after user data from api is recieved.
     async (toSetContext: SessionContextType) => {
       if (toSetContext.loading === true) {
         // We should not be updating the context to loading
         throw new Error("Should never come here");
       }
 
-          if (!toSetContext.doesSessionExist && props.requireAuth === true) {
-            // READCODE BURI: redirect to login
-            props.redirectToLogin();
-          } else {
+      if (!toSetContext.doesSessionExist && props.requireAuth === true) {
+        // READCODE BURI RTL3: redirect to login
+        props.redirectToLogin();
+      } else {
         setContext((context) => (!context.loading ? context : toSetContext));
       }
     },
@@ -175,12 +175,12 @@ const SessionAuth: React.FC<PropsWithChildren<SessionAuthProps>> = ({
     props.requireAuth === true &&
     (actualContext.loading || !actualContext.doesSessionExist)
   ) {
-    // READCODE BURI: This is where we decide to not show the thing inside the HLC as the guy is not logged in. this is only relevant if requireAuth is true.. we return null so that nothing is shown in that place but we have set an event to be handled when api response returns, that is where we are redirecting.
+    // READCODE BURI RTL3: This is where we decide to not show the thing inside the HLC as the guy is not logged in. this is only relevant if requireAuth is true.. we return null so that nothing is shown in that place but we have set an event to be handled when api response returns, that is where we are redirecting.
     return null;
   }
 
     return (
-      // READCODE BURI: This is where we decide to show the children of HLC; we also pass user data
+      // READCODE BURI RTL3 SES3: This is where we decide to show the children of HLC; we also pass user data
 
       <SessionContext.Provider value={{ ...actualContext, isDefault: false }}>
         {children}
