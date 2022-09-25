@@ -236,7 +236,7 @@ export async function getSession(
         enableAntiCsrf: handShakeInfo.antiCsrf === "VIA_TOKEN",
     };
 
-    // READCODE BUNI MW3: but why do we verify only when AT is not there. What if AT is not valid anymore? 
+    // READCODE BUNI MW3: but why do we verify only when AT is not there. What if AT is not valid anymore?. This is only called for the jwt case. I verified from core
     let response = await helpers.querier.sendPostRequest(new NormalisedURLPath("/recipe/session/verify"), requestBody);
     if (response.status === "OK") {
         helpers.updateJwtSigningPublicKeyInfo(

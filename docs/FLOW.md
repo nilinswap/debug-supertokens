@@ -3,6 +3,8 @@
 
 (go to [a video on supertokens working](https://www.youtube.com/watch?v=MA5JDmUlO3E) and understand basics)
 
+(**Shit over here is written after fact checking through debugger** so be careful if you challenge)
+
 
 # Level 1
 
@@ -36,12 +38,12 @@ S1.SC2. There is a backend core called supertokens-core. -> unimplemented()
 
 What behaviour are we going to understand?
 
-- the component which has PasswordlessAuth wrapper around it, would not be opened without auth. other routes are allowed to be opened - done
-- /auth would lead to the signinup page. so technically, authed component redirects to /auth. - done
+- the component which has PasswordlessAuth wrapper around it, would not be opened without auth. other routes are allowed to be opened 
+- /auth would lead to the signinup page. so technically, authed component redirects to /auth. 
 - you can enter your email-id and on click of submit button, you are awaited for the response from backend to tell it was successful to send otp. You are redirected to accept_otp page
 - you enter otp and you are redirected to the page which you landed on the first time you came. so redirectTo was preserved in the whole process. Your cookies are set with sRefreshToken and sAccessToken. 
 - Next time, you go to authed page, you are not asked for auth. 
-- if it is an okay response but stale otp response, frontend is handling it to show wrong otp. 
+- if it is an okay response but stale otp response, frontend is handling it to show wrong otp message. 
 - if I am logged out, it remembers my email id and asks me if I want to go ahead. 
 - regularly /refresh the refresh token - not done
 - there are different themes that I can select. - not done

@@ -380,7 +380,7 @@ export default class SuperTokens {
 
             logDebugMessage("middleware: Request being handled by recipe. ID is: " + id);
 
-            // READCODE BUNI MW3: this is where exact request handling happens. we pas the response and it writes response with body inplace (yeah, it is bad right)
+            // READCODE BUNI MW3: this is where exact request handling happens. we pass the response and it writes response with body inplace
             // give task to the matched recipe
             let requestHandled = await matchedRecipe.handleAPIRequest(id, request, response, path, method);
             if (!requestHandled) {
