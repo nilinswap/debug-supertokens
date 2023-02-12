@@ -13,7 +13,19 @@
  * under the License.
  */
 
-import {
+import type { InputProps } from "./components/library/input";
+import type { ResetPasswordEmail } from "./components/themes/resetPasswordUsingToken/resetPasswordEmail";
+import type { SubmitNewPassword } from "./components/themes/resetPasswordUsingToken/submitNewPassword";
+import type { SignIn } from "./components/themes/signInAndUp/signIn";
+import type { SignInFooter } from "./components/themes/signInAndUp/signInFooter";
+import type { SignInForm } from "./components/themes/signInAndUp/signInForm";
+import type { SignInHeader } from "./components/themes/signInAndUp/signInHeader";
+import type { SignUp } from "./components/themes/signInAndUp/signUp";
+import type { SignUpFooter } from "./components/themes/signInAndUp/signUpFooter";
+import type { SignUpForm } from "./components/themes/signInAndUp/signUpForm";
+import type { SignUpHeader } from "./components/themes/signInAndUp/signUpHeader";
+import type { ComponentOverride } from "../../components/componentOverride/componentOverride";
+import type {
     APIFormField,
     FeatureBaseConfig,
     FormField,
@@ -22,32 +34,18 @@ import {
     NormalisedFormField,
     ThemeBaseProps,
 } from "../../types";
-import React, { Dispatch } from "react";
-import {
+import type {
     GetRedirectionURLContext as AuthRecipeModuleGetRedirectionURLContext,
     OnHandleEventContext as AuthRecipeModuleOnHandleEventContext,
-    PreAndPostAPIHookAction as AuthRecipeModulePreAPIHookAction,
     User,
     Config as AuthRecipeModuleConfig,
     NormalisedConfig as NormalisedAuthRecipeModuleConfig,
     UserInput as AuthRecipeModuleUserInput,
-    UserInputOverride as AuthRecipeUserInputOverride,
-} from "../authRecipeWithEmailVerification/types";
-import OverrideableBuilder from "supertokens-js-override";
-
-import { ComponentOverride } from "../../components/componentOverride/componentOverride";
-import { SignInHeader } from "./components/themes/signInAndUp/signInHeader";
-import { SignIn } from "./components/themes/signInAndUp/signIn";
-import { SignInFooter } from "./components/themes/signInAndUp/signInFooter";
-import { SignInForm } from "./components/themes/signInAndUp/signInForm";
-import { SignUp } from "./components/themes/signInAndUp/signUp";
-import { SignUpFooter } from "./components/themes/signInAndUp/signUpFooter";
-import { SignUpForm } from "./components/themes/signInAndUp/signUpForm";
-import { SignUpHeader } from "./components/themes/signInAndUp/signUpHeader";
-import { ResetPasswordEmail } from "./components/themes/resetPasswordUsingToken/resetPasswordEmail";
-import { SubmitNewPassword } from "./components/themes/resetPasswordUsingToken/submitNewPassword";
-import { InputProps } from "./components/library/input";
-import { RecipeInterface } from "supertokens-web-js/recipe/emailpassword";
+} from "../authRecipe/types";
+import type React from "react";
+import type { Dispatch } from "react";
+import type { OverrideableBuilder } from "supertokens-js-override";
+import type { RecipeInterface } from "supertokens-web-js/recipe/emailpassword";
 
 export type ComponentOverrideMap = {
     EmailPasswordSignIn_Override?: ComponentOverride<typeof SignIn>;
@@ -70,8 +68,7 @@ export type UserInput = {
             originalImplementation: RecipeInterface,
             builder?: OverrideableBuilder<RecipeInterface>
         ) => RecipeInterface;
-        components?: ComponentOverrideMap;
-    } & AuthRecipeUserInputOverride;
+    };
 } & AuthRecipeModuleUserInput<GetRedirectionURLContext, PreAndPostAPIHookAction, OnHandleEventContext>;
 
 export type Config = UserInput &
@@ -85,7 +82,6 @@ export type NormalisedConfig = {
             originalImplementation: RecipeInterface,
             builder?: OverrideableBuilder<RecipeInterface>
         ) => RecipeInterface;
-        components: ComponentOverrideMap;
     };
 } & NormalisedAuthRecipeModuleConfig<GetRedirectionURLContext, PreAndPostAPIHookAction, OnHandleEventContext>;
 
@@ -307,7 +303,6 @@ export type FormFieldError = {
 };
 
 export type PreAndPostAPIHookAction =
-    | AuthRecipeModulePreAPIHookAction
     | "EMAIL_PASSWORD_SIGN_UP"
     | "EMAIL_PASSWORD_SIGN_IN"
     | "SEND_RESET_PASSWORD_EMAIL"

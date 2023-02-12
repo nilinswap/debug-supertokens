@@ -16,14 +16,14 @@
 /*
  * Imports.
  */
-import { StyleProvider } from "../../../../../styles/styleContext";
-import { defaultPalette, hasFontDefined } from "../../../../../styles/styles";
+import { hasFontDefined } from "../../../../../styles/styles";
 import UserContextWrapper from "../../../../../usercontext/userContextWrapper";
-import { getStyles } from "../../../../emailpassword/components/themes/styles/styles";
 import { ThemeBase } from "../../../../emailpassword/components/themes/themeBase";
-import { EmailVerificationThemeProps } from "../../../types";
+
 import { SendVerifyEmail } from "./sendVerifyEmail";
 import { VerifyEmailLinkClicked } from "./verifyEmailLinkClicked";
+
+import type { EmailVerificationThemeProps } from "../../../types";
 
 /*
  * Component.
@@ -36,29 +36,11 @@ export function EmailVerificationTheme(props: EmailVerificationThemeProps): JSX.
 
     // If no token, return SendVerifyEmail.
     if (props.verifyEmailLinkClickedScreen === undefined) {
-        return (
-            <StyleProvider
-                rawPalette={props.config.palette}
-                defaultPalette={defaultPalette}
-                styleFromInit={props.sendVerifyEmailScreen.styleFromInit}
-                rootStyleFromInit={props.config.rootStyle}
-                getDefaultStyles={getStyles}>
-                <SendVerifyEmail {...props.sendVerifyEmailScreen} />
-            </StyleProvider>
-        );
+        return <SendVerifyEmail {...props.sendVerifyEmailScreen} />;
     }
 
     // Otherwise, return VerifyEmailLinkClicked.
-    return (
-        <StyleProvider
-            rawPalette={props.config.palette}
-            defaultPalette={defaultPalette}
-            styleFromInit={props.verifyEmailLinkClickedScreen.styleFromInit}
-            rootStyleFromInit={props.config.rootStyle}
-            getDefaultStyles={getStyles}>
-            <VerifyEmailLinkClicked {...props.verifyEmailLinkClickedScreen} />
-        </StyleProvider>
-    );
+    return <VerifyEmailLinkClicked {...props.verifyEmailLinkClickedScreen} />;
 }
 
 function EmailVerificationThemeWrapper(props: EmailVerificationThemeProps): JSX.Element {
@@ -66,7 +48,14 @@ function EmailVerificationThemeWrapper(props: EmailVerificationThemeProps): JSX.
 
     return (
         <UserContextWrapper userContext={props.userContext}>
-            <ThemeBase loadDefaultFont={!hasFont}>
+            <ThemeBase
+                loadDefaultFont={!hasFont}
+                userStyles={[
+                    props.config.rootStyle,
+                    props.verifyEmailLinkClickedScreen === undefined
+                        ? props.config.sendVerifyEmailScreen.style
+                        : props.config.verifyEmailLinkClickedScreen.style,
+                ]}>
                 <EmailVerificationTheme {...props} />
             </ThemeBase>
         </UserContextWrapper>

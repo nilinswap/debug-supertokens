@@ -17,9 +17,25 @@
  * Imports.
  */
 
-import { CreateRecipeFunction, RecipeFeatureComponentMap, NormalisedAppInfo, FeatureBaseProps } from "../../types";
-import AuthRecipeWithEmailVerification from "../authRecipeWithEmailVerification";
-import {
+import { OverrideableBuilder } from "supertokens-js-override";
+import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
+
+import { SSR_ERROR } from "../../constants";
+import UserContextWrapper from "../../usercontext/userContextWrapper";
+import { isTest, matchRecipeIdUsingQueryParams } from "../../utils";
+import AuthRecipe from "../authRecipe";
+import AuthWidgetWrapper from "../authRecipe/authWidgetWrapper";
+import Passwordless from "../passwordless/recipe";
+import ThirdParty from "../thirdparty/recipe";
+
+import { useRecipeComponentOverrideContext } from "./componentOverrideContext";
+import SignInAndUp from "./components/features/signInAndUp";
+import RecipeImplementation from "./recipeImplementation";
+import getPasswordlessImpl from "./recipeImplementation/passwordlessImplementation";
+import getThirdPartyImpl from "./recipeImplementation/thirdPartyImplementation";
+import { normaliseThirdPartyPasswordlessConfig } from "./utils";
+
+import type {
     Config,
     GetRedirectionURLContext,
     NormalisedConfig,
@@ -27,26 +43,14 @@ import {
     UserInput,
     PreAndPostAPIHookAction,
 } from "./types";
-import { isTest, matchRecipeIdUsingQueryParams } from "../../utils";
-import { normaliseThirdPartyPasswordlessConfig } from "./utils";
-import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
-import { SSR_ERROR } from "../../constants";
-import RecipeModule from "../recipeModule";
-import SignInAndUp from "./components/features/signInAndUp";
-import Passwordless from "../passwordless/recipe";
-import ThirdParty from "../thirdparty/recipe";
-import RecipeImplementation from "./recipeImplementation";
-import getPasswordlessImpl from "./recipeImplementation/passwordlessImplementation";
-import getThirdPartyImpl from "./recipeImplementation/thirdPartyImplementation";
-import EmailVerification from "../emailverification/recipe";
-import AuthWidgetWrapper from "../authRecipe/authWidgetWrapper";
-import OverrideableBuilder from "supertokens-js-override";
-import { RecipeInterface as TPPWlessRecipeInterface } from "supertokens-web-js/recipe/thirdpartypasswordless";
-import UserContextWrapper from "../../usercontext/userContextWrapper";
-// import * as React from "react";
+import type { GenericComponentOverrideMap } from "../../components/componentOverride/componentOverrideContext";
+import type { CreateRecipeFunction, FeatureBaseProps, NormalisedAppInfo, RecipeFeatureComponentMap } from "../../types";
+import type RecipeModule from "../recipeModule";
+import type { RecipeInterface as TPPWlessRecipeInterface } from "supertokens-web-js/recipe/thirdpartypasswordless";
 
-export default class ThirdPartyPasswordless extends AuthRecipeWithEmailVerification<
+export default class ThirdPartyPasswordless extends AuthRecipe<
     GetRedirectionURLContext,
+    never,
     OnHandleEventContext,
     NormalisedConfig
 > {
@@ -62,14 +66,11 @@ export default class ThirdPartyPasswordless extends AuthRecipeWithEmailVerificat
     constructor(
         config: Config,
         recipes: {
-            emailVerificationInstance: EmailVerification | undefined;
             thirdPartyInstance: ThirdParty | undefined;
             passwordlessInstance: Passwordless | undefined;
         }
     ) {
-        super(normaliseThirdPartyPasswordlessConfig(config), {
-            emailVerificationInstance: recipes.emailVerificationInstance,
-        });
+        super(normaliseThirdPartyPasswordlessConfig(config));
 
         {
             const builder = new OverrideableBuilder(
@@ -106,36 +107,33 @@ export default class ThirdPartyPasswordless extends AuthRecipeWithEmailVerificat
                 ? recipes.thirdPartyInstance
                 : this.config.thirdpartyUserInput === undefined
                 ? undefined
-                : new ThirdParty(
-                      {
-                          ...this.config.thirdpartyUserInput,
-                          appInfo: this.config.appInfo,
-                          recipeId: this.config.recipeId,
-                          override: {
-                              ...this.config.thirdpartyUserInput.override,
-                              functions: () => getThirdPartyImpl(this.recipeImpl),
-                          },
+                : new ThirdParty({
+                      ...this.config.thirdpartyUserInput,
+                      appInfo: this.config.appInfo,
+                      recipeId: this.config.recipeId,
+                      override: {
+                          ...this.config.thirdpartyUserInput.override,
+                          functions: () => getThirdPartyImpl(this.recipeImpl),
                       },
-                      {
-                          emailVerificationInstance: this.emailVerification,
-                      }
-                  );
+                  });
     }
 
-    getFeatures = (): RecipeFeatureComponentMap => {
+    getFeatures = (
+        useComponentOverrides: () => GenericComponentOverrideMap<any> = useRecipeComponentOverrideContext
+    ): RecipeFeatureComponentMap => {
         let features: RecipeFeatureComponentMap = {};
 
         if (this.passwordlessRecipe !== undefined) {
             features = {
                 ...features,
-                ...this.passwordlessRecipe.getFeatures(),
+                ...this.passwordlessRecipe.getFeatures(useComponentOverrides),
             };
         }
 
         if (this.thirdPartyRecipe !== undefined) {
             features = {
                 ...features,
-                ...this.thirdPartyRecipe.getFeatures(),
+                ...this.thirdPartyRecipe.getFeatures(useComponentOverrides),
             };
         }
 
@@ -148,23 +146,23 @@ export default class ThirdPartyPasswordless extends AuthRecipeWithEmailVerificat
             const normalisedFullPath = this.config.appInfo.websiteBasePath.appendPath(new NormalisedURLPath("/"));
             features[normalisedFullPath.getAsStringDangerous()] = {
                 matches: matchRecipeIdUsingQueryParams(this.config.recipeId),
-                component: (prop: any) => this.getFeatureComponent("signInUp", prop),
+                component: (prop: any) => this.getFeatureComponent("signInUp", prop, useComponentOverrides),
             };
         }
 
         return {
             ...features,
-            ...this.getAuthRecipeWithEmailVerificationFeatures(),
         };
     };
 
     getDefaultRedirectionURL = async (context: GetRedirectionURLContext): Promise<string> => {
-        return this.getAuthRecipeWithEmailVerificationDefaultRedirectionURL(context);
+        return this.getAuthRecipeDefaultRedirectionURL(context);
     };
 
     getFeatureComponent = (
-        componentName: "emailverification" | "signInUp" | "linkClickedScreen" | "signinupcallback",
-        props: FeatureBaseProps & { redirectOnSessionExists?: boolean; userContext?: any }
+        componentName: "signInUp" | "linkClickedScreen" | "signinupcallback",
+        props: FeatureBaseProps & { redirectOnSessionExists?: boolean; userContext?: any },
+        useComponentOverrides: () => GenericComponentOverrideMap<any> = useRecipeComponentOverrideContext
     ): JSX.Element => {
         if (componentName === "signInUp") {
             if (props.redirectOnSessionExists !== false) {
@@ -178,14 +176,14 @@ export default class ThirdPartyPasswordless extends AuthRecipeWithEmailVerificat
                         >
                             authRecipe={this}
                             history={props.history}>
-                            <SignInAndUp recipe={this} {...props} />
+                            <SignInAndUp recipe={this} {...props} useComponentOverrides={useComponentOverrides} />
                         </AuthWidgetWrapper>
                     </UserContextWrapper>
                 );
             } else {
                 return (
                     <UserContextWrapper userContext={props.userContext}>
-                        <SignInAndUp recipe={this} {...props} />
+                        <SignInAndUp recipe={this} {...props} useComponentOverrides={useComponentOverrides} />
                     </UserContextWrapper>
                 );
             }
@@ -195,16 +193,16 @@ export default class ThirdPartyPasswordless extends AuthRecipeWithEmailVerificat
                     "Embedding this component requires the passwordless recipe to be enabled. Please check the value of disablePasswordless in the configuration."
                 );
             }
-            return this.passwordlessRecipe.getFeatureComponent(componentName, props);
+            return this.passwordlessRecipe.getFeatureComponent(componentName, props, useComponentOverrides);
         } else if (componentName === "signinupcallback") {
             if (this.thirdPartyRecipe === undefined) {
                 throw new Error(
                     "Embedding this component requires the thirdparty recipe to be enabled. Please check the value of signInUpFeature.providers in the configuration."
                 );
             }
-            return this.thirdPartyRecipe.getFeatureComponent(componentName, props);
+            return this.thirdPartyRecipe.getFeatureComponent(componentName, props, useComponentOverrides);
         } else {
-            return this.getAuthRecipeWithEmailVerificationFeatureComponent(componentName, props);
+            throw new Error("Should never come here.");
         }
     };
 
@@ -226,7 +224,6 @@ export default class ThirdPartyPasswordless extends AuthRecipeWithEmailVerificat
                 },
                 {
                     passwordlessInstance: undefined,
-                    emailVerificationInstance: undefined,
                     thirdPartyInstance: undefined,
                 }
             );

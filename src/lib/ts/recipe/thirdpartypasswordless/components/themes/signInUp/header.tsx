@@ -15,25 +15,21 @@
 /*
  * Imports.
  */
-import { Fragment, useContext } from "react";
+import { Fragment } from "react";
+
 import { useTranslation } from "../../../../..";
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
-import StyleContext from "../../../../../styles/styleContext";
-// import * as React from "react";
 
 /*
  * Component.
  */
 export const Header = withOverride("ThirdPartyPasswordlessHeader", function ThirdPartyPasswordlessHeader() {
-    const styles = useContext(StyleContext);
     const t = useTranslation();
 
     return (
         <Fragment>
-            <div data-supertokens="headerTitle" css={styles.headerTitle}>
-                {t("THIRD_PARTY_PASSWORDLESS_SIGN_IN_AND_UP_HEADER_TITLE")}
-            </div>
-            <div data-supertokens="divider" css={styles.divider}></div>
+            <div data-supertokens="headerTitle">{t("THIRD_PARTY_PASSWORDLESS_SIGN_IN_AND_UP_HEADER_TITLE")}</div>
+            <div data-supertokens="divider"></div>
         </Fragment>
     );
 });

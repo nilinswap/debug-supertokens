@@ -17,13 +17,16 @@
  * Imports.
  */
 
-import Session from "../session/recipe";
-import RecipeModule from "../recipeModule";
-import { NormalisedConfig, GetRedirectionURLContext, OnHandleEventContext } from "./types";
-import { getCurrentNormalisedUrlPath, getNormalisedUserContext } from "../../utils";
+import { PostSuperTokensInitCallbacks } from "supertokens-web-js/utils/postSuperTokensInitCallbacks";
 
-export default abstract class
-    AuthRecipe<
+import { getNormalisedUserContext } from "../../utils";
+import RecipeModule from "../recipeModule";
+import Session from "../session/recipe";
+import SessionRecipe from "../session/recipe";
+
+import type { NormalisedConfig, GetRedirectionURLContext, OnHandleEventContext } from "./types";
+
+export default abstract class AuthRecipe<
     T,
     Action,
     R,
@@ -31,13 +34,16 @@ export default abstract class
 > extends RecipeModule<T | GetRedirectionURLContext, Action, R | OnHandleEventContext, N> {
     constructor(config: N) {
         super(config);
+        PostSuperTokensInitCallbacks.addPostInitCallback(() => {
+            const session = SessionRecipe.getInstance();
+            if (session !== undefined) {
+                session.addAuthRecipeRedirectionHandler(this.config.recipeId, this.redirect.bind(this));
+            }
+        });
     }
 
     getAuthRecipeDefaultRedirectionURL = async (context: GetRedirectionURLContext): Promise<string> => {
-        if (context.action === "SIGN_IN_AND_UP") {
-            return `${this.config.appInfo.websiteBasePath.getAsStringDangerous()}?rid=${this.config.recipeId}`;
-        } else if (context.action === "SUCCESS") {
-            // READCODE BURI: it comes here when otp is a succes and we are ready to redirect to path
+        if (context.action === "SUCCESS") {
             return context.redirectToPath === undefined ? "/" : context.redirectToPath;
         } else {
             throw new Error("Should never come here");
@@ -54,36 +60,5 @@ export default abstract class
         return await Session.getInstanceOrThrow().doesSessionExist({
             userContext: getNormalisedUserContext(input?.userContext),
         });
-    };
-
-    redirectToAuthWithRedirectToPath = (show?: "signin" | "signup", history?: any, queryParams?: any) => {
-        const redirectToPath = getCurrentNormalisedUrlPath().getAsStringDangerous();
-        if (queryParams === undefined) {
-            queryParams = {};
-        }
-        queryParams = {
-            ...queryParams,
-            redirectToPath,
-        };
-        return this.redirectToAuthWithoutRedirectToPath(show, history, queryParams);
-    };
-
-    redirectToAuthWithoutRedirectToPath = (show?: "signin" | "signup", history?: any, queryParams?: any) => {
-        if (queryParams === undefined) {
-            queryParams = {};
-        }
-        if (show !== undefined) {
-            queryParams = {
-                ...queryParams,
-                show,
-            };
-        }
-        return this.redirect(
-            {
-                action: "SIGN_IN_AND_UP",
-            },
-            history,
-            queryParams
-        );
     };
 }

@@ -16,9 +16,10 @@
 /*
  * Imports.
  */
-import { Config, NormalisedConfig } from "./types";
-import { normaliseAuthRecipeWithEmailVerificationConfig } from "../authRecipeWithEmailVerification/utils";
-import { RecipeInterface as TPPWlessRecipeInterface } from "supertokens-web-js/recipe/thirdpartypasswordless";
+import { normaliseAuthRecipe } from "../authRecipe/utils";
+
+import type { Config, NormalisedConfig } from "./types";
+import type { RecipeInterface as TPPWlessRecipeInterface } from "supertokens-web-js/recipe/thirdpartypasswordless";
 
 export function normaliseThirdPartyPasswordlessConfig(config: Config): NormalisedConfig {
     const disablePasswordless = config.disablePasswordless === true;
@@ -32,26 +33,23 @@ export function normaliseThirdPartyPasswordlessConfig(config: Config): Normalise
 
     const override: any = {
         functions: (originalImplementation: TPPWlessRecipeInterface) => originalImplementation,
-        components: {},
         ...config.override,
     };
 
     const thirdPartyProviderAndEmailOrPhoneFormStyle =
         config?.signInUpFeature?.thirdPartyProviderAndEmailOrPhoneFormStyle === undefined
-            ? {}
+            ? ""
             : config?.signInUpFeature.thirdPartyProviderAndEmailOrPhoneFormStyle;
     return {
-        ...normaliseAuthRecipeWithEmailVerificationConfig(config),
+        ...normaliseAuthRecipe(config),
 
         thirdPartyProviderAndEmailOrPhoneFormStyle,
         thirdpartyUserInput: disableThirdParty
             ? undefined
             : {
-                  emailVerificationFeature: config.emailVerificationFeature,
                   getRedirectionURL: config.getRedirectionURL,
                   style: config.style,
                   onHandleEvent: config.onHandleEvent,
-                  palette: config.palette,
                   preAPIHook: config.preAPIHook,
                   signInAndUpFeature: {
                       ...config.signInUpFeature,
@@ -59,9 +57,7 @@ export function normaliseThirdPartyPasswordlessConfig(config: Config): Normalise
                   },
                   oAuthCallbackScreen: config.oAuthCallbackScreen,
                   useShadowDom: config.useShadowDom,
-                  override: {
-                      components: override.components,
-                  },
+                  override: {},
               },
         passwordlessUserInput: disablePasswordless
             ? undefined
@@ -72,7 +68,6 @@ export function normaliseThirdPartyPasswordlessConfig(config: Config): Normalise
                   validatePhoneNumber: "validatePhoneNumber" in config ? config.validatePhoneNumber : undefined,
                   getRedirectionURL: config.getRedirectionURL,
                   onHandleEvent: config.onHandleEvent,
-                  palette: config.palette,
                   preAPIHook: config.preAPIHook,
                   useShadowDom: config.useShadowDom,
                   signInUpFeature: {
@@ -80,9 +75,7 @@ export function normaliseThirdPartyPasswordlessConfig(config: Config): Normalise
                       emailOrPhoneFormStyle: thirdPartyProviderAndEmailOrPhoneFormStyle,
                   },
                   linkClickedScreenFeature: config.linkClickedScreenFeature,
-                  override: {
-                      components: override.components,
-                  },
+                  override: {},
               },
         override,
     };

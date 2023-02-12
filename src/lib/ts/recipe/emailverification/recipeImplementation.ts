@@ -1,12 +1,13 @@
-import { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
-import { OnHandleEventContext, PreAndPostAPIHookAction } from "./types";
 import { getRecipeImplementation as WebJSRecipeImplementation } from "supertokens-web-js/recipe/emailverification/recipeImplementation";
-import { NormalisedAppInfo } from "../../types";
-import {
+
+import type { OnHandleEventContext, PreAndPostAPIHookAction } from "./types";
+import type { NormalisedAppInfo } from "../../types";
+import type {
     RecipeOnHandleEventFunction,
     RecipePostAPIHookFunction,
     RecipePreAPIHookFunction,
 } from "../recipeModule/types";
+import type { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
 
 export default function getRecipeImplementation(recipeInput: {
     recipeId: string;
@@ -23,7 +24,7 @@ export default function getRecipeImplementation(recipeInput: {
             fetchResponse: Response;
         }> {
             const response = await webJsImplementation.verifyEmail.bind(this)({
-                userContext: input.userContext,
+                ...input,
             });
 
             if (response.status === "OK") {
@@ -41,7 +42,7 @@ export default function getRecipeImplementation(recipeInput: {
             fetchResponse: Response;
         }> {
             const response = await webJsImplementation.sendVerificationEmail.bind(this)({
-                userContext: input.userContext,
+                ...input,
             });
 
             if (response.status === "OK") {
@@ -60,7 +61,7 @@ export default function getRecipeImplementation(recipeInput: {
             fetchResponse: Response;
         }> {
             const response = await webJsImplementation.isEmailVerified.bind(this)({
-                userContext: input.userContext,
+                ...input,
             });
 
             return response;

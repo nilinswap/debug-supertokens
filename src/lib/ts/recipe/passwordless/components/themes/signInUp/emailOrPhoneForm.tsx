@@ -13,15 +13,20 @@
  * under the License.
  */
 
-import { SignInUpEmailOrPhoneFormProps } from "../../../types";
-import { withOverride } from "../../../../../components/componentOverride/withOverride";
-import FormBase from "../../../../emailpassword/components/library/formBase";
-import { phoneNumberInputWithInjectedProps } from "./phoneNumberInput";
-import { defaultEmailValidator, defaultValidate } from "../../../../emailpassword/validators";
 import { useMemo, useState } from "react";
+import { useEffect } from "react";
 import STGeneralError from "supertokens-web-js/utils/error";
+
+import { withOverride } from "../../../../../components/componentOverride/withOverride";
 import { useUserContext } from "../../../../../usercontext";
+import FormBase from "../../../../emailpassword/components/library/formBase";
+import { preloadPhoneNumberUtils } from "../../../phoneNumberUtils";
+import { defaultEmailValidator, defaultValidate } from "../../../validators";
+
+import { phoneNumberInputWithInjectedProps } from "./phoneNumberInput";
 import { SignInUpFooter } from "./signInUpFooter";
+
+import type { SignInUpEmailOrPhoneFormProps } from "../../../types";
 
 export const EmailOrPhoneForm = withOverride(
     "PasswordlessEmailOrPhoneForm",
@@ -29,6 +34,10 @@ export const EmailOrPhoneForm = withOverride(
         const [isPhoneNumber, setIsPhoneNumber] = useState<boolean>(false);
         const userContext = useUserContext();
 
+        useEffect(() => {
+            // We preload this here, since it will be used almost for sure, but loading it
+            void preloadPhoneNumberUtils();
+        }, []);
         const emailOrPhoneInput = useMemo(
             () =>
                 isPhoneNumber
@@ -96,9 +105,27 @@ export const EmailOrPhoneForm = withOverride(
                             );
 
                         if (intPhoneNumber && isPhoneNumber !== true) {
-                            setValue("emailOrPhone", intPhoneNumber);
-                            setIsPhoneNumber(true);
-                            throw new STGeneralError("PWLESS_EMAIL_OR_PHONE_INVALID_INPUT_GUESS_PHONE_ERR");
+                            const phoneValidationResAfterGuess = await props.config.validatePhoneNumber(intPhoneNumber);
+                            if (phoneValidationResAfterGuess === undefined) {
+                                try {
+                                    return await props.recipeImplementation.createCode({
+                                        phoneNumber: intPhoneNumber,
+                                        userContext,
+                                    });
+                                } catch (ex) {
+                                    // General errors from the API can make createCode throw but we want to switch to the phone UI anyway
+                                    setValue("emailOrPhone", intPhoneNumber);
+                                    setIsPhoneNumber(true);
+                                    throw ex;
+                                }
+                            } else {
+                                // In this case we could get a phonenumber but not a completely valid one
+                                // We want to switch to the phone UI and pre-fill the number
+
+                                setValue("emailOrPhone", intPhoneNumber);
+                                setIsPhoneNumber(true);
+                                throw new STGeneralError("PWLESS_EMAIL_OR_PHONE_INVALID_INPUT_GUESS_PHONE_ERR");
+                            }
                         } else {
                             throw new STGeneralError(phoneValidationRes);
                         }

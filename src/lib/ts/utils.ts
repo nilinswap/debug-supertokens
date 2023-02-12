@@ -13,14 +13,16 @@
  * under the License.
  */
 
-import { useEffect, useRef } from "react";
-import { DEFAULT_API_BASE_PATH, DEFAULT_WEBSITE_BASE_PATH, RECIPE_ID_QUERY_PARAM } from "./constants";
-import { CookieHandlerReference } from "supertokens-website/utils/cookieHandler";
+import { useEffect, useRef, useState } from "react";
+import { CookieHandlerReference } from "supertokens-web-js/utils/cookieHandler";
 import NormalisedURLDomain from "supertokens-web-js/utils/normalisedURLDomain";
 import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
-import { FormFieldError } from "./recipe/emailpassword/types";
-import { APIFormField, AppInfoUserInput, NormalisedAppInfo, NormalisedFormField } from "./types";
-import { WindowHandlerReference } from "supertokens-website/utils/windowHandler";
+import { WindowHandlerReference } from "supertokens-web-js/utils/windowHandler";
+
+import { DEFAULT_API_BASE_PATH, DEFAULT_WEBSITE_BASE_PATH, RECIPE_ID_QUERY_PARAM } from "./constants";
+
+import type { FormFieldError } from "./recipe/emailpassword/types";
+import type { APIFormField, AppInfoUserInput, NormalisedAppInfo, NormalisedFormField } from "./types";
 
 /*
  * getRecipeIdFromPath
@@ -199,6 +201,10 @@ export function appendQueryParamsToURL(stringUrl: string, queryParams?: Record<s
     }
 }
 
+export function appendTrailingSlashToURL(stringUrl: string): string {
+    return stringUrl.endsWith("/") ? stringUrl : stringUrl + "/";
+}
+
 /*
  * Default method for matching recipe route based on query params.
  */
@@ -212,7 +218,6 @@ export function matchRecipeIdUsingQueryParams(recipeId: string): () => boolean {
 }
 
 export function redirectWithFullPageReload(to: string): void {
-    // READCODE BURI: so if it is redirected to auth without any to..it get redirected to index.
     if (to.trim() === "") {
         to = "/";
     }
@@ -274,28 +279,28 @@ export function mergeObjects<T>(obj1: T, obj2: T): T {
 }
 
 export function normaliseCookieScopeOrThrowError(cookieScope: string): string {
-    function helper(sessionScope: string): string {
-        sessionScope = sessionScope.trim().toLowerCase();
+    function helper(cookieScope: string): string {
+        cookieScope = cookieScope.trim().toLowerCase();
 
         // first we convert it to a URL so that we can use the URL class
-        if (sessionScope.startsWith(".")) {
-            sessionScope = sessionScope.substr(1);
+        if (cookieScope.startsWith(".")) {
+            cookieScope = cookieScope.substr(1);
         }
 
-        if (!sessionScope.startsWith("http://") && !sessionScope.startsWith("https://")) {
-            sessionScope = "http://" + sessionScope;
+        if (!cookieScope.startsWith("http://") && !cookieScope.startsWith("https://")) {
+            cookieScope = "http://" + cookieScope;
         }
 
         try {
-            const urlObj = new URL(sessionScope);
-            sessionScope = urlObj.hostname;
+            const urlObj = new URL(cookieScope);
+            cookieScope = urlObj.hostname;
 
             // remove leading dot
-            if (sessionScope.startsWith(".")) {
-                sessionScope = sessionScope.substr(1);
+            if (cookieScope.startsWith(".")) {
+                cookieScope = cookieScope.substr(1);
             }
 
-            return sessionScope;
+            return cookieScope;
         } catch (err) {
             throw new Error("Please provide a valid cookie scope");
         }
@@ -410,6 +415,7 @@ export const useOnMountAPICall = <T>(
 ) => {
     const consumeReq = useRef<Promise<T>>();
 
+    const [error, setError] = useState<any>(undefined);
     useEffect(() => {
         const effect = async (signal: AbortSignal) => {
             let resp;
@@ -424,8 +430,12 @@ export const useOnMountAPICall = <T>(
                     void handleResponse(resp);
                 }
             } catch (err) {
-                if (!signal.aborted && handleError) {
-                    handleError(err, resp);
+                if (!signal.aborted) {
+                    if (handleError !== undefined) {
+                        handleError(err, resp);
+                    } else {
+                        setError(err);
+                    }
                 }
             }
         };
@@ -438,5 +448,29 @@ export const useOnMountAPICall = <T>(
             };
         }
         return;
-    }, [consumeReq, fetch, handleResponse, handleError, startLoading]);
+    }, [setError, consumeReq, fetch, handleResponse, handleError, startLoading]);
+
+    if (error) {
+        throw error;
+    }
 };
+
+export function saveInvalidClaimRedirectPathInContext(userContext: any, invalidClaimRedirectPath: string) {
+    if (userContext["_default"] === undefined) {
+        userContext["_default"] = {};
+    }
+    if (userContext["_default"].redirectPath === undefined) {
+        userContext["_default"] = {
+            ...userContext["_default"],
+            invalidClaimRedirectPath,
+        };
+    }
+}
+
+export function popInvalidClaimRedirectPathFromContext(userContext: any) {
+    const res = userContext["_default"]?.invalidClaimRedirectPath;
+    if (res !== undefined) {
+        delete userContext["_default"].invalidClaimRedirectPath;
+    }
+    return res;
+}

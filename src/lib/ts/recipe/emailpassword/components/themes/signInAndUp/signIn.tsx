@@ -13,27 +13,20 @@
  * under the License.
  */
 
-/*
- * Imports.
- */
-import { useContext } from "react";
-import StyleContext from "../../../../../styles/styleContext";
-
-import { SignInThemeProps } from "../../../types";
-
-import { SignInFooter } from "./signInFooter";
-import { SignInForm } from "./signInForm";
-import { SignInHeader } from "./signInHeader";
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
 import { SuperTokensBranding } from "../../../../../components/SuperTokensBranding";
 import GeneralError from "../../library/generalError";
 
-export const SignIn = withOverride("EmailPasswordSignIn", function EmailPasswordSignIn(props: SignInThemeProps) {
-    const styles = useContext(StyleContext);
+import { SignInFooter } from "./signInFooter";
+import { SignInForm } from "./signInForm";
+import { SignInHeader } from "./signInHeader";
 
+import type { SignInThemeProps } from "../../../types";
+
+export const SignIn = withOverride("EmailPasswordSignIn", function EmailPasswordSignIn(props: SignInThemeProps) {
     return (
-        <div data-supertokens="container" css={styles.container}>
-            <div data-supertokens="row" css={styles.row}>
+        <div data-supertokens="container">
+            <div data-supertokens="row">
                 {<SignInHeader onClick={props.signUpClicked} />}
                 {props.error !== undefined && <GeneralError error={props.error} />}
 

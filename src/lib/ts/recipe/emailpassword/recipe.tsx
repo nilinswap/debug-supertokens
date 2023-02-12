@@ -17,9 +17,23 @@
  * Imports.
  */
 
-import AuthRecipeWithEmailVerification from "../authRecipeWithEmailVerification";
-import { CreateRecipeFunction, RecipeFeatureComponentMap, NormalisedAppInfo, FeatureBaseProps } from "../../types";
-import {
+import { OverrideableBuilder } from "supertokens-js-override";
+import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
+
+import { SSR_ERROR } from "../../constants";
+import UserContextWrapper from "../../usercontext/userContextWrapper";
+import { isTest, matchRecipeIdUsingQueryParams } from "../../utils";
+import AuthRecipe from "../authRecipe";
+import AuthWidgetWrapper from "../authRecipe/authWidgetWrapper";
+
+import { useRecipeComponentOverrideContext } from "./componentOverrideContext";
+import ResetPasswordUsingToken from "./components/features/resetPasswordUsingToken";
+import SignInAndUp from "./components/features/signInAndUp";
+import { DEFAULT_RESET_PASSWORD_PATH } from "./constants";
+import RecipeImplementation from "./recipeImplementation";
+import { normaliseEmailPasswordConfig } from "./utils";
+
+import type {
     GetRedirectionURLContext,
     OnHandleEventContext,
     PreAndPostAPIHookAction,
@@ -27,26 +41,17 @@ import {
     NormalisedConfig,
     UserInput,
 } from "./types";
-import { isTest, matchRecipeIdUsingQueryParams } from "../../utils";
-import { normaliseEmailPasswordConfig } from "./utils";
-import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
-import { DEFAULT_RESET_PASSWORD_PATH } from "./constants";
-import { SSR_ERROR } from "../../constants";
-import RecipeModule from "../recipeModule";
-import SignInAndUp from "./components/features/signInAndUp";
-import ResetPasswordUsingToken from "./components/features/resetPasswordUsingToken";
-import RecipeImplementation from "./recipeImplementation";
-import EmailVerification from "../emailverification/recipe";
-import AuthWidgetWrapper from "../authRecipe/authWidgetWrapper";
-import { RecipeInterface as WebJsRecipeInterface } from "supertokens-web-js/recipe/emailpassword";
-import OverrideableBuilder from "supertokens-js-override";
-import UserContextWrapper from "../../usercontext/userContextWrapper";
+import type { GenericComponentOverrideMap } from "../../components/componentOverride/componentOverrideContext";
+import type { CreateRecipeFunction, FeatureBaseProps, NormalisedAppInfo, RecipeFeatureComponentMap } from "../../types";
+import type RecipeModule from "../recipeModule";
+import type { RecipeInterface as WebJsRecipeInterface } from "supertokens-web-js/recipe/emailpassword";
 
 /*
  * Class.
  */
-export default class EmailPassword extends AuthRecipeWithEmailVerification<
+export default class EmailPassword extends AuthRecipe<
     GetRedirectionURLContext,
+    never,
     OnHandleEventContext,
     NormalisedConfig
 > {
@@ -55,15 +60,8 @@ export default class EmailPassword extends AuthRecipeWithEmailVerification<
 
     recipeImpl: WebJsRecipeInterface;
 
-    constructor(
-        config: Config,
-        recipes: {
-            emailVerificationInstance: EmailVerification | undefined;
-        }
-    ) {
-        super(normaliseEmailPasswordConfig(config), {
-            emailVerificationInstance: recipes.emailVerificationInstance,
-        });
+    constructor(config: Config) {
+        super(normaliseEmailPasswordConfig(config));
 
         const builder = new OverrideableBuilder(
             RecipeImplementation({
@@ -77,13 +75,15 @@ export default class EmailPassword extends AuthRecipeWithEmailVerification<
         this.recipeImpl = builder.override(this.config.override.functions).build();
     }
 
-    getFeatures = (): RecipeFeatureComponentMap => {
+    getFeatures = (
+        useComponentOverrides: () => GenericComponentOverrideMap<any> = useRecipeComponentOverrideContext
+    ): RecipeFeatureComponentMap => {
         const features: RecipeFeatureComponentMap = {};
         if (this.config.signInAndUpFeature.disableDefaultUI !== true) {
             const normalisedFullPath = this.config.appInfo.websiteBasePath.appendPath(new NormalisedURLPath("/"));
             features[normalisedFullPath.getAsStringDangerous()] = {
                 matches: matchRecipeIdUsingQueryParams(this.config.recipeId),
-                component: (props) => this.getFeatureComponent("signinup", props),
+                component: (props) => this.getFeatureComponent("signinup", props, useComponentOverrides),
             };
         }
 
@@ -93,14 +93,11 @@ export default class EmailPassword extends AuthRecipeWithEmailVerification<
             );
             features[normalisedFullPath.getAsStringDangerous()] = {
                 matches: matchRecipeIdUsingQueryParams(this.config.recipeId),
-                component: (props) => this.getFeatureComponent("resetpassword", props),
+                component: (props) => this.getFeatureComponent("resetpassword", props, useComponentOverrides),
             };
         }
 
-        return {
-            ...features,
-            ...this.getAuthRecipeWithEmailVerificationFeatures(),
-        };
+        return features;
     };
 
     getDefaultRedirectionURL = async (context: GetRedirectionURLContext): Promise<string> => {
@@ -111,12 +108,13 @@ export default class EmailPassword extends AuthRecipeWithEmailVerification<
             }`;
         }
 
-        return this.getAuthRecipeWithEmailVerificationDefaultRedirectionURL(context);
+        return this.getAuthRecipeDefaultRedirectionURL(context);
     };
 
     getFeatureComponent = (
-        componentName: "signinup" | "resetpassword" | "emailverification",
-        props: FeatureBaseProps & { redirectOnSessionExists?: boolean; userContext?: any }
+        componentName: "signinup" | "resetpassword",
+        props: FeatureBaseProps & { redirectOnSessionExists?: boolean; userContext?: any },
+        useComponentOverrides: () => GenericComponentOverrideMap<any> = useRecipeComponentOverrideContext
     ): JSX.Element => {
         if (componentName === "signinup") {
             if (props.redirectOnSessionExists !== false) {
@@ -130,25 +128,25 @@ export default class EmailPassword extends AuthRecipeWithEmailVerification<
                         >
                             authRecipe={this}
                             history={props.history}>
-                            <SignInAndUp recipe={this} {...props} />
+                            <SignInAndUp recipe={this} {...props} useComponentOverrides={useComponentOverrides} />
                         </AuthWidgetWrapper>
                     </UserContextWrapper>
                 );
             } else {
                 return (
                     <UserContextWrapper userContext={props.userContext}>
-                        <SignInAndUp recipe={this} {...props} />
+                        <SignInAndUp recipe={this} {...props} useComponentOverrides={useComponentOverrides} />
                     </UserContextWrapper>
                 );
             }
         } else if (componentName === "resetpassword") {
             return (
                 <UserContextWrapper userContext={props.userContext}>
-                    <ResetPasswordUsingToken recipe={this} {...props} />
+                    <ResetPasswordUsingToken recipe={this} {...props} useComponentOverrides={useComponentOverrides} />
                 </UserContextWrapper>
             );
         } else {
-            return this.getAuthRecipeWithEmailVerificationFeatureComponent(componentName, props);
+            throw new Error("Should never come here.");
         }
     };
 
@@ -158,16 +156,11 @@ export default class EmailPassword extends AuthRecipeWithEmailVerification<
         return (
             appInfo: NormalisedAppInfo
         ): RecipeModule<GetRedirectionURLContext, PreAndPostAPIHookAction, OnHandleEventContext, NormalisedConfig> => {
-            EmailPassword.instance = new EmailPassword(
-                {
-                    ...config,
-                    appInfo,
-                    recipeId: EmailPassword.RECIPE_ID,
-                },
-                {
-                    emailVerificationInstance: undefined,
-                }
-            );
+            EmailPassword.instance = new EmailPassword({
+                ...config,
+                appInfo,
+                recipeId: EmailPassword.RECIPE_ID,
+            });
             return EmailPassword.instance;
         };
     }

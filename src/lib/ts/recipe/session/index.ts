@@ -13,16 +13,28 @@
  * under the License.
  */
 
-import Session from "./recipe";
-import { RecipeInterface } from "supertokens-web-js/recipe/session";
-import SessionAuthWrapper from "./sessionAuth";
-import useSessionContextFunc from "./useSessionContext";
-import { InputType, SessionContextType } from "./types";
-import SessionContext from "./sessionContext";
+import {
+    BooleanClaim,
+    ClaimValidationResult,
+    PrimitiveArrayClaim,
+    PrimitiveClaim,
+    RecipeInterface,
+    SessionClaim,
+} from "supertokens-web-js/recipe/session";
+import { ClaimValidationError, SessionClaimValidator } from "supertokens-web-js/recipe/session";
+
 import { getNormalisedUserContext } from "../../utils";
+
+import Session from "./recipe";
+import SessionAuthWrapper from "./sessionAuth";
+import SessionContext from "./sessionContext";
+import { InputType, SessionContextType } from "./types";
+import { useClaimValue as useClaimValueFunc } from "./useClaimValue";
+import useSessionContextFunc from "./useSessionContext";
 
 export default class SessionAPIWrapper {
     static useSessionContext = useSessionContextFunc;
+    static useClaimValue = useClaimValueFunc;
 
     static SessionAuth = SessionAuthWrapper;
 
@@ -32,6 +44,12 @@ export default class SessionAPIWrapper {
 
     static async getUserId(input?: { userContext?: any }): Promise<string> {
         return Session.getInstanceOrThrow().getUserId({
+            userContext: getNormalisedUserContext(input?.userContext),
+        });
+    }
+
+    static async getAccessToken(input?: { userContext?: any }): Promise<string | undefined> {
+        return Session.getInstanceOrThrow().getAccessToken({
             userContext: getNormalisedUserContext(input?.userContext),
         });
     }
@@ -52,6 +70,9 @@ export default class SessionAPIWrapper {
         });
     }
 
+    /**
+     * @deprecated
+     */
     static addAxiosInterceptors(axiosInstance: any, userContext?: any): void {
         return Session.addAxiosInterceptors(axiosInstance, getNormalisedUserContext(userContext));
     }
@@ -61,30 +82,77 @@ export default class SessionAPIWrapper {
             userContext: getNormalisedUserContext(input?.userContext),
         });
     }
+
+    static validateClaims(input: {
+        overrideGlobalClaimValidators?: (
+            globalClaimValidators: SessionClaimValidator[],
+            userContext: any
+        ) => SessionClaimValidator[];
+        userContext?: any;
+    }): Promise<ClaimValidationError[]> | ClaimValidationError[] {
+        return Session.getInstanceOrThrow().validateClaims({
+            overrideGlobalClaimValidators: input?.overrideGlobalClaimValidators,
+            userContext: getNormalisedUserContext(input?.userContext),
+        });
+    }
+
+    static getInvalidClaimsFromResponse(input: {
+        response: { data: any } | Response;
+        userContext: any;
+    }): Promise<ClaimValidationError[]> {
+        return Session.getInstanceOrThrow().getInvalidClaimsFromResponse(input);
+    }
+
+    static getClaimValue(input: { claim: SessionClaim<unknown>; userContext?: any }): Promise<unknown> {
+        return Session.getInstanceOrThrow().getClaimValue({
+            claim: input.claim,
+            userContext: getNormalisedUserContext(input?.userContext),
+        });
+    }
 }
 
 const useSessionContext = SessionAPIWrapper.useSessionContext;
+const useClaimValue = SessionAPIWrapper.useClaimValue;
 const SessionAuth = SessionAPIWrapper.SessionAuth;
 const init = SessionAPIWrapper.init;
 const getUserId = SessionAPIWrapper.getUserId;
+const getAccessToken = SessionAPIWrapper.getAccessToken;
 const getAccessTokenPayloadSecurely = SessionAPIWrapper.getAccessTokenPayloadSecurely;
 const attemptRefreshingSession = SessionAPIWrapper.attemptRefreshingSession;
 const doesSessionExist = SessionAPIWrapper.doesSessionExist;
+/**
+ * @deprecated
+ */
 const addAxiosInterceptors = SessionAPIWrapper.addAxiosInterceptors;
 const signOut = SessionAPIWrapper.signOut;
+const validateClaims = SessionAPIWrapper.validateClaims;
+const getInvalidClaimsFromResponse = SessionAPIWrapper.getInvalidClaimsFromResponse;
+const getClaimValue = SessionAPIWrapper.getClaimValue;
 
 export {
     useSessionContext,
+    useClaimValue,
     SessionAuth,
     init,
     getUserId,
+    getAccessToken,
     getAccessTokenPayloadSecurely,
     attemptRefreshingSession,
     doesSessionExist,
     addAxiosInterceptors,
     signOut,
+    validateClaims,
+    getInvalidClaimsFromResponse,
     RecipeInterface,
     InputType,
     SessionContext,
     SessionContextType,
+    BooleanClaim,
+    ClaimValidationError,
+    ClaimValidationResult,
+    PrimitiveArrayClaim,
+    PrimitiveClaim,
+    SessionClaimValidator,
+    SessionClaim,
+    getClaimValue,
 };

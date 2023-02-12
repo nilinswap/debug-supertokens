@@ -12,22 +12,20 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-import { useContext, useState } from "react";
-import StyleContext from "../../../../../styles/styleContext";
+import { useState } from "react";
 
-import { EnterEmailProps, EnterEmailStatus } from "../../../types";
-
-import FormBase from "../../library/formBase";
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
 import { useTranslation } from "../../../../../translation/translationContext";
-import { validateForm } from "../../../../../utils";
-import GeneralError from "../../library/generalError";
 import { useUserContext } from "../../../../../usercontext";
-import BackToSignInButton from "../../library/backToSignInButton";
+import { validateForm } from "../../../../../utils";
 import BackButton from "../../library/backButton";
+import BackToSignInButton from "../../library/backToSignInButton";
+import FormBase from "../../library/formBase";
+import GeneralError from "../../library/generalError";
+
+import type { EnterEmailProps, EnterEmailStatus } from "../../../types";
 
 const EmailPasswordResetPasswordEmail: React.FC<EnterEmailProps> = (props) => {
-    const styles = useContext(StyleContext);
     const t = useTranslation();
     const userContext = useUserContext();
     const [status, setStatus] = useState<EnterEmailStatus>("READY");
@@ -51,16 +49,11 @@ const EmailPasswordResetPasswordEmail: React.FC<EnterEmailProps> = (props) => {
 
     if (status === "SENT") {
         return (
-            <div data-supertokens="container" css={styles.container}>
-                <div data-supertokens="row" css={styles.row}>
-                    <div
-                        data-supertokens="primaryText enterEmailSuccessMessage"
-                        css={[styles.primaryText, styles.enterEmailSuccessMessage]}>
+            <div data-supertokens="container">
+                <div data-supertokens="row">
+                    <div data-supertokens="primaryText enterEmailSuccessMessage">
                         {emailSuccessText}
-                        <span
-                            data-supertokens="link resendEmailLink"
-                            css={[styles.link, styles.resendEmailLink]}
-                            onClick={resend}>
+                        <span data-supertokens="link resendEmailLink" onClick={resend}>
                             {t("EMAIL_PASSWORD_RESET_RESEND_LINK")}
                         </span>
                     </div>
@@ -71,24 +64,18 @@ const EmailPasswordResetPasswordEmail: React.FC<EnterEmailProps> = (props) => {
     }
 
     // Otherwise, return Form.
-        return (
-        <div data-supertokens="container" css={styles.container}>
-            <div data-supertokens="row" css={styles.row}>
-                <div
-                    data-supertokens="headerTitle resetPasswordHeaderTitle"
-                    css={[styles.headerTitle, styles.resetPasswordHeaderTitle]}>
+    return (
+        <div data-supertokens="container">
+            <div data-supertokens="row">
+                <div data-supertokens="headerTitle resetPasswordHeaderTitle">
                     <BackButton onClick={props.onBackButtonClicked} />
                     {t("EMAIL_PASSWORD_RESET_HEADER_TITLE")}
-                    <span
-                        data-supertokens="backButtonPlaceholder backButtonCommon"
-                        css={[styles.backButtonPlaceholder, styles.backButtonCommon]}>
+                    <span data-supertokens="backButtonPlaceholder backButtonCommon">
                         {/* empty span for spacing the back button */}
                     </span>
                 </div>
-                <div data-supertokens="headerSubtitle" css={styles.headerSubtitle}>
-                    <div data-supertokens="secondaryText" css={styles.secondaryText}>
-                        {t("EMAIL_PASSWORD_RESET_HEADER_SUBTITLE")}
-                    </div>
+                <div data-supertokens="headerSubtitle">
+                    <div data-supertokens="secondaryText">{t("EMAIL_PASSWORD_RESET_HEADER_SUBTITLE")}</div>
                 </div>
                 {props.error !== undefined && <GeneralError error={props.error} />}
                 <FormBase

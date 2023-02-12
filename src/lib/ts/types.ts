@@ -12,15 +12,20 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-import RecipeModule from "./recipe/recipeModule";
-import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
-import NormalisedURLDomain from "supertokens-web-js/utils/normalisedURLDomain";
-import { CSSObject } from "@emotion/react/types/index";
-import { ComponentClass, PropsWithChildren } from "react";
-import { NormalisedConfig as NormalisedRecipeModuleConfig } from "./recipe/recipeModule/types";
-import { TranslationFunc, TranslationStore } from "./translation/translationHelpers";
-import { CookieHandlerInput } from "supertokens-website/utils/cookieHandler/types";
-import { WindowHandlerInput } from "supertokens-website/utils/windowHandler/types";
+
+import type RecipeModule from "./recipe/recipeModule";
+import type { NormalisedConfig as NormalisedRecipeModuleConfig } from "./recipe/recipeModule/types";
+import type { TranslationFunc, TranslationStore } from "./translation/translationHelpers";
+import type { ComponentClass, PropsWithChildren } from "react";
+import type { CookieHandlerInput } from "supertokens-web-js/utils/cookieHandler/types";
+import type NormalisedURLDomain from "supertokens-web-js/utils/normalisedURLDomain";
+import type NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
+import type { WindowHandlerInput } from "supertokens-web-js/utils/windowHandler/types";
+
+export type GetRedirectionURLContext = {
+    action: "TO_AUTH";
+    showSignIn: boolean | undefined;
+};
 
 /*
  * Recipe Module Manager Config Types.
@@ -71,6 +76,7 @@ export type SuperTokensConfig = {
         translationFunc?: TranslationFunc;
     };
     enableDebugLogs?: boolean;
+    getRedirectionURL?: (context: GetRedirectionURLContext) => Promise<string | undefined>;
 };
 
 export type CreateRecipeFunction<T, S, R, N extends NormalisedRecipeModuleConfig<T, S, R>> = (
@@ -241,8 +247,6 @@ export type NormalisedFormField = {
 
 export type ReactComponentClass = ComponentClass<any, any> | (<T>(props: T) => JSX.Element);
 
-export type Styles = Record<string, CSSObject>;
-
 /*
  * Features Config Types.
  */
@@ -251,27 +255,18 @@ export type FeatureBaseConfig = {
     /*
      * Additional styles to override themes.
      */
-    style?: Styles;
+    style?: string;
 };
 
 export type NormalisedBaseConfig = {
     /*
      * Additional styles to override themes.
      */
-    style: Styles;
+    style: string;
 };
-
-export type NormalisedPalette = {
-    colors: Record<string, string>;
-    fonts: {
-        size: string[];
-    };
-};
-
-export type NormalisedDefaultStyles = Record<string, CSSObject>;
 
 export type ThemeBaseProps = {
-    styleFromInit?: Styles;
+    styleFromInit?: string;
 };
 
 export type FeatureBaseProps = PropsWithChildren<{

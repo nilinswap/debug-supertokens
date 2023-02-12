@@ -14,10 +14,12 @@
  */
 
 import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
+
 import SuperTokens from "../../../superTokens";
 import ProviderButton from "../components/library/providerButton";
-import { ProviderConfig } from "./types";
-// import * as React from "react";
+
+import type { ProviderConfig } from "./types";
+
 /*
  * Imports.
  */
@@ -31,6 +33,7 @@ export default abstract class Provider {
      */
     id: string;
     name: string;
+    getRedirectURL: () => string;
     clientId?: string;
 
     /*
@@ -41,6 +44,8 @@ export default abstract class Provider {
         this.id = config.id;
         this.name = config.name;
         this.clientId = config.clientId;
+        this.getRedirectURL =
+            config.getRedirectURL !== undefined ? config.getRedirectURL : () => this.defaultGetRedirectURL();
     }
 
     /*
@@ -52,7 +57,7 @@ export default abstract class Provider {
         return <ProviderButton logo={this.getLogo()} providerName={providerName} displayName={this.name} />;
     }
 
-    getRedirectURL(): string {
+    defaultGetRedirectURL(): string {
         const domain = SuperTokens.getInstanceOrThrow().appInfo.websiteDomain.getAsStringDangerous();
         const callbackPath = new NormalisedURLPath(`/callback/${this.id}`);
         const path = SuperTokens.getInstanceOrThrow()

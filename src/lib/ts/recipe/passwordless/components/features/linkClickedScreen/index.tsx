@@ -17,23 +17,24 @@
  */
 import React from "react";
 import { Fragment, useCallback, useState } from "react";
-
-import { FeatureBaseProps } from "../../../../../types";
-import { getQueryParams, getURLHash, useOnMountAPICall } from "../../../../../utils";
-import FeatureWrapper from "../../../../../components/featureWrapper";
-import { StyleProvider } from "../../../../../styles/styleContext";
-import { defaultPalette } from "../../../../../styles/styles";
-import { getStyles } from "../../themes/styles";
-import { Awaited } from "../../../../../types";
-import { LinkClickedScreen as LinkClickedScreenTheme } from "../../themes/linkClickedScreen";
-import Recipe from "../../../recipe";
-import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
-import { defaultTranslationsPasswordless } from "../../themes/translations";
-import { useUserContext } from "../../../../../usercontext";
-import { getLoginAttemptInfo } from "../../../utils";
 import STGeneralError from "supertokens-web-js/utils/error";
 
-type PropType = FeatureBaseProps & { recipe: Recipe };
+import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
+import FeatureWrapper from "../../../../../components/featureWrapper";
+import SuperTokens from "../../../../../superTokens";
+import { useUserContext } from "../../../../../usercontext";
+import { getQueryParams, getURLHash, useOnMountAPICall } from "../../../../../utils";
+import Session from "../../../../session/recipe";
+import { getLoginAttemptInfo } from "../../../utils";
+import { LinkClickedScreen as LinkClickedScreenTheme } from "../../themes/linkClickedScreen";
+import { defaultTranslationsPasswordless } from "../../themes/translations";
+
+import type { Awaited } from "../../../../../types";
+import type { FeatureBaseProps } from "../../../../../types";
+import type Recipe from "../../../recipe";
+import type { ComponentOverrideMap } from "../../../types";
+
+type PropType = FeatureBaseProps & { recipe: Recipe; useComponentOverrides: () => ComponentOverrideMap };
 
 const LinkClickedScreen: React.FC<PropType> = (props) => {
     const userContext = useUserContext();
@@ -44,8 +45,12 @@ const LinkClickedScreen: React.FC<PropType> = (props) => {
         const linkCode = getURLHash();
 
         if (preAuthSessionId === null || preAuthSessionId.length === 0 || linkCode.length === 0) {
-            await props.recipe.redirectToAuthWithoutRedirectToPath(undefined, props.history, {
-                error: "signin",
+            await SuperTokens.getInstanceOrThrow().redirectToAuth({
+                history: props.history,
+                queryParams: {
+                    error: "signin",
+                },
+                redirectBack: false,
             });
             return "REDIRECTING";
         }
@@ -75,8 +80,12 @@ const LinkClickedScreen: React.FC<PropType> = (props) => {
             }
 
             if (response.status === "RESTART_FLOW_ERROR") {
-                return props.recipe.redirectToAuthWithoutRedirectToPath(undefined, props.history, {
-                    error: "restart_link",
+                return SuperTokens.getInstanceOrThrow().redirectToAuth({
+                    history: props.history,
+                    queryParams: {
+                        error: "restart_link",
+                    },
+                    redirectBack: false,
                 });
             }
 
@@ -88,12 +97,16 @@ const LinkClickedScreen: React.FC<PropType> = (props) => {
                 await props.recipe.recipeImpl.clearLoginAttemptInfo({
                     userContext,
                 });
-                return props.recipe.redirect(
+                return Session.getInstanceOrThrow().validateGlobalClaimsAndHandleSuccessRedirection(
                     {
-                        action: "SUCCESS",
-                        isNewUser: response.createdUser,
-                        redirectToPath: loginAttemptInfo?.redirectToPath,
+                        rid: props.recipe.config.recipeId,
+                        successRedirectContext: {
+                            action: "SUCCESS",
+                            isNewUser: response.createdNewUser,
+                            redirectToPath: loginAttemptInfo?.redirectToPath,
+                        },
                     },
+                    userContext,
                     props.history
                 );
             }
@@ -104,13 +117,21 @@ const LinkClickedScreen: React.FC<PropType> = (props) => {
     const handleConsumeError = useCallback(
         (err) => {
             if (STGeneralError.isThisError(err)) {
-                return props.recipe.redirectToAuthWithoutRedirectToPath(undefined, props.history, {
-                    error: "custom",
-                    message: err.message,
+                return SuperTokens.getInstanceOrThrow().redirectToAuth({
+                    history: props.history,
+                    queryParams: {
+                        error: "custom",
+                        message: err.message,
+                    },
+                    redirectBack: false,
                 });
             } else {
-                return props.recipe.redirectToAuthWithoutRedirectToPath(undefined, props.history, {
-                    error: "restart_link",
+                return SuperTokens.getInstanceOrThrow().redirectToAuth({
+                    history: props.history,
+                    queryParams: {
+                        error: "signin",
+                    },
+                    redirectBack: false,
                 });
             }
         },
@@ -118,9 +139,7 @@ const LinkClickedScreen: React.FC<PropType> = (props) => {
     );
     useOnMountAPICall(consumeCodeAtMount, handleConsumeResp, handleConsumeError);
 
-    const componentOverrides = props.recipe.config.override.components;
-
-    const linkClickedScreen = props.recipe.config.linkClickedScreenFeature;
+    const recipeComponentOverrides = props.useComponentOverrides();
 
     const childProps = {
         recipeImplementation: props.recipe.recipeImpl,
@@ -149,31 +168,24 @@ const LinkClickedScreen: React.FC<PropType> = (props) => {
     };
 
     return (
-        <ComponentOverrideContext.Provider value={componentOverrides}>
+        <ComponentOverrideContext.Provider value={recipeComponentOverrides}>
             <FeatureWrapper
                 useShadowDom={props.recipe.config.useShadowDom}
                 defaultStore={defaultTranslationsPasswordless}>
-                <StyleProvider
-                    rawPalette={props.recipe.config.palette}
-                    defaultPalette={defaultPalette}
-                    styleFromInit={linkClickedScreen.style}
-                    rootStyleFromInit={props.recipe.config.rootStyle}
-                    getDefaultStyles={getStyles}>
-                    <Fragment>
-                        {/* No custom theme, use default. */}
-                        {props.children === undefined && <LinkClickedScreenTheme {...childProps} />}
+                <Fragment>
+                    {/* No custom theme, use default. */}
+                    {props.children === undefined && <LinkClickedScreenTheme {...childProps} />}
 
-                        {/* Otherwise, custom theme is provided, propagate props. */}
-                        {props.children &&
-                            React.Children.map(props.children, (child) => {
-                                if (React.isValidElement(child)) {
-                                    return React.cloneElement(child, childProps);
-                                }
+                    {/* Otherwise, custom theme is provided, propagate props. */}
+                    {props.children &&
+                        React.Children.map(props.children, (child) => {
+                            if (React.isValidElement(child)) {
+                                return React.cloneElement(child, childProps);
+                            }
 
-                                return child;
-                            })}
-                    </Fragment>
-                </StyleProvider>
+                            return child;
+                        })}
+                </Fragment>
             </FeatureWrapper>
         </ComponentOverrideContext.Provider>
     );

@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "noImplicitAny": true,
+    "allowSyntheticDefaultImports": true,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
+    "module": "ESNext",
+    "outDir": "build",
+    "moduleResolution": "node",
+    "declaration": true,
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "sourceMap": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "importHelpers": false,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node", "react"]
+  },
+  "compileOnSave": true
+}

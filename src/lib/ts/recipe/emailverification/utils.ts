@@ -13,19 +13,20 @@
  * under the License.
  */
 
-import { NormalisedBaseConfig } from "../../types";
-import { Config, NormalisedConfig } from "./types";
 import { normaliseRecipeModuleConfig } from "../recipeModule/utils";
-import { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
+
+import type { Config, NormalisedConfig } from "./types";
+import type { NormalisedBaseConfig } from "../../types";
+import type { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
 
 export function normaliseEmailVerificationFeature(config: Config): NormalisedConfig {
     const disableDefaultUI = config.disableDefaultUI === true;
-    const mode = config.mode === undefined ? "OFF" : config.mode;
+    const mode = config.mode === undefined ? "REQUIRED" : config.mode;
 
     const sendVerifyEmailScreenStyle =
         config.sendVerifyEmailScreen !== undefined && config.sendVerifyEmailScreen.style !== undefined
             ? config.sendVerifyEmailScreen.style
-            : {};
+            : "";
 
     const sendVerifyEmailScreen: NormalisedBaseConfig = {
         style: sendVerifyEmailScreenStyle,
@@ -34,7 +35,7 @@ export function normaliseEmailVerificationFeature(config: Config): NormalisedCon
     const verifyEmailLinkClickedScreenStyle =
         config.verifyEmailLinkClickedScreen !== undefined && config.verifyEmailLinkClickedScreen.style !== undefined
             ? config.verifyEmailLinkClickedScreen.style
-            : {};
+            : "";
 
     const verifyEmailLinkClickedScreen: NormalisedBaseConfig = {
         style: verifyEmailLinkClickedScreenStyle,
@@ -42,7 +43,6 @@ export function normaliseEmailVerificationFeature(config: Config): NormalisedCon
 
     const override = {
         functions: (originalImplementation: RecipeInterface) => originalImplementation,
-        components: {},
         ...config.override,
     };
 
@@ -52,9 +52,6 @@ export function normaliseEmailVerificationFeature(config: Config): NormalisedCon
         mode,
         sendVerifyEmailScreen,
         verifyEmailLinkClickedScreen,
-        signOut: config.signOut,
-        postVerificationRedirect: config.postVerificationRedirect,
-        redirectToSignIn: config.redirectToSignIn,
         override,
     };
 }

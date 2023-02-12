@@ -1,12 +1,13 @@
-import { OnHandleEventContext, PreAndPostAPIHookAction } from "./types";
-import { NormalisedAppInfo } from "../../types";
-import { RecipeInterface } from "supertokens-web-js/recipe/passwordless";
-import {
+import { getRecipeImplementation as WebJSRecipeImplementation } from "supertokens-web-js/recipe/passwordless/recipeImplementation";
+
+import type { OnHandleEventContext, PreAndPostAPIHookAction } from "./types";
+import type { NormalisedAppInfo } from "../../types";
+import type {
     RecipeOnHandleEventFunction,
     RecipePostAPIHookFunction,
     RecipePreAPIHookFunction,
 } from "../recipeModule/types";
-import { getRecipeImplementation as WebJSRecipeImplementation } from "supertokens-web-js/recipe/passwordless/recipeImplementation";
+import type { RecipeInterface } from "supertokens-web-js/recipe/passwordless";
 
 export default function getRecipeImplementation(recipeInput: {
     recipeId: string;
@@ -24,9 +25,8 @@ export default function getRecipeImplementation(recipeInput: {
 
     return {
         createCode: async function (input) {
-            // READCODE BUNI: yaha par hum paraya(implementation of another library) ko apna bana rhae
             const response = await webJsImplementation.createCode.bind(this)(input);
-            
+
             if (response.status === "OK") {
                 recipeInput.onHandleEvent({
                     action: "PASSWORDLESS_CODE_SENT",
@@ -61,7 +61,7 @@ export default function getRecipeImplementation(recipeInput: {
             } else if (response.status === "OK") {
                 recipeInput.onHandleEvent({
                     action: "SUCCESS",
-                    isNewUser: response.createdUser,
+                    isNewUser: response.createdNewUser,
                     user: response.user,
                 });
             }

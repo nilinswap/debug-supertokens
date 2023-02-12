@@ -12,62 +12,52 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-import { FeatureBaseConfig, ThemeBaseProps } from "../../types";
-import { Config as RecipeModuleConfig, NormalisedConfig as NormalisedRecipeModuleConfig } from "../recipeModule/types";
-
-import { ComponentOverride } from "../../components/componentOverride/componentOverride";
-import { SendVerifyEmail } from "./components/themes/emailVerification/sendVerifyEmail";
-import { VerifyEmailLinkClicked } from "./components/themes/emailVerification/verifyEmailLinkClicked";
-import OverrideableBuilder from "supertokens-js-override";
-import { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
-
-// For AuthRecipeModule, we don't need to take signOut,
-// redirectToSignIn and postVerificationRedirect as inputs from the user.
-// So we have UserInputForAuthRecipeModule for AuthRecipeModule, and UserInput
-// for anyone who wants to use this recipe directly.
-export type UserInputForAuthRecipeModule = {
-    mode?: "OFF" | "REQUIRED";
-    disableDefaultUI?: boolean;
-    sendVerifyEmailScreen?: FeatureBaseConfig;
-    verifyEmailLinkClickedScreen?: FeatureBaseConfig;
-};
+import type { SendVerifyEmail } from "./components/themes/emailVerification/sendVerifyEmail";
+import type { VerifyEmailLinkClicked } from "./components/themes/emailVerification/verifyEmailLinkClicked";
+import type { ComponentOverride } from "../../components/componentOverride/componentOverride";
+import type { FeatureBaseConfig, ThemeBaseProps } from "../../types";
+import type {
+    Config as RecipeModuleConfig,
+    NormalisedConfig as NormalisedRecipeModuleConfig,
+    UserInput as RecipeModuleUserInput,
+} from "../recipeModule/types";
+import type { OverrideableBuilder } from "supertokens-js-override";
+import type { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
 
 export type ComponentOverrideMap = {
     EmailVerificationSendVerifyEmail_Override?: ComponentOverride<typeof SendVerifyEmail>;
     EmailVerificationVerifyEmailLinkClicked_Override?: ComponentOverride<typeof VerifyEmailLinkClicked>;
 };
 
-export type UserInput = UserInputForAuthRecipeModule & {
-    signOut(): Promise<void>;
-    redirectToSignIn(history?: any): Promise<void>;
-    postVerificationRedirect(history?: any): Promise<void>;
+// Config is what does in the constructor of the recipe.
+export type UserInput = {
+    mode?: "OPTIONAL" | "REQUIRED";
+    disableDefaultUI?: boolean;
+    sendVerifyEmailScreen?: FeatureBaseConfig;
+    verifyEmailLinkClickedScreen?: FeatureBaseConfig;
+
     override?: {
         functions?: (
             originalImplementation: RecipeInterface,
             builder?: OverrideableBuilder<RecipeInterface>
         ) => RecipeInterface;
-        components?: ComponentOverrideMap;
     };
-};
+} & RecipeModuleUserInput<GetRedirectionURLContext, PreAndPostAPIHookAction, OnHandleEventContext>;
 
 // Config is what does in the constructor of the recipe.
 export type Config = UserInput &
     RecipeModuleConfig<GetRedirectionURLContext, PreAndPostAPIHookAction, OnHandleEventContext>;
 
 export type NormalisedConfig = {
-    mode: "OFF" | "REQUIRED";
+    mode: "OPTIONAL" | "REQUIRED";
     disableDefaultUI: boolean;
     sendVerifyEmailScreen: FeatureBaseConfig;
     verifyEmailLinkClickedScreen: FeatureBaseConfig;
-    signOut(): Promise<void>;
-    redirectToSignIn(history?: any): Promise<void>;
-    postVerificationRedirect(history?: any): Promise<void>;
     override: {
         functions: (
             originalImplementation: RecipeInterface,
             builder?: OverrideableBuilder<RecipeInterface>
         ) => RecipeInterface;
-        components: ComponentOverrideMap;
     };
 } & NormalisedRecipeModuleConfig<GetRedirectionURLContext, PreAndPostAPIHookAction, OnHandleEventContext>;
 
@@ -101,6 +91,7 @@ export type SendVerifyEmailThemeProps = ThemeBaseProps & {
     config: NormalisedConfig;
     signOut: () => Promise<void>;
     onEmailAlreadyVerified: () => Promise<void>;
+    redirectToAuth: () => Promise<void>;
 };
 
 export type VerifyEmailLinkClickedThemeProps = ThemeBaseProps & {

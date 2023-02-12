@@ -13,12 +13,17 @@
  * under the License.
  */
 
-import { FormField, FormFieldBaseConfig, NormalisedFormField } from "../../types";
-import { MANDATORY_FORM_FIELDS_ID_ARRAY } from "./constants";
-import OverrideableBuilder from "supertokens-js-override";
-import { ComponentOverrideMap } from "./types";
+import { normaliseAuthRecipe } from "../authRecipe/utils";
 
+import { MANDATORY_FORM_FIELDS_ID_ARRAY } from "./constants";
 import {
+    defaultLoginPasswordValidator,
+    defaultEmailValidator,
+    defaultPasswordValidator,
+    defaultValidate,
+} from "./validators";
+
+import type {
     Config,
     NormalisedConfig,
     NormalisedEnterEmailForm,
@@ -32,14 +37,9 @@ import {
     SignInFormFeatureUserInput,
     SignUpFormFeatureUserInput,
 } from "./types";
-import {
-    defaultLoginPasswordValidator,
-    defaultEmailValidator,
-    defaultPasswordValidator,
-    defaultValidate,
-} from "./validators";
-import { normaliseAuthRecipeWithEmailVerificationConfig } from "../authRecipeWithEmailVerification/utils";
-import { RecipeInterface } from "supertokens-web-js/recipe/emailpassword";
+import type { FormField, FormFieldBaseConfig, NormalisedFormField } from "../../types";
+import type { OverrideableBuilder } from "supertokens-js-override";
+import type { RecipeInterface } from "supertokens-web-js/recipe/emailpassword";
 
 export function normaliseEmailPasswordConfig(config: Config): NormalisedConfig {
     const signInAndUpFeature: NormalisedSignInAndUpFeatureConfig = normaliseSignInAndUpFeature(
@@ -70,15 +70,13 @@ export function normaliseEmailPasswordConfig(config: Config): NormalisedConfig {
             originalImplementation: RecipeInterface,
             builder?: OverrideableBuilder<RecipeInterface>
         ) => RecipeInterface;
-        components: ComponentOverrideMap;
     } = {
         functions: (originalImplementation: RecipeInterface) => originalImplementation,
-        components: {},
         ...config.override,
     };
 
     return {
-        ...normaliseAuthRecipeWithEmailVerificationConfig(config),
+        ...normaliseAuthRecipe(config),
         signInAndUpFeature,
         resetPasswordUsingTokenFeature,
         override,
@@ -149,7 +147,7 @@ export function normaliseSignUpFormFeatureConfig(
     const formFields = mergeFormFields(defaultFormFields, userFormFields);
     const privacyPolicyLink = config.privacyPolicyLink;
     const termsOfServiceLink = config.termsOfServiceLink;
-    const style = config.style !== undefined ? config.style : {};
+    const style = config.style !== undefined ? config.style : "";
 
     return {
         style,
@@ -180,7 +178,7 @@ export function normaliseSignInFormFeatureConfig(
     }
     const formFields = mergeFormFields(defaultFormFields, userFormFields);
 
-    const style = config.style !== undefined ? config.style : {};
+    const style = config.style !== undefined ? config.style : "";
 
     return {
         style,
@@ -228,7 +226,7 @@ export function normaliseResetPasswordUsingTokenFeature(
     const submitNewPasswordFormStyle =
         config.submitNewPasswordForm !== undefined && config.submitNewPasswordForm.style !== undefined
             ? config.submitNewPasswordForm.style
-            : {};
+            : "";
 
     const submitNewPasswordForm: NormalisedSubmitNewPasswordForm = {
         style: submitNewPasswordFormStyle,
@@ -255,7 +253,7 @@ export function normaliseResetPasswordUsingTokenFeature(
     const enterEmailFormStyle =
         config.enterEmailForm !== undefined && config.enterEmailForm.style !== undefined
             ? config.enterEmailForm.style
-            : {};
+            : "";
 
     const enterEmailForm: NormalisedEnterEmailForm = {
         style: enterEmailFormStyle,

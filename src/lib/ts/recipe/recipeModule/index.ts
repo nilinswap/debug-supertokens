@@ -13,10 +13,12 @@
  * under the License.
  */
 
-import { RecipeFeatureComponentMap } from "../../types";
+import SuperTokens from "../../superTokens";
+import { appendQueryParamsToURL } from "../../utils";
 
-import { appendQueryParamsToURL, redirectWithFullPageReload, getOriginOfPage, redirectWithHistory } from "../../utils";
-import { NormalisedConfig } from "./types";
+import type { NormalisedConfig } from "./types";
+import type { GenericComponentOverrideMap } from "../../components/componentOverride/componentOverrideContext";
+import type { RecipeFeatureComponentMap } from "../../types";
 
 /*
  * Class.
@@ -41,29 +43,9 @@ export default abstract class RecipeModule<
         history?: any,
         queryParams?: Record<string, string>
     ): Promise<void> => {
-        //READCODE BURI: this function is where you redirect to /auth or whatever redirecturl is. 
         let redirectUrl = await this.getRedirectUrl(context);
         redirectUrl = appendQueryParamsToURL(redirectUrl, queryParams);
-
-        try {
-            new URL(redirectUrl); // If full URL, no error thrown, skip in app redirection.
-        } catch (e) {
-            // For multi tenancy, If mismatch between websiteDomain and current location, prepand URL relative path with websiteDomain.
-            const origin = getOriginOfPage().getAsStringDangerous();
-            if (origin !== this.config.appInfo.websiteDomain.getAsStringDangerous()) {
-                redirectUrl = `${this.config.appInfo.websiteDomain.getAsStringDangerous()}${redirectUrl}`;
-                redirectWithFullPageReload(redirectUrl);
-                return;
-            }
-
-            // If history was provided, use to redirect without reloading.
-            if (history !== undefined) {
-                redirectWithHistory(redirectUrl, history);
-                return;
-            }
-        }
-        // Otherwise, redirect in app.
-        redirectWithFullPageReload(redirectUrl);
+        return SuperTokens.getInstanceOrThrow().redirectToUrl(redirectUrl, history);
     };
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -83,7 +65,11 @@ export default abstract class RecipeModule<
         throw new Error("getDefaultRedirectionURL is not implemented.");
     }
 
-    abstract getFeatures(): RecipeFeatureComponentMap;
+    abstract getFeatures(useComponentOverrides?: () => GenericComponentOverrideMap<any>): RecipeFeatureComponentMap;
 
-    abstract getFeatureComponent(componentName: string, props: any): JSX.Element;
+    abstract getFeatureComponent(
+        componentName: string,
+        props: any,
+        useComponentOverrides?: () => GenericComponentOverrideMap<any>
+    ): JSX.Element;
 }

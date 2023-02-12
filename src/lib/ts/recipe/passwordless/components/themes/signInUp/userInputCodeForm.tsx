@@ -13,18 +13,20 @@
  * under the License.
  */
 
-import { SignInUpUserInputCodeFormProps } from "../../../types";
+import React, { useEffect, useState } from "react";
+import STGeneralError from "supertokens-web-js/utils/error";
+
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
+import { useTranslation } from "../../../../../translation/translationContext";
+import { useUserContext } from "../../../../../usercontext";
+import { Label } from "../../../../emailpassword/components/library";
 import FormBase from "../../../../emailpassword/components/library/formBase";
 import { userInputCodeValidate } from "../../../validators";
-import { Label } from "../../../../emailpassword/components/library";
-import React, { useContext, useEffect, useState } from "react";
-import StyleContext from "../../../../../styles/styleContext";
+
 import { ResendButton } from "./resendButton";
-import { useTranslation } from "../../../../../translation/translationContext";
-import STGeneralError from "supertokens-web-js/utils/error";
-import { useUserContext } from "../../../../../usercontext";
 import { UserInputCodeFormFooter } from "./userInputCodeFormFooter";
+
+import type { SignInUpUserInputCodeFormProps } from "../../../types";
 
 export const UserInputCodeForm = withOverride(
     "PasswordlessUserInputCodeForm",
@@ -34,7 +36,6 @@ export const UserInputCodeForm = withOverride(
             footer?: JSX.Element;
         }
     ): JSX.Element {
-        const styles = useContext(StyleContext);
         const t = useTranslation();
         const userContext = useUserContext();
 
@@ -90,7 +91,7 @@ export const UserInputCodeForm = withOverride(
         return (
             <React.Fragment>
                 {clearResendNotifTimeout !== undefined && (
-                    <div data-supertokens="generalSuccess" css={[styles.generalSuccess]}>
+                    <div data-supertokens="generalSuccess">
                         {props.loginAttemptInfo.contactMethod === "EMAIL"
                             ? t("PWLESS_RESEND_SUCCESS_EMAIL")
                             : t("PWLESS_RESEND_SUCCESS_PHONE")}
@@ -105,7 +106,7 @@ export const UserInputCodeForm = withOverride(
                             id: "userInputCode",
                             label: "",
                             labelComponent: (
-                                <div css={styles.codeInputLabelWrapper} data-supertokens="codeInputLabelWrapper">
+                                <div data-supertokens="codeInputLabelWrapper">
                                     <Label
                                         value={"PWLESS_USER_INPUT_CODE_INPUT_LABEL"}
                                         data-supertokens="codeInputLabel"
@@ -129,43 +130,30 @@ export const UserInputCodeForm = withOverride(
                     onSuccess={props.onSuccess}
                     buttonLabel={"PWLESS_SIGN_IN_UP_CONTINUE_BUTTON"}
                     callAPI={async (formFields) => {
-                      const userInputCode = formFields.find(
-                        (field) => field.id === "userInputCode"
-                      )?.value;
-                      if (
-                        userInputCode === undefined ||
-                        userInputCode.length === 0
-                      ) {
-                        throw new STGeneralError("GENERAL_ERROR_OTP_UNDEFINED");
-                      }
-                      // READCODE BURI: this is the where we call supertokens-web-js's lib/ts/recipe/passwordless/recipeImplementation.ts's consumeCode where we call the actual apis. 
-                      const response =
-                        await props.recipeImplementation.consumeCode({
-                          deviceId: props.loginAttemptInfo.deviceId,
-                          preAuthSessionId:
-                            props.loginAttemptInfo.preAuthSessionId,
-                          userInputCode,
-                          userContext,
+                        const userInputCode = formFields.find((field) => field.id === "userInputCode")?.value;
+                        if (userInputCode === undefined || userInputCode.length === 0) {
+                            throw new STGeneralError("GENERAL_ERROR_OTP_UNDEFINED");
+                        }
+                        const response = await props.recipeImplementation.consumeCode({
+                            deviceId: props.loginAttemptInfo.deviceId,
+                            preAuthSessionId: props.loginAttemptInfo.preAuthSessionId,
+                            userInputCode,
+                            userContext,
                         });
 
-                      if (
-                        response.status === "OK" ||
-                        response.status === "RESTART_FLOW_ERROR"
-                      ) {
-                        return response;
-                      }
+                        if (response.status === "OK" || response.status === "RESTART_FLOW_ERROR") {
+                            return response;
+                        }
 
-                      if (
-                        response.status === "INCORRECT_USER_INPUT_CODE_ERROR"
-                      ) {
-                        throw new STGeneralError("GENERAL_ERROR_OTP_INVALID");
-                      }
+                        if (response.status === "INCORRECT_USER_INPUT_CODE_ERROR") {
+                            throw new STGeneralError("GENERAL_ERROR_OTP_INVALID");
+                        }
 
-                      if (response.status === "EXPIRED_USER_INPUT_CODE_ERROR") {
-                        throw new STGeneralError("GENERAL_ERROR_OTP_EXPIRED");
-                      }
+                        if (response.status === "EXPIRED_USER_INPUT_CODE_ERROR") {
+                            throw new STGeneralError("GENERAL_ERROR_OTP_EXPIRED");
+                        }
 
-                      throw new STGeneralError("SOMETHING_WENT_WRONG_ERROR");
+                        throw new STGeneralError("SOMETHING_WENT_WRONG_ERROR");
                     }}
                     validateOnBlur={false}
                     showLabels={true}

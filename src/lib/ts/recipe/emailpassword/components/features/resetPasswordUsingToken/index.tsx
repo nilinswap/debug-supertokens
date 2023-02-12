@@ -17,106 +17,97 @@
  * Imports.
  */
 import * as React from "react";
-import { PureComponent, Fragment } from "react";
-import ResetPasswordUsingTokenTheme from "../../themes/resetPasswordUsingToken";
-import { FeatureBaseProps } from "../../../../../types";
+import { Fragment } from "react";
 
-import { getQueryParams } from "../../../../../utils";
-import FeatureWrapper from "../../../../../components/featureWrapper";
-import Recipe from "../../../recipe";
 import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
+import FeatureWrapper from "../../../../../components/featureWrapper";
+import SuperTokens from "../../../../../superTokens";
+import { getQueryParams } from "../../../../../utils";
+import ResetPasswordUsingTokenTheme from "../../themes/resetPasswordUsingToken";
 import { defaultTranslationsEmailPassword } from "../../themes/translations";
+
+import type { FeatureBaseProps } from "../../../../../types";
+import type Recipe from "../../../recipe";
+import type { ComponentOverrideMap } from "../../../types";
 
 type PropType = FeatureBaseProps & {
     recipe: Recipe;
+    useComponentOverrides: () => ComponentOverrideMap;
 };
 
-class ResetPasswordUsingToken extends PureComponent<
-    PropType,
-    { token: string | undefined; error: string | undefined }
-> {
-    /*
-     * Constructor.
-     */
-    constructor(props: PropType) {
-        super(props);
+const ResetPasswordUsingToken: React.FC<PropType> = (props) => {
+    const token = getQueryParams("token");
+    const [error, setError] = React.useState<string>();
 
-        const token = getQueryParams("token");
-        if (token === null) {
-            this.state = { token: undefined, error: undefined };
-        } else {
-            this.state = {
-                token,
-                error: undefined,
-            };
-        }
-    }
+    const enterEmailFormFeature = props.recipe.config.resetPasswordUsingTokenFeature.enterEmailForm;
 
-    render = (): JSX.Element => {
-        const enterEmailFormFeature = this.props.recipe.config.resetPasswordUsingTokenFeature.enterEmailForm;
+    const submitNewPasswordFormFeature = props.recipe.config.resetPasswordUsingTokenFeature.submitNewPasswordForm;
 
-        const componentOverrides = this.props.recipe.config.override.components;
+    const submitNewPasswordForm =
+        token === undefined || token === null
+            ? undefined
+            : {
+                  error: error,
+                  onError: (error: string) => setError(error),
+                  clearError: () => setError(undefined),
+                  styleFromInit: submitNewPasswordFormFeature.style,
+                  formFields: submitNewPasswordFormFeature.formFields,
+                  recipeImplementation: props.recipe.recipeImpl,
+                  config: props.recipe.config,
+                  onSignInClicked: () => {
+                      void SuperTokens.getInstanceOrThrow().redirectToAuth({
+                          show: "signin",
+                          history: props.history,
+                          redirectBack: false,
+                      });
+                  },
+                  token: token,
+              };
 
-        const submitNewPasswordFormFeature =
-            this.props.recipe.config.resetPasswordUsingTokenFeature.submitNewPasswordForm;
-
-        const submitNewPasswordForm =
-            this.state.token === undefined
-                ? undefined
-                : {
-                      error: this.state.error,
-                      onError: (error: string) => this.setState((os) => ({ ...os, error })),
-                      clearError: () => this.setState((os) => ({ ...os, error: undefined })),
-                      styleFromInit: submitNewPasswordFormFeature.style,
-                      formFields: submitNewPasswordFormFeature.formFields,
-                      recipeImplementation: this.props.recipe.recipeImpl,
-                      config: this.props.recipe.config,
-                      onSignInClicked: () => {
-                          void this.props.recipe.redirectToAuthWithoutRedirectToPath("signin", this.props.history);
-                      },
-                      token: this.state.token,
-                  };
-
-        const enterEmailForm = {
-            onBackButtonClicked: () =>
-                this.props.recipe.redirectToAuthWithoutRedirectToPath("signin", this.props.history),
-            error: this.state.error,
-            onError: (error: string) => this.setState((os) => ({ ...os, error })),
-            clearError: () => this.setState((os) => ({ ...os, error: undefined })),
-            styleFromInit: enterEmailFormFeature.style,
-            formFields: enterEmailFormFeature.formFields,
-            recipeImplementation: this.props.recipe.recipeImpl,
-            config: this.props.recipe.config,
-        };
-
-        const props = {
-            config: this.props.recipe.config,
-            submitNewPasswordForm: submitNewPasswordForm,
-            enterEmailForm: enterEmailForm,
-        };
-
-        return (
-            <ComponentOverrideContext.Provider value={componentOverrides}>
-                <FeatureWrapper
-                    useShadowDom={this.props.recipe.config.useShadowDom}
-                    defaultStore={defaultTranslationsEmailPassword}>
-                    <Fragment>
-                        {/* No custom theme, use default. */}
-                        {this.props.children === undefined && <ResetPasswordUsingTokenTheme {...props} />}
-                        {/* Otherwise, custom theme is provided, propagate props. */}
-                        {this.props.children &&
-                            React.Children.map(this.props.children, (child) => {
-                                if (React.isValidElement(child)) {
-                                    return React.cloneElement(child, props);
-                                }
-
-                                return child;
-                            })}
-                    </Fragment>
-                </FeatureWrapper>
-            </ComponentOverrideContext.Provider>
-        );
+    const enterEmailForm = {
+        onBackButtonClicked: () =>
+            SuperTokens.getInstanceOrThrow().redirectToAuth({
+                show: "signin",
+                history: props.history,
+                redirectBack: false,
+            }),
+        error: error,
+        onError: (error: string) => setError(error),
+        clearError: () => setError(undefined),
+        styleFromInit: enterEmailFormFeature.style,
+        formFields: enterEmailFormFeature.formFields,
+        recipeImplementation: props.recipe.recipeImpl,
+        config: props.recipe.config,
     };
-}
+
+    const childProps = {
+        config: props.recipe.config,
+        submitNewPasswordForm: submitNewPasswordForm,
+        enterEmailForm: enterEmailForm,
+    };
+    const recipeComponentOverrides = props.useComponentOverrides();
+
+    return (
+        <ComponentOverrideContext.Provider value={recipeComponentOverrides}>
+            <FeatureWrapper
+                useShadowDom={props.recipe.config.useShadowDom}
+                defaultStore={defaultTranslationsEmailPassword}>
+                <Fragment>
+                    {/* No custom theme, use default. */}
+                    {props.children === undefined && <ResetPasswordUsingTokenTheme {...childProps} />}
+                    {/* Otherwise, custom theme is provided, propagate props. */}
+                    {props.children &&
+                        React.Children.map(props.children, (child) => {
+                            if (React.isValidElement(child)) {
+                                return React.cloneElement(child, childProps);
+                            }
+
+                            return child;
+                        })}
+                </Fragment>
+            </FeatureWrapper>
+        </ComponentOverrideContext.Provider>
+    );
+};
 
 export default ResetPasswordUsingToken;

@@ -17,30 +17,39 @@
  * Imports.
  */
 import * as React from "react";
-import RecipeModule from "./recipe/recipeModule";
-import { ComponentWithRecipeAndMatchingMethod, NormalisedAppInfo, SuperTokensConfig } from "./types";
+import { CookieHandlerReference } from "supertokens-web-js/utils/cookieHandler";
+import { PostSuperTokensInitCallbacks } from "supertokens-web-js/utils/postSuperTokensInitCallbacks";
+import { WindowHandlerReference } from "supertokens-web-js/utils/windowHandler";
+
+import { RoutingComponent } from "./components/routingComponent";
+import { getSuperTokensRoutesForReactRouterDom } from "./components/superTokensRoute";
+import { getSuperTokensRoutesForReactRouterDomV6 } from "./components/superTokensRouteV6";
+import { SSR_ERROR } from "./constants";
+import { saveCurrentLanguage, TranslationController } from "./translation/translationHelpers";
 import {
+    appendQueryParamsToURL,
+    appendTrailingSlashToURL,
     getCurrentNormalisedUrlPath,
     getDefaultCookieScope,
+    getOriginOfPage,
     isTest,
     normaliseCookieScopeOrThrowError,
     normaliseInputAppInfoOrThrowError,
+    redirectWithFullPageReload,
+    redirectWithHistory,
 } from "./utils";
-import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
-import { getSuperTokensRoutesForReactRouterDom } from "./components/superTokensRoute";
-import { getSuperTokensRoutesForReactRouterDomV6 } from "./components/superTokensRouteV6";
-import { BaseFeatureComponentMap } from "./types";
-import { SSR_ERROR } from "./constants";
-import { NormalisedConfig as NormalisedRecipeModuleConfig } from "./recipe/recipeModule/types";
-import { RoutingComponent } from "./components/routingComponent";
-import {
-    saveCurrentLanguage,
-    TranslationController,
-    TranslationFunc,
-    TranslationStore,
-} from "./translation/translationHelpers";
-import { CookieHandlerReference } from "supertokens-website/utils/cookieHandler";
-import { WindowHandlerReference } from "supertokens-website/utils/windowHandler";
+
+import type RecipeModule from "./recipe/recipeModule";
+import type { NormalisedConfig as NormalisedRecipeModuleConfig } from "./recipe/recipeModule/types";
+import type { TranslationFunc, TranslationStore } from "./translation/translationHelpers";
+import type {
+    ComponentWithRecipeAndMatchingMethod,
+    GetRedirectionURLContext,
+    NormalisedAppInfo,
+    SuperTokensConfig,
+} from "./types";
+import type { BaseFeatureComponentMap } from "./types";
+import type NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
 
 /*
  * Class.
@@ -68,7 +77,7 @@ export default class SuperTokens {
     };
     recipeList: RecipeModule<any, any, any, any>[] = [];
     private pathsToFeatureComponentWithRecipeIdMap?: BaseFeatureComponentMap;
-
+    private userGetRedirectionURL: SuperTokensConfig["getRedirectionURL"];
     /*
      * Constructor.
      */
@@ -98,6 +107,8 @@ export default class SuperTokens {
             enableDebugLogs = config.enableDebugLogs;
         }
 
+        this.userGetRedirectionURL = config.getRedirectionURL;
+
         this.recipeList = config.recipeList.map((recipe) => {
             return recipe(this.appInfo, enableDebugLogs);
         });
@@ -116,6 +127,8 @@ export default class SuperTokens {
         }
 
         SuperTokens.instance = new SuperTokens(config);
+
+        PostSuperTokensInitCallbacks.runPostInitCallbacks();
     }
 
     static getInstanceOrThrow(): SuperTokens {
@@ -269,6 +282,64 @@ export default class SuperTokens {
     loadTranslation(store: TranslationStore): void {
         this.languageTranslations.translationEventSource.emit("TranslationLoaded", store);
     }
+
+    async getRedirectUrl(context: GetRedirectionURLContext): Promise<string> {
+        if (this.userGetRedirectionURL) {
+            const userRes = await this.userGetRedirectionURL(context);
+            if (userRes !== undefined) {
+                return userRes;
+            }
+        }
+        if (context.action === "TO_AUTH") {
+            const redirectUrl = this.appInfo.websiteBasePath.getAsStringDangerous();
+            return appendTrailingSlashToURL(redirectUrl);
+        }
+        throw new Error("Should never come here: unexpected redirection context");
+    }
+
+    redirectToAuth = async (options: {
+        show?: "signin" | "signup";
+        history?: any;
+        queryParams?: any;
+        redirectBack: boolean;
+    }) => {
+        const queryParams = options.queryParams === undefined ? {} : options.queryParams;
+        if (options.show !== undefined) {
+            queryParams.show = options.show;
+        }
+        if (options.redirectBack === true) {
+            queryParams.redirectToPath = getCurrentNormalisedUrlPath().getAsStringDangerous();
+        }
+
+        let redirectUrl = await this.getRedirectUrl({
+            action: "TO_AUTH",
+            showSignIn: options.show === "signin",
+        });
+        redirectUrl = appendQueryParamsToURL(redirectUrl, queryParams);
+        return this.redirectToUrl(redirectUrl, options.history);
+    };
+
+    redirectToUrl = async (redirectUrl: string, history?: any): Promise<void> => {
+        try {
+            new URL(redirectUrl); // If full URL, no error thrown, skip in app redirection.
+        } catch (e) {
+            // For multi tenancy, If mismatch between websiteDomain and current location, prepend URL relative path with websiteDomain.
+            const origin = getOriginOfPage().getAsStringDangerous();
+            if (origin !== this.appInfo.websiteDomain.getAsStringDangerous()) {
+                redirectUrl = `${this.appInfo.websiteDomain.getAsStringDangerous()}${redirectUrl}`;
+                redirectWithFullPageReload(redirectUrl);
+                return;
+            }
+
+            // If history was provided, use to redirect without reloading.
+            if (history !== undefined) {
+                redirectWithHistory(redirectUrl, history);
+                return;
+            }
+        }
+        // Otherwise, redirect in app.
+        redirectWithFullPageReload(redirectUrl);
+    };
 
     /*
      * Tests methods.

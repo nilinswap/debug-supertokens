@@ -16,19 +16,21 @@
 /*
  * Imports.
  */
+import { redirectWithFullPageReload } from "../../utils";
+import { normaliseAuthRecipe } from "../authRecipe/utils";
+
 import Provider from "./providers";
 import Custom from "./providers/custom";
-import {
+
+import type Recipe from "./recipe";
+import type {
     NormalisedSignInAndUpFeatureConfig,
     NormalisedConfig,
     SignInAndUpFeatureUserInput,
     Config,
     CustomStateProperties,
 } from "./types";
-import Recipe from "./recipe";
-import { normaliseAuthRecipeWithEmailVerificationConfig } from "../authRecipeWithEmailVerification/utils";
-import { RecipeInterface } from "supertokens-web-js/recipe/thirdparty";
-import { redirectWithFullPageReload } from "../../utils";
+import type { RecipeInterface } from "supertokens-web-js/recipe/thirdparty";
 
 /*
  * Methods.
@@ -43,11 +45,10 @@ export function normaliseThirdPartyConfig(config: Config): NormalisedConfig {
 
     const override: any = {
         functions: (originalImplementation: RecipeInterface) => originalImplementation,
-        components: {},
         ...config.override,
     };
     return {
-        ...normaliseAuthRecipeWithEmailVerificationConfig(config),
+        ...normaliseAuthRecipe(config),
         signInAndUpFeature,
         oAuthCallbackScreen,
         override,
@@ -70,7 +71,7 @@ export function normaliseSignInAndUpFeature(
     }
 
     const disableDefaultUI = config.disableDefaultUI === true;
-    const style = config.style !== undefined ? config.style : {};
+    const style = config.style !== undefined ? config.style : "";
     const privacyPolicyLink = config.privacyPolicyLink;
     const termsOfServiceLink = config.termsOfServiceLink;
 

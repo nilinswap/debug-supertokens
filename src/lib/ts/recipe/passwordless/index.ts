@@ -13,17 +13,20 @@
  * under the License.
  */
 
-import { UserInput } from "./types";
+import { RecipeInterface } from "supertokens-web-js/recipe/passwordless";
 
-import Passwordless from "./recipe";
-import PasswordlessAuth from "./passwordlessAuth";
-import { GetRedirectionURLContext, PreAPIHookContext, OnHandleEventContext } from "./types";
-import SignInUpThemeWrapper from "./components/themes/signInUp";
-import { RecipeFunctionOptions, RecipeInterface } from "supertokens-web-js/recipe/passwordless";
-import { PasswordlessFlowType, PasswordlessUser } from "supertokens-web-js/recipe/passwordless/types";
 import { getNormalisedUserContext } from "../../utils";
+
+import { RecipeComponentsOverrideContextProvider } from "./componentOverrideContext";
+import SignInUpThemeWrapper from "./components/themes/signInUp";
+import Passwordless from "./recipe";
+import { UserInput } from "./types";
+import { GetRedirectionURLContext, PreAPIHookContext, OnHandleEventContext } from "./types";
 import * as UtilFunctions from "./utils";
-import { PropsWithChildren } from "react";
+
+import type { PropsWithChildren } from "react";
+import type { RecipeFunctionOptions } from "supertokens-web-js/recipe/passwordless";
+import type { PasswordlessFlowType, PasswordlessUser } from "supertokens-web-js/recipe/passwordless/types";
 
 export default class Wrapper {
     static init(config: UserInput) {
@@ -34,26 +37,6 @@ export default class Wrapper {
         return Passwordless.getInstanceOrThrow().signOut({
             userContext: getNormalisedUserContext(input?.userContext),
         });
-    }
-
-    // have backwards compatibility to allow input as "signin" | "signup"
-    static async redirectToAuth(
-        input?:
-            | ("signin" | "signup")
-            | {
-                  show?: "signin" | "signup";
-                  redirectBack?: boolean;
-              }
-    ): Promise<void> {
-        if (input === undefined || typeof input === "string") {
-            return Passwordless.getInstanceOrThrow().redirectToAuthWithoutRedirectToPath(input);
-        } else {
-            if (input.redirectBack === false || input.redirectBack === undefined) {
-                return Passwordless.getInstanceOrThrow().redirectToAuthWithoutRedirectToPath(input.show);
-            } else {
-                return Passwordless.getInstanceOrThrow().redirectToAuthWithRedirectToPath(input.show);
-            }
-        }
     }
 
     static async createCode(
@@ -84,7 +67,7 @@ export default class Wrapper {
     }
 
     static async consumeCode(
-        input:
+        input?:
             | {
                   userInputCode: string;
                   userContext?: any;
@@ -97,7 +80,7 @@ export default class Wrapper {
     ): Promise<
         | {
               status: "OK";
-              createdUser: boolean;
+              createdNewUser: boolean;
               user: PasswordlessUser;
               fetchResponse: Response;
           }
@@ -190,14 +173,13 @@ export default class Wrapper {
         });
     }
 
-    static PasswordlessAuth = PasswordlessAuth;
-
     static SignInUp = (prop: PropsWithChildren<{ redirectOnSessionExists?: boolean; userContext?: any }> = {}) =>
         Passwordless.getInstanceOrThrow().getFeatureComponent("signInUp", prop);
     static SignInUpTheme = SignInUpThemeWrapper;
 
     static LinkClicked = (prop?: any) =>
         Passwordless.getInstanceOrThrow().getFeatureComponent("linkClickedScreen", prop);
+    static ComponentsOverrideProvider = RecipeComponentsOverrideContextProvider;
 }
 
 const init = Wrapper.init;
@@ -212,15 +194,15 @@ const getLoginAttemptInfo = Wrapper.getLoginAttemptInfo;
 const setLoginAttemptInfo = Wrapper.setLoginAttemptInfo;
 const clearLoginAttemptInfo = Wrapper.clearLoginAttemptInfo;
 const signOut = Wrapper.signOut;
-const redirectToAuth = Wrapper.redirectToAuth;
 const SignInUp = Wrapper.SignInUp;
 const SignInUpTheme = Wrapper.SignInUpTheme;
 const LinkClicked = Wrapper.LinkClicked;
+const PasswordlessComponentsOverrideProvider = Wrapper.ComponentsOverrideProvider;
 
 export {
-    PasswordlessAuth,
     SignInUp,
     SignInUpTheme,
+    PasswordlessComponentsOverrideProvider,
     LinkClicked,
     init,
     createCode,
@@ -234,7 +216,6 @@ export {
     setLoginAttemptInfo,
     clearLoginAttemptInfo,
     signOut,
-    redirectToAuth,
     GetRedirectionURLContext,
     PreAPIHookContext,
     OnHandleEventContext,

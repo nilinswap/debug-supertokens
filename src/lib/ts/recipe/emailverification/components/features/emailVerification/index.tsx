@@ -18,23 +18,33 @@
  */
 import * as React from "react";
 import { useContext, useState, useMemo, useCallback, Fragment } from "react";
-import { clearQueryParams, getQueryParams, useOnMountAPICall } from "../../../../../utils";
-import { EmailVerificationTheme } from "../../themes/emailVerification";
-import { FeatureBaseProps } from "../../../../../types";
-import FeatureWrapper from "../../../../../components/featureWrapper";
-import Recipe from "../../../recipe";
-import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
-import { SessionContext } from "../../../../session";
-import { defaultTranslationsEmailVerification } from "../../themes/translations";
-import { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
-import { useUserContext } from "../../../../../usercontext";
 
-type Prop = FeatureBaseProps & { recipe: Recipe; userContext?: any };
+import { redirectToAuth } from "../../../../..";
+import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
+import FeatureWrapper from "../../../../../components/featureWrapper";
+import { useUserContext } from "../../../../../usercontext";
+import { clearQueryParams, getQueryParams, useOnMountAPICall } from "../../../../../utils";
+import { SessionContext } from "../../../../session";
+import Session from "../../../../session/recipe";
+import EmailVerificationTheme from "../../themes/emailVerification";
+import { defaultTranslationsEmailVerification } from "../../themes/translations";
+
+import type { FeatureBaseProps } from "../../../../../types";
+import type Recipe from "../../../recipe";
+import type { ComponentOverrideMap } from "../../../types";
+import type { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
+
+type Prop = FeatureBaseProps & { recipe: Recipe; userContext?: any; useComponentOverrides: () => ComponentOverrideMap };
 
 export const EmailVerification: React.FC<Prop> = (props) => {
     const sessionContext = useContext(SessionContext);
     const [status, setStatus] = useState("LOADING");
     const userContext = useUserContext();
+    const recipeComponentOverrides = props.useComponentOverrides();
+
+    const redirectToAuthWithHistory = useCallback(async () => {
+        await redirectToAuth({ redirectBack: false, history: props.history });
+    }, [props.history]);
 
     const modifiedRecipeImplementation = useMemo<RecipeInterface>(
         () => ({
@@ -48,6 +58,14 @@ export const EmailVerification: React.FC<Prop> = (props) => {
         [props.recipe]
     );
 
+    const onSuccess = useCallback(async () => {
+        return Session.getInstanceOrThrow().validateGlobalClaimsAndHandleSuccessRedirection(
+            undefined,
+            userContext,
+            props.history
+        );
+    }, [props.recipe, props.history, userContext]);
+
     const fetchIsEmailVerified = useCallback(async () => {
         if (sessionContext.loading === true) {
             // This callback should only be called if the session is already loaded
@@ -56,45 +74,49 @@ export const EmailVerification: React.FC<Prop> = (props) => {
         const token = getQueryParams("token") ?? undefined;
         if (token === undefined) {
             if (!sessionContext.doesSessionExist) {
-                await props.recipe.config.redirectToSignIn(props.history);
+                await redirectToAuthWithHistory();
             } else {
                 // we check if the email is already verified, and if it is, then we redirect the user
                 return (await props.recipe.recipeImpl.isEmailVerified({ userContext })).isVerified;
             }
         }
         return false;
-    }, [props.recipe, sessionContext]);
+    }, [props.recipe, sessionContext, redirectToAuthWithHistory]);
 
     const checkIsEmailVerified = useCallback(
         async (isVerified: boolean): Promise<void> => {
             if (isVerified) {
-                return props.recipe.config.postVerificationRedirect(props.history);
+                return onSuccess();
             }
             setStatus("READY");
         },
-        [props.recipe, setStatus]
+        [props.recipe, setStatus, onSuccess]
     );
-    useOnMountAPICall(fetchIsEmailVerified, checkIsEmailVerified, undefined, sessionContext.loading === false);
+
+    const handleError = useCallback(
+        async (err) => {
+            // TODO: we will not need this after restructuring the emailverification components, since it should be handled by SessionAuth
+            // If the error cleared the session we redirect away, otherwise we have no way of handling it.
+            if (await Session.getInstanceOrThrow().doesSessionExist({ userContext })) {
+                throw err;
+            } else {
+                await redirectToAuthWithHistory();
+            }
+        },
+        [redirectToAuthWithHistory]
+    );
+
+    useOnMountAPICall(fetchIsEmailVerified, checkIsEmailVerified, handleError, sessionContext.loading === false);
 
     const signOut = useCallback(async (): Promise<void> => {
-        await props.recipe.config.signOut();
-        return await props.recipe.config.redirectToSignIn(props.history);
-    }, [props.recipe]);
-
-    const onTokenInvalidRedirect = useCallback(
-        () => props.recipe.config.redirectToSignIn(props.history),
-        [props.recipe, props.history]
-    );
-    const onSuccess = useCallback(
-        () => props.recipe.config.postVerificationRedirect(props.history),
-        [props.recipe, props.history]
-    );
+        const session = Session.getInstanceOrThrow();
+        await session.signOut(props.userContext);
+        return redirectToAuthWithHistory();
+    }, [props.recipe, redirectToAuthWithHistory]);
 
     if (status === "LOADING") {
         return <Fragment />;
     }
-
-    const componentOverrides = props.recipe.config.override.components;
 
     const sendVerifyEmailScreenFeature = props.recipe.config.sendVerifyEmailScreen;
 
@@ -104,6 +126,7 @@ export const EmailVerification: React.FC<Prop> = (props) => {
         config: props.recipe.config,
         signOut: signOut,
         onEmailAlreadyVerified: onSuccess,
+        redirectToAuth: redirectToAuthWithHistory,
     };
 
     const verifyEmailLinkClickedScreenFeature = props.recipe.config.verifyEmailLinkClickedScreen;
@@ -114,7 +137,7 @@ export const EmailVerification: React.FC<Prop> = (props) => {
             ? undefined
             : {
                   styleFromInit: verifyEmailLinkClickedScreenFeature.style,
-                  onTokenInvalidRedirect: onTokenInvalidRedirect,
+                  onTokenInvalidRedirect: redirectToAuthWithHistory,
                   onSuccess,
                   recipeImplementation: modifiedRecipeImplementation,
                   config: props.recipe.config,
@@ -127,9 +150,8 @@ export const EmailVerification: React.FC<Prop> = (props) => {
         verifyEmailLinkClickedScreen,
         hasToken: token !== undefined,
     };
-
     return (
-        <ComponentOverrideContext.Provider value={componentOverrides}>
+        <ComponentOverrideContext.Provider value={recipeComponentOverrides}>
             <FeatureWrapper
                 useShadowDom={props.recipe.config.useShadowDom}
                 defaultStore={defaultTranslationsEmailVerification}>
