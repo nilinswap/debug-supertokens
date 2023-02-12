@@ -13,11 +13,13 @@ only supports supertokens-auth-react and supertokens-node for now.
 
 - `npx parcel index.html`
 
-## Backend
+
+## Backend - NOT NEEDED
 
 - `python3 -m venv .venv && source .venv/bin/activate`
 
-- `cd backend && flask --app main run -p 4321`
+- `cd backend && pip install -r requirements.txt && flask --app main run -p 4321`
+
 
 ### use node backend
 - `cd be_node`

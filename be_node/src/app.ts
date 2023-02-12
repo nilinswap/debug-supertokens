@@ -12,7 +12,7 @@ supertokens.init({
   framework: "express",
   supertokens: {
     // try.supertokens.com is for demo purposes. Replace this with the address of your core instance (sign up on supertokens.com), or self host a core.
-    connectionURI: "http://localhost:3567",
+    connectionURI: "https://try.supertokens.com",
     // apiKey: "IF YOU HAVE AN API KEY FOR THE CORE, ADD IT HERE",
   },
   appInfo: {
