@@ -114,10 +114,6 @@ export function validateAndNormaliseUserInput(
             getSmsDeliveryConfig,
             flowType: config.flowType,
             contactMethod: "EMAIL",
-            getLinkDomainAndPath:
-                config.getLinkDomainAndPath === undefined
-                    ? getDefaultGetLinkDomainAndPath(appInfo)
-                    : config.getLinkDomainAndPath,
             validateEmailAddress:
                 config.validateEmailAddress === undefined ? defaultValidateEmail : config.validateEmailAddress,
             getCustomUserInputCode: config.getCustomUserInputCode,
@@ -129,10 +125,6 @@ export function validateAndNormaliseUserInput(
             getSmsDeliveryConfig,
             flowType: config.flowType,
             contactMethod: "PHONE",
-            getLinkDomainAndPath:
-                config.getLinkDomainAndPath === undefined
-                    ? getDefaultGetLinkDomainAndPath(appInfo)
-                    : config.getLinkDomainAndPath,
             validatePhoneNumber:
                 config.validatePhoneNumber === undefined ? defaultValidatePhoneNumber : config.validatePhoneNumber,
             getCustomUserInputCode: config.getCustomUserInputCode,
@@ -146,10 +138,6 @@ export function validateAndNormaliseUserInput(
             contactMethod: "EMAIL_OR_PHONE",
             validateEmailAddress:
                 config.validateEmailAddress === undefined ? defaultValidateEmail : config.validateEmailAddress,
-            getLinkDomainAndPath:
-                config.getLinkDomainAndPath === undefined
-                    ? getDefaultGetLinkDomainAndPath(appInfo)
-                    : config.getLinkDomainAndPath,
             validatePhoneNumber:
                 config.validatePhoneNumber === undefined ? defaultValidatePhoneNumber : config.validatePhoneNumber,
             getCustomUserInputCode: config.getCustomUserInputCode,
@@ -157,24 +145,7 @@ export function validateAndNormaliseUserInput(
     }
 }
 
-function getDefaultGetLinkDomainAndPath(appInfo: NormalisedAppinfo) {
-    return (
-        _:
-            | {
-                  email: string;
-              }
-            | {
-                  phoneNumber: string;
-              },
-        __: any
-    ): Promise<string> | string => {
-        return (
-            appInfo.websiteDomain.getAsStringDangerous() + appInfo.websiteBasePath.getAsStringDangerous() + "/verify"
-        );
-    };
-}
-
-function defaultValidatePhoneNumber(value: string): Promise<string | undefined> | string | undefined {
+export function defaultValidatePhoneNumber(value: string): Promise<string | undefined> | string | undefined {
     if (typeof value !== "string") {
         return "Development bug: Please make sure the phoneNumber field is a string";
     }
@@ -189,7 +160,7 @@ function defaultValidatePhoneNumber(value: string): Promise<string | undefined> 
     return undefined;
 }
 
-function defaultValidateEmail(value: string): Promise<string | undefined> | string | undefined {
+export function defaultValidateEmail(value: string): Promise<string | undefined> | string | undefined {
     // We check if the email syntax is correct
     // As per https://github.com/supertokens/supertokens-auth-react/issues/5#issuecomment-709512438
     // Regex from https://stackoverflow.com/a/46181/3867175

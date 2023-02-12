@@ -13,9 +13,15 @@
  * under the License.
  */
 
-import { TypeInput, NormalisedAppinfo, HTTPMethod } from "./types";
+import { TypeInput, NormalisedAppinfo, HTTPMethod, SuperTokensInfo } from "./types";
 import axios from "axios";
-import { normaliseInputAppInfoOrThrowError, maxVersion, normaliseHttpMethod, sendNon200Response } from "./utils";
+import {
+    normaliseInputAppInfoOrThrowError,
+    maxVersion,
+    normaliseHttpMethod,
+    sendNon200ResponseWithMessage,
+    getRidFromHeader,
+} from "./utils";
 import { Querier } from "./querier";
 import RecipeModule from "./recipeModule";
 import { HEADER_RID, HEADER_FDI } from "./constants";
@@ -25,6 +31,7 @@ import { BaseRequest, BaseResponse } from "./framework";
 import { TypeFramework } from "./framework/types";
 import STError from "./error";
 import { logDebugMessage } from "./logger";
+import { PostSuperTokensInitCallbacks } from "./postSuperTokensInitCallbacks";
 
 export default class SuperTokens {
     private static instance: SuperTokens | undefined;
@@ -37,6 +44,8 @@ export default class SuperTokens {
 
     recipeModules: RecipeModule[];
 
+    supertokens: undefined | SuperTokensInfo;
+
     constructor(config: TypeInput) {
         logDebugMessage("Started SuperTokens with debug logging (supertokens.init called)");
         logDebugMessage("appInfo: " + JSON.stringify(config.appInfo));
@@ -44,6 +53,7 @@ export default class SuperTokens {
         this.framework = config.framework !== undefined ? config.framework : "express";
         logDebugMessage("framework: " + this.framework);
         this.appInfo = normaliseInputAppInfoOrThrowError(config.appInfo);
+        this.supertokens = config.supertokens;
 
         Querier.init(
             config.supertokens?.connectionURI
@@ -69,7 +79,6 @@ export default class SuperTokens {
 
         this.isInServerlessEnv = config.isInServerlessEnv === undefined ? false : config.isInServerlessEnv;
 
-        // READCODE BUNI: this is ensures that the recipe "classes" are loaded. later we call methods on them. these are based on init method input
         this.recipeModules = config.recipeList.map((func) => {
             return func(this.appInfo, this.isInServerlessEnv);
         });
@@ -99,7 +108,7 @@ export default class SuperTokens {
             }
             await axios({
                 method: "POST",
-                url: "https://api.supertokens.io/0/st/telemetry",
+                url: "https://api.supertokens.com/0/st/telemetry",
                 data: {
                     appName: this.appInfo.appName,
                     websiteDomain: this.appInfo.websiteDomain.getAsStringDangerous(),
@@ -115,6 +124,7 @@ export default class SuperTokens {
     static init(config: TypeInput) {
         if (SuperTokens.instance === undefined) {
             SuperTokens.instance = new SuperTokens(config);
+            PostSuperTokensInitCallbacks.runPostInitCallbacks();
         }
     }
 
@@ -328,7 +338,6 @@ export default class SuperTokens {
         let path = this.appInfo.apiGatewayPath.appendPath(new NormalisedURLPath(request.getOriginalURL()));
         let method: HTTPMethod = normaliseHttpMethod(request.getMethod());
 
-        // READCODE BUNI MW3: See we match for path to start with apiBasePath 
         // if the prefix of the URL doesn't match the base path, we skip
         if (!path.startsWith(this.appInfo.apiBasePath)) {
             logDebugMessage(
@@ -338,15 +347,13 @@ export default class SuperTokens {
             return false;
         }
 
-        let requestRID = request.getHeaderValue(HEADER_RID);
+        let requestRID = getRidFromHeader(request);
         logDebugMessage("middleware: requestRID is: " + requestRID);
         if (requestRID === "anti-csrf") {
             // see https://github.com/supertokens/supertokens-node/issues/202
             requestRID = undefined;
         }
         if (requestRID !== undefined) {
-            // READCODE BUNI: Here use use requestRID to find which recipe to call method on. It is like implmenting abstraction (concept of abstract class) across the app (frontend and backend)
-
             let matchedRecipe: RecipeModule | undefined = undefined;
 
             // we loop through all recipe modules to find the one with the matching rId
@@ -365,7 +372,6 @@ export default class SuperTokens {
             }
             logDebugMessage("middleware: Matched with recipe ID: " + matchedRecipe.getRecipeId());
 
-            // READCODE BUNI: for a recipe, if the path is the one that is expected. this is checked below.
             let id = matchedRecipe.returnAPIIdIfCanHandleRequest(path, method);
             if (id === undefined) {
                 logDebugMessage(
@@ -380,7 +386,6 @@ export default class SuperTokens {
 
             logDebugMessage("middleware: Request being handled by recipe. ID is: " + id);
 
-            // READCODE BUNI MW3: this is where exact request handling happens. we pass the response and it writes response with body inplace
             // give task to the matched recipe
             let requestHandled = await matchedRecipe.handleAPIRequest(id, request, response, path, method);
             if (!requestHandled) {
@@ -422,7 +427,7 @@ export default class SuperTokens {
             logDebugMessage("errorHandler: Error is from SuperTokens recipe. Message: " + err.message);
             if (err.type === STError.BAD_INPUT_ERROR) {
                 logDebugMessage("errorHandler: Sending 400 status code response");
-                return sendNon200Response(response, err.message, 400);
+                return sendNon200ResponseWithMessage(response, err.message, 400);
             }
 
             for (let i = 0; i < this.recipeModules.length; i++) {

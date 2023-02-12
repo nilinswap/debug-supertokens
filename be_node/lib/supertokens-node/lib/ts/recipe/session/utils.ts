@@ -13,25 +13,29 @@
  * under the License.
  */
 
-import { CreateOrRefreshAPIResponse, TypeInput, TypeNormalisedInput, NormalisedErrorHandlers } from "./types";
 import {
-    setFrontTokenInHeaders,
-    attachAccessTokenToCookie,
-    attachRefreshTokenToCookie,
-    setIdRefreshTokenInHeaderAndCookie,
-    setAntiCsrfTokenInHeaders,
-} from "./cookieAndHeaders";
+    CreateOrRefreshAPIResponse,
+    TypeInput,
+    TypeNormalisedInput,
+    NormalisedErrorHandlers,
+    ClaimValidationError,
+    SessionClaimValidator,
+    SessionContainerInterface,
+    VerifySessionOptions,
+    TokenTransferMethod,
+} from "./types";
+import { setFrontTokenInHeaders, setAntiCsrfTokenInHeaders, setToken, getAuthModeFromHeader } from "./cookieAndHeaders";
 import { URL } from "url";
 import SessionRecipe from "./recipe";
 import { REFRESH_API_PATH } from "./constants";
 import NormalisedURLPath from "../../normalisedURLPath";
 import { NormalisedAppinfo } from "../../types";
-import * as psl from "psl";
 import { isAnIpAddress } from "../../utils";
 import { RecipeInterface, APIInterface } from "./types";
 import { BaseRequest, BaseResponse } from "../../framework";
-import { sendNon200Response } from "../../utils";
+import { sendNon200ResponseWithMessage, sendNon200Response } from "../../utils";
 import { ACCESS_TOKEN_PAYLOAD_JWT_PROPERTY_NAME_KEY, JWT_RESERVED_KEY_USE_ERROR_MESSAGE } from "./with-jwt/constants";
+import { logDebugMessage } from "../../logger";
 
 export async function sendTryRefreshTokenResponse(
     recipeInstance: SessionRecipe,
@@ -39,7 +43,7 @@ export async function sendTryRefreshTokenResponse(
     __: BaseRequest,
     response: BaseResponse
 ) {
-    sendNon200Response(response, "try refresh token", recipeInstance.config.sessionExpiredStatusCode);
+    sendNon200ResponseWithMessage(response, "try refresh token", recipeInstance.config.sessionExpiredStatusCode);
 }
 
 export async function sendUnauthorisedResponse(
@@ -48,7 +52,19 @@ export async function sendUnauthorisedResponse(
     __: BaseRequest,
     response: BaseResponse
 ) {
-    sendNon200Response(response, "unauthorised", recipeInstance.config.sessionExpiredStatusCode);
+    sendNon200ResponseWithMessage(response, "unauthorised", recipeInstance.config.sessionExpiredStatusCode);
+}
+
+export async function sendInvalidClaimResponse(
+    recipeInstance: SessionRecipe,
+    claimValidationErrors: ClaimValidationError[],
+    __: BaseRequest,
+    response: BaseResponse
+) {
+    sendNon200Response(response, recipeInstance.config.invalidClaimStatusCode, {
+        message: "invalid claim",
+        claimValidationErrors,
+    });
 }
 
 export async function sendTokenTheftDetectedResponse(
@@ -59,7 +75,7 @@ export async function sendTokenTheftDetectedResponse(
     response: BaseResponse
 ) {
     await recipeInstance.recipeInterfaceImpl.revokeSession({ sessionHandle, userContext: {} });
-    sendNon200Response(response, "token theft detected", recipeInstance.config.sessionExpiredStatusCode);
+    sendNon200ResponseWithMessage(response, "token theft detected", recipeInstance.config.sessionExpiredStatusCode);
 }
 
 export function normaliseSessionScopeOrThrowError(sessionScope: string): string {
@@ -103,20 +119,6 @@ export function normaliseSessionScopeOrThrowError(sessionScope: string): string 
     return noDotNormalised;
 }
 
-export function getTopLevelDomainForSameSiteResolution(url: string): string {
-    let urlObj = new URL(url);
-    let hostname = urlObj.hostname;
-    if (hostname.startsWith("localhost") || hostname.startsWith("localhost.org") || isAnIpAddress(hostname)) {
-        // we treat these as the same TLDs since we can use sameSite lax for all of them.
-        return "localhost";
-    }
-    let parsedURL = psl.parse(hostname) as psl.ParsedDomain;
-    if (parsedURL.domain === null) {
-        throw new Error("Please make sure that the apiDomain and websiteDomain have correct values");
-    }
-    return parsedURL.domain;
-}
-
 export function getURLProtocol(url: string): string {
     let urlObj = new URL(url);
     return urlObj.protocol;
@@ -132,14 +134,13 @@ export function validateAndNormaliseUserInput(
             ? undefined
             : normaliseSessionScopeOrThrowError(config.cookieDomain);
 
-    let topLevelAPIDomain = getTopLevelDomainForSameSiteResolution(appInfo.apiDomain.getAsStringDangerous());
-    let topLevelWebsiteDomain = getTopLevelDomainForSameSiteResolution(appInfo.websiteDomain.getAsStringDangerous());
-
     let protocolOfAPIDomain = getURLProtocol(appInfo.apiDomain.getAsStringDangerous());
     let protocolOfWebsiteDomain = getURLProtocol(appInfo.websiteDomain.getAsStringDangerous());
 
     let cookieSameSite: "strict" | "lax" | "none" =
-        topLevelAPIDomain !== topLevelWebsiteDomain || protocolOfAPIDomain !== protocolOfWebsiteDomain ? "none" : "lax";
+        appInfo.topLevelAPIDomain !== appInfo.topLevelWebsiteDomain || protocolOfAPIDomain !== protocolOfWebsiteDomain
+            ? "none"
+            : "lax";
     cookieSameSite =
         config === undefined || config.cookieSameSite === undefined
             ? cookieSameSite
@@ -152,6 +153,11 @@ export function validateAndNormaliseUserInput(
 
     let sessionExpiredStatusCode =
         config === undefined || config.sessionExpiredStatusCode === undefined ? 401 : config.sessionExpiredStatusCode;
+    const invalidClaimStatusCode = config?.invalidClaimStatusCode ?? 403;
+
+    if (sessionExpiredStatusCode === invalidClaimStatusCode) {
+        throw new Error("sessionExpiredStatusCode and sessionExpiredStatusCode must be different");
+    }
 
     if (config !== undefined && config.antiCsrf !== undefined) {
         if (config.antiCsrf !== "NONE" && config.antiCsrf !== "VIA_CUSTOM_HEADER" && config.antiCsrf !== "VIA_TOKEN") {
@@ -181,6 +187,9 @@ export function validateAndNormaliseUserInput(
         onUnauthorised: async (message: string, request: BaseRequest, response: BaseResponse) => {
             return await sendUnauthorisedResponse(recipeInstance, message, request, response);
         },
+        onInvalidClaim: (validationErrors: ClaimValidationError[], request: BaseRequest, response: BaseResponse) => {
+            return sendInvalidClaimResponse(recipeInstance, validationErrors, request, response);
+        },
     };
     if (config !== undefined && config.errorHandlers !== undefined) {
         if (config.errorHandlers.onTokenTheftDetected !== undefined) {
@@ -189,21 +198,9 @@ export function validateAndNormaliseUserInput(
         if (config.errorHandlers.onUnauthorised !== undefined) {
             errorHandlers.onUnauthorised = config.errorHandlers.onUnauthorised;
         }
-    }
-
-    if (
-        cookieSameSite === "none" &&
-        !cookieSecure &&
-        !(
-            (topLevelAPIDomain === "localhost" || isAnIpAddress(topLevelAPIDomain)) &&
-            (topLevelWebsiteDomain === "localhost" || isAnIpAddress(topLevelWebsiteDomain))
-        )
-    ) {
-        // We can allow insecure cookie when both website & API domain are localhost or an IP
-        // When either of them is a different domain, API domain needs to have https and a secure cookie to work
-        throw new Error(
-            "Since your API and website domain are different, for sessions to work, please use https on your apiDomain and dont set cookieSecure to false."
-        );
+        if (config.errorHandlers.onInvalidClaim !== undefined) {
+            errorHandlers.onInvalidClaim = config.errorHandlers.onInvalidClaim;
+        }
     }
 
     let enableJWT = false;
@@ -232,6 +229,10 @@ export function validateAndNormaliseUserInput(
 
     return {
         refreshTokenPath: appInfo.apiBasePath.appendPath(new NormalisedURLPath(REFRESH_API_PATH)),
+        getTokenTransferMethod:
+            config?.getTokenTransferMethod === undefined
+                ? defaultGetTokenTransferMethod
+                : config.getTokenTransferMethod,
         cookieDomain,
         cookieSameSite,
         cookieSecure,
@@ -239,6 +240,7 @@ export function validateAndNormaliseUserInput(
         errorHandlers,
         antiCsrf,
         override,
+        invalidClaimStatusCode,
         jwt: {
             enable: enableJWT,
             propertyNameInAccessTokenPayload: accessTokenPayloadJWTPropertyName,
@@ -256,26 +258,92 @@ export function normaliseSameSiteOrThrowError(sameSite: string): "strict" | "lax
     return sameSite;
 }
 
-export function attachCreateOrRefreshSessionResponseToExpressRes(
+export function attachTokensToResponse(
     config: TypeNormalisedInput,
     res: BaseResponse,
-    response: CreateOrRefreshAPIResponse
+    response: CreateOrRefreshAPIResponse,
+    transferMethod: TokenTransferMethod
 ) {
     let accessToken = response.accessToken;
     let refreshToken = response.refreshToken;
-    let idRefreshToken = response.idRefreshToken;
     setFrontTokenInHeaders(res, response.session.userId, response.accessToken.expiry, response.session.userDataInJWT);
-    attachAccessTokenToCookie(config, res, accessToken.token, accessToken.expiry);
-    attachRefreshTokenToCookie(config, res, refreshToken.token, refreshToken.expiry);
-    setIdRefreshTokenInHeaderAndCookie(config, res, idRefreshToken.token, idRefreshToken.expiry);
+    setToken(
+        config,
+        res,
+        "access",
+        accessToken.token,
+        // We set the expiration to 100 years, because we can't really access the expiration of the refresh token everywhere we are setting it.
+        // This should be safe to do, since this is only the validity of the cookie (set here or on the frontend) but we check the expiration of the JWT anyway.
+        // Even if the token is expired the presence of the token indicates that the user could have a valid refresh
+        // Setting them to infinity would require special case handling on the frontend and just adding 10 years seems enough.
+        Date.now() + 3153600000000,
+        transferMethod
+    );
+    setToken(config, res, "refresh", refreshToken.token, refreshToken.expiry, transferMethod);
     if (response.antiCsrfToken !== undefined) {
         setAntiCsrfTokenInHeaders(res, response.antiCsrfToken);
     }
 }
 
-export function handleNonErrorInstance(err: any, handler: (err: any) => any) {
-    if (err instanceof Error) {
-        return handler(err);
+export async function getRequiredClaimValidators(
+    session: SessionContainerInterface,
+    overrideGlobalClaimValidators: VerifySessionOptions["overrideGlobalClaimValidators"],
+    userContext: any
+) {
+    const claimValidatorsAddedByOtherRecipes = SessionRecipe.getInstanceOrThrowError().getClaimValidatorsAddedByOtherRecipes();
+    const globalClaimValidators: SessionClaimValidator[] = await SessionRecipe.getInstanceOrThrowError().recipeInterfaceImpl.getGlobalClaimValidators(
+        {
+            userId: session.getUserId(),
+            claimValidatorsAddedByOtherRecipes,
+            userContext,
+        }
+    );
+
+    return overrideGlobalClaimValidators !== undefined
+        ? await overrideGlobalClaimValidators(globalClaimValidators, session, userContext)
+        : globalClaimValidators;
+}
+
+export async function validateClaimsInPayload(
+    claimValidators: SessionClaimValidator[],
+    newAccessTokenPayload: any,
+    userContext: any
+) {
+    const validationErrors = [];
+    for (const validator of claimValidators) {
+        const claimValidationResult = await validator.validate(newAccessTokenPayload, userContext);
+        logDebugMessage(
+            "validateClaimsInPayload " + validator.id + " validation res " + JSON.stringify(claimValidationResult)
+        );
+        if (!claimValidationResult.isValid) {
+            validationErrors.push({
+                id: validator.id,
+                reason: claimValidationResult.reason,
+            });
+        }
     }
-    throw new Error("nothing exceptional");
+    return validationErrors;
+}
+
+function defaultGetTokenTransferMethod({
+    req,
+    forCreateNewSession,
+}: {
+    req: BaseRequest;
+    forCreateNewSession: boolean;
+}): TokenTransferMethod | "any" {
+    // We allow fallback (checking headers then cookies) by default when validating
+    if (!forCreateNewSession) {
+        return "any";
+    }
+
+    // In create new session we respect the frontend preference by default
+    switch (getAuthModeFromHeader(req)) {
+        case "header":
+            return "header";
+        case "cookie":
+            return "cookie";
+        default:
+            return "any";
+    }
 }

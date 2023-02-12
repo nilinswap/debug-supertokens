@@ -20,7 +20,6 @@ import parsePhoneNumber from "libphonenumber-js/max";
 import { makeDefaultUserContextFromAPI } from "../../../utils";
 
 export default async function createCode(apiImplementation: APIInterface, options: APIOptions): Promise<boolean> {
-    // READCODE BUNI AL3: input validation happens here and then api is called
     if (apiImplementation.createCodePOST === undefined) {
         return false;
     }
@@ -93,8 +92,7 @@ export default async function createCode(apiImplementation: APIInterface, option
             ? { email, options, userContext: makeDefaultUserContextFromAPI(options.req) }
             : { phoneNumber: phoneNumber!, options, userContext: makeDefaultUserContextFromAPI(options.req) }
     );
-    
-    // READCODE BUNI AL3: here we are setting response in place.
+
     send200Response(options.res, result);
     return true;
 }

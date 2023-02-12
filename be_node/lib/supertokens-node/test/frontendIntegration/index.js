@@ -70,6 +70,7 @@ function getConfig(enableAntiCsrf, enableJWT, jwtPropertyName) {
             },
             recipeList: [
                 Session.init({
+                    getTokenTransferMethod: process.env.TRANSFER_METHOD ? () => process.env.TRANSFER_METHOD : undefined,
                     jwt: {
                         enable: true,
                         propertyNameInAccessTokenPayload: jwtPropertyName,
@@ -91,13 +92,25 @@ function getConfig(enableAntiCsrf, enableJWT, jwtPropertyName) {
                         functions: function (oI) {
                             return {
                                 ...oI,
-                                createNewSession: async function ({ res, userId, accessTokenPayload, sessionData }) {
+                                createNewSession: async function ({
+                                    req,
+                                    res,
+                                    userId,
+                                    accessTokenPayload,
+                                    sessionData,
+                                }) {
                                     accessTokenPayload = {
                                         ...accessTokenPayload,
                                         customClaim: "customValue",
                                     };
 
-                                    return await oI.createNewSession({ res, userId, accessTokenPayload, sessionData });
+                                    return await oI.createNewSession({
+                                        req,
+                                        res,
+                                        userId,
+                                        accessTokenPayload,
+                                        sessionData,
+                                    });
                                 },
                             };
                         },
@@ -118,6 +131,7 @@ function getConfig(enableAntiCsrf, enableJWT, jwtPropertyName) {
         },
         recipeList: [
             Session.init({
+                getTokenTransferMethod: process.env.TRANSFER_METHOD ? () => process.env.TRANSFER_METHOD : undefined,
                 errorHandlers: {
                     onUnauthorised: (err, req, res) => {
                         res.setStatusCode(401);
@@ -184,6 +198,7 @@ app.get("/featureFlags", async (req, res) => {
     res.status(200).json({
         sessionJwt:
             maxVersion(supertokens_node_version, "8.3") === supertokens_node_version && currentEnableJWT === true,
+        sessionClaims: maxVersion(supertokens_node_version, "12.0") === supertokens_node_version,
     });
 });
 
@@ -200,7 +215,7 @@ app.post("/reinitialiseBackendConfig", async (req, res) => {
 
 app.post("/login", async (req, res) => {
     let userId = req.body.userId;
-    let session = await Session.createNewSession(res, userId);
+    let session = await Session.createNewSession(req, res, userId);
     res.send(session.getUserId());
 });
 
@@ -237,7 +252,7 @@ app.get(
     (req, res, next) => verifySession()(req, res, next),
     async (req, res) => {
         let response = req.headers["rid"];
-        res.send(response === undefined ? "fail" : "success");
+        res.send(response !== "anti-csrf" ? "fail" : "success");
     }
 );
 
@@ -257,6 +272,27 @@ app.post(
         res.json(req.session.getAccessTokenPayload());
     }
 );
+
+app.post(
+    "/session-claims-error",
+    (req, res, next) =>
+        verifySession({
+            overrideGlobalClaimValidators: () => [
+                {
+                    id: "test-claim-failing",
+                    shouldRefetch: () => false,
+                    validate: () => ({ isValid: false, reason: { message: "testReason" } }),
+                },
+            ],
+        })(req, res, next),
+    async (req, res) => {
+        res.json({});
+    }
+);
+
+app.post("/403-without-body", async (req, res) => {
+    res.sendStatus(403);
+});
 
 app.use("/testing", async (req, res) => {
     let tH = req.headers["testing"];
@@ -314,6 +350,10 @@ app.get("/getSessionCalledTime", async (req, res) => {
     res.status(200).send("" + noOfTimesGetSessionCalledDuringTest);
 });
 
+app.get("/getPackageVersion", async (req, res) => {
+    res.status(200).send("" + package_version);
+});
+
 app.get("/ping", async (req, res) => {
     res.send("success");
 });
@@ -337,8 +377,15 @@ app.post("/checkAllowCredentials", (req, res) => {
 app.get("/index.html", (req, res) => {
     res.sendFile("index.html", { root: __dirname });
 });
+
+app.use("/angular", express.static("./angular"));
+
 app.get("/testError", (req, res) => {
-    res.status(500).send("test error message");
+    let code = 500;
+    if (req.query.code) {
+        code = Number.parseInt(req.query.code);
+    }
+    res.status(code).send("test error message");
 });
 
 app.post(

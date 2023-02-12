@@ -54,7 +54,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL_OR_PHONE",
                     flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -98,7 +98,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL_OR_PHONE",
                     flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -196,7 +196,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL_OR_PHONE",
                     flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -266,7 +266,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL_OR_PHONE",
                     flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -332,7 +332,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "PHONE",
                     flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -373,7 +373,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "PHONE",
                     flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -439,7 +439,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                     websiteDomain: "supertokens.io",
                 },
                 recipeList: [
-                    Session.init(),
+                    Session.init({ getTokenTransferMethod: () => "cookie" }),
                     ThirdPartyPasswordless.init({
                         contactMethod: "PHONE",
                         flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -499,7 +499,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "PHONE",
                     flowType: "USER_INPUT_CODE",
@@ -571,7 +571,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "PHONE",
                     flowType: "MAGIC_LINK",
@@ -633,7 +633,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "PHONE",
                     flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -696,7 +696,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "PHONE",
                     flowType: "MAGIC_LINK",
@@ -762,7 +762,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL",
                     flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -804,7 +804,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL",
                     flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -870,7 +870,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                     websiteDomain: "supertokens.io",
                 },
                 recipeList: [
-                    Session.init(),
+                    Session.init({ getTokenTransferMethod: () => "cookie" }),
                     ThirdPartyPasswordless.init({
                         contactMethod: "EMAIL",
                         flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -931,7 +931,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL",
                     flowType: "USER_INPUT_CODE",
@@ -1003,7 +1003,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL",
                     flowType: "MAGIC_LINK",
@@ -1065,7 +1065,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL",
                     flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
@@ -1128,7 +1128,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL",
                     flowType: "MAGIC_LINK",
@@ -1198,7 +1198,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                         websiteDomain: "supertokens.io",
                     },
                     recipeList: [
-                        Session.init(),
+                        Session.init({ getTokenTransferMethod: () => "cookie" }),
                         ThirdPartyPasswordless.init({
                             contactMethod: "EMAIL",
                         }),
@@ -1228,7 +1228,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                         websiteDomain: "supertokens.io",
                     },
                     recipeList: [
-                        Session.init(),
+                        Session.init({ getTokenTransferMethod: () => "cookie" }),
                         ThirdPartyPasswordless.init({
                             flowType: "USER_INPUT_CODE",
                         }),
@@ -1241,73 +1241,6 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 }
             }
         }
-    });
-
-    // Passing getLinkDomainAndPath should call that, and the resulting magic link (from API call and from ThirdPartyPasswordless.createMagicLink function call) should use the custom link returned from the function
-    it("test for thirdPartyPasswordless, passing getLinkDomainAndPath", async function () {
-        await startST();
-
-        let magicLinkFromAPI = undefined;
-        let customPath = "http://customPath.com";
-
-        STExpress.init({
-            supertokens: {
-                connectionURI: "http://localhost:8080",
-            },
-            appInfo: {
-                apiDomain: "api.supertokens.io",
-                appName: "SuperTokens",
-                websiteDomain: "supertokens.io",
-            },
-            recipeList: [
-                Session.init(),
-                ThirdPartyPasswordless.init({
-                    contactMethod: "EMAIL",
-                    flowType: "MAGIC_LINK",
-                    getLinkDomainAndPath: (contactInfo) => {
-                        return customPath;
-                    },
-                    createAndSendCustomEmail: (input) => {
-                        magicLinkFromAPI = input.urlWithLinkCode;
-                    },
-                }),
-            ],
-        });
-
-        // run test if current CDI version >= 2.11
-        if (!(await isCDIVersionCompatible("2.11"))) {
-            return;
-        }
-
-        const app = express();
-
-        app.use(middleware());
-
-        app.use(errorHandler());
-
-        let magicLinkFromFunction = await ThirdPartyPasswordless.createMagicLink({
-            email: "test@example.com",
-        });
-
-        let response = await new Promise((resolve) =>
-            request(app)
-                .post("/auth/signinup/code")
-                .send({
-                    email: "test@example.com",
-                })
-                .expect(200)
-                .end((err, res) => {
-                    if (err) {
-                        resolve(undefined);
-                    } else {
-                        resolve(JSON.parse(res.text));
-                    }
-                })
-        );
-
-        assert(response.status === "OK");
-        assert(magicLinkFromAPI.startsWith(customPath));
-        assert(magicLinkFromFunction.startsWith(customPath));
     });
 
     /*
@@ -1333,7 +1266,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL",
                     flowType: "USER_INPUT_CODE",
@@ -1419,7 +1352,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL",
                     flowType: "USER_INPUT_CODE",
@@ -1507,7 +1440,7 @@ describe(`config tests: ${printPath("[test/thirdpartypasswordless/config.test.js
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyPasswordless.init({
                     contactMethod: "EMAIL",
                     flowType: "USER_INPUT_CODE",

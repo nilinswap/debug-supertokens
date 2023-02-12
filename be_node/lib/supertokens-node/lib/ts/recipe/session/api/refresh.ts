@@ -23,7 +23,6 @@ export default async function handleRefreshAPI(apiImplementation: APIInterface, 
     }
 
     await apiImplementation.refreshPOST({ options, userContext: makeDefaultUserContextFromAPI(options.req) });
-    // READCODE BUNI: here we are setting response in place. 
     send200Response(options.res, {});
     return true;
 }

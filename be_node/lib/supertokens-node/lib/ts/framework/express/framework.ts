@@ -116,6 +116,10 @@ export class ExpressResponse extends BaseResponse {
         setHeaderForExpressLikeResponse(this.response, key, value, allowDuplicateKey);
     };
 
+    removeHeader = (key: string) => {
+        this.response.removeHeader(key);
+    };
+
     setCookie = (
         key: string,
         value: string,
@@ -156,7 +160,6 @@ export const middleware = () => {
         const response = new ExpressResponse(res);
         try {
             supertokens = SuperTokens.getInstanceOrThrowError();
-            // READCODE BUNI MW3: express's middlware is called 
             const result = await supertokens.middleware(request, response);
             if (!result) {
                 return next();

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2016",
     "module": "commonjs",
     "rootDir": "./",
     "moduleResolution": "node",
@@ -9,6 +9,7 @@
     "isolatedModules": true,
     "noEmit": false, //make it true and dist will not be generated on startdev
     "strict": true,
+    "useUnknownInCatchVariables": false,
     "jsx": "preserve",
     "skipLibCheck": true,
     "sourceMap": true

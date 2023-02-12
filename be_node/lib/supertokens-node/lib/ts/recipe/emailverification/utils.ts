@@ -16,7 +16,6 @@
 import Recipe from "./recipe";
 import { TypeInput, TypeNormalisedInput, RecipeInterface, APIInterface } from "./types";
 import { NormalisedAppinfo } from "../../types";
-import { getEmailVerificationURL as defaultGetEmailVerificationURL } from "./emailVerificationFunctions";
 import BackwardCompatibilityService from "./emaildelivery/services/backwardCompatibility";
 
 export function validateAndNormaliseUserInput(
@@ -24,13 +23,6 @@ export function validateAndNormaliseUserInput(
     appInfo: NormalisedAppinfo,
     config: TypeInput
 ): TypeNormalisedInput {
-    let getEmailVerificationURL =
-        config.getEmailVerificationURL === undefined
-            ? defaultGetEmailVerificationURL(appInfo)
-            : config.getEmailVerificationURL;
-
-    let getEmailForUserId = config.getEmailForUserId;
-
     let override = {
         functions: (originalImplementation: RecipeInterface) => originalImplementation,
         apis: (originalImplementation: APIInterface) => originalImplementation,
@@ -70,9 +62,21 @@ export function validateAndNormaliseUserInput(
         };
     }
     return {
-        getEmailForUserId,
-        getEmailVerificationURL,
+        mode: config.mode,
+        getEmailForUserId: config.getEmailForUserId,
         override,
         getEmailDeliveryConfig,
     };
+}
+
+export function getEmailVerifyLink(input: { appInfo: NormalisedAppinfo; token: string; recipeId: string }): string {
+    return (
+        input.appInfo.websiteDomain.getAsStringDangerous() +
+        input.appInfo.websiteBasePath.getAsStringDangerous() +
+        "/verify-email" +
+        "?token=" +
+        input.token +
+        "&rid=" +
+        input.recipeId
+    );
 }

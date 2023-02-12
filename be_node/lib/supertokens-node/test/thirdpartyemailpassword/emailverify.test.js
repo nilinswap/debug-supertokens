@@ -29,6 +29,7 @@ let Session = require("../../recipe/session");
 let assert = require("assert");
 let { ProcessState } = require("../../lib/build/processState");
 let ThirdPartyEmailPassword = require("../../recipe/thirdpartyemailpassword");
+const EmailVerification = require("../../recipe/emailverification");
 const express = require("express");
 const request = require("supertest");
 let { middleware, errorHandler } = require("../../framework/express");
@@ -85,10 +86,9 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
+                EmailVerification.init({ mode: "OPTIONAL" }),
                 ThirdPartyEmailPassword.init(),
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
+                Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" }),
             ],
         });
 
@@ -105,13 +105,7 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
         let userId = JSON.parse(response.text).user.id;
         let infoFromResponse = extractInfoFromResponse(response);
 
-        response = await emailVerifyTokenRequest(
-            app,
-            infoFromResponse.accessToken,
-            infoFromResponse.idRefreshTokenFromCookie,
-            infoFromResponse.antiCsrf,
-            userId
-        );
+        response = await emailVerifyTokenRequest(app, infoFromResponse.accessToken, infoFromResponse.antiCsrf, userId);
 
         assert(JSON.parse(response.text).status === "OK");
         assert(Object.keys(JSON.parse(response.text)).length === 1);
@@ -129,10 +123,9 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
+                EmailVerification.init({ mode: "OPTIONAL" }),
                 ThirdPartyEmailPassword.init(),
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
+                Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" }),
             ],
         });
 
@@ -149,16 +142,10 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
         let userId = JSON.parse(response.text).user.id;
         let infoFromResponse = extractInfoFromResponse(response);
 
-        let verifyToken = await ThirdPartyEmailPassword.createEmailVerificationToken(userId);
-        await ThirdPartyEmailPassword.verifyEmailUsingToken(verifyToken.token);
+        let verifyToken = await EmailVerification.createEmailVerificationToken(userId);
+        await EmailVerification.verifyEmailUsingToken(verifyToken.token);
 
-        response = await emailVerifyTokenRequest(
-            app,
-            infoFromResponse.accessToken,
-            infoFromResponse.idRefreshTokenFromCookie,
-            infoFromResponse.antiCsrf,
-            userId
-        );
+        response = await emailVerifyTokenRequest(app, infoFromResponse.accessToken, infoFromResponse.antiCsrf, userId);
 
         assert(JSON.parse(response.text).status === "EMAIL_ALREADY_VERIFIED_ERROR");
         assert(response.status === 200);
@@ -177,10 +164,9 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
+                EmailVerification.init({ mode: "OPTIONAL" }),
                 ThirdPartyEmailPassword.init(),
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
+                Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" }),
             ],
         });
 
@@ -223,17 +209,15 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                ThirdPartyEmailPassword.init({
-                    emailVerificationFeature: {
-                        createAndSendCustomEmail: (user, emailVerificationURLWithToken) => {
-                            userInfo = user;
-                            emailToken = emailVerificationURLWithToken;
-                        },
+                EmailVerification.init({
+                    mode: "OPTIONAL",
+                    createAndSendCustomEmail: (user, emailVerificationURLWithToken) => {
+                        userInfo = user;
+                        emailToken = emailVerificationURLWithToken;
                     },
                 }),
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
+                ThirdPartyEmailPassword.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" }),
             ],
         });
 
@@ -253,7 +237,6 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
         let response2 = await emailVerifyTokenRequest(
             app,
             infoFromResponse.accessToken,
-            infoFromResponse.idRefreshTokenFromCookie,
             infoFromResponse.antiCsrf,
             userId
         );
@@ -284,18 +267,17 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                ThirdPartyEmailPassword.init({
-                    providers: [this.customProvider1],
-                    emailVerificationFeature: {
-                        createAndSendCustomEmail: (user, emailVerificationURLWithToken) => {
-                            userInfo = user;
-                            emailToken = emailVerificationURLWithToken;
-                        },
+                EmailVerification.init({
+                    mode: "OPTIONAL",
+                    createAndSendCustomEmail: (user, emailVerificationURLWithToken) => {
+                        userInfo = user;
+                        emailToken = emailVerificationURLWithToken;
                     },
                 }),
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
+                ThirdPartyEmailPassword.init({
+                    providers: [this.customProvider1],
                 }),
+                Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" }),
             ],
         });
 
@@ -315,7 +297,6 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
         let response2 = await emailVerifyTokenRequest(
             app,
             infoFromResponse.accessToken,
-            infoFromResponse.idRefreshTokenFromCookie,
             infoFromResponse.antiCsrf,
             userId
         );
@@ -326,9 +307,6 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
         assert(Object.keys(JSON.parse(response2.text)).length === 1);
 
         assert(userInfo.id === userId);
-        assert(userInfo.thirdParty !== undefined);
-        assert(userInfo.thirdParty.userId === "testPass0");
-        assert(userInfo.thirdParty.id === "custom");
         assert(userInfo.email === "test@gmail.com");
         assert(emailToken !== null);
     });
@@ -346,10 +324,11 @@ describe(`emailverify: ${printPath("[test/thirdpartyemailpassword/emailverify.te
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                ThirdPartyEmailPassword.init(),
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
+                EmailVerification.init({
+                    mode: "OPTIONAL",
                 }),
+                ThirdPartyEmailPassword.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" }),
             ],
         });
 

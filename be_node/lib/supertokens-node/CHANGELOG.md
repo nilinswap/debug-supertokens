@@ -7,6 +7,330 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+## [13.0.1] - 2023-02-06
+
+-   Email template updates
+
+## [13.0.0] - 2023-02-01
+
+### Breaking changes
+
+-   The frontend SDK should be updated to a version supporting the header-based sessions!
+    -   supertokens-auth-react: >= 0.31.0
+    -   supertokens-web-js: >= 0.5.0
+    -   supertokens-website: >= 16.0.0
+    -   supertokens-react-native: >= 4.0.0
+    -   supertokens-ios >= 0.2.0
+    -   supertokens-android >= 0.3.0
+    -   supertokens-flutter >= 0.1.0
+-   `createNewSession` now requires passing the request as well as the response.
+    -   This only requires a change if you manually created sessions (e.g.: during testing)
+    -   There is a migration example added below. It uses express, but the same principle applies for other supported frameworks.
+-   Only supporting FDI 1.16
+
+### Added
+
+-   Added support for authorizing requests using the `Authorization` header instead of cookies
+    -   Added `getTokenTransferMethod` config option
+    -   Check out https://supertokens.com/docs/thirdpartyemailpassword/common-customizations/sessions/token-transfer-method for more information
+
+### Migration
+
+This example uses express, but the same principle applies for other supported frameworks.
+
+Before:
+
+```
+const app = express();
+app.post("/create", async (req, res) => {
+    await Session.createNewSession(res, "testing-userId", {}, {});
+    res.status(200).json({ message: true });
+});
+```
+
+After the update:
+
+```
+const app = express();
+app.post("/create", async (req, res) => {
+    await Session.createNewSession(req, res, "testing-userId", {}, {});
+    res.status(200).json({ message: true });
+});
+```
+
+## [12.1.6] - 2023-01-22
+
+-   Updates jsonwebtoken dependency to version 9.0.0 to fix vulnerability in it's `verify` function.
+
+## [12.1.5] - 2022-12-10
+
+-   Fixes Content-type header in AWS lambda framework
+
+## [12.1.4] - 2022-12-26
+
+-   Updates dashboard version
+-   Updates user GET API for the dashboard recipe
+
+## [12.1.3] - 2022-12-12
+
+-   Updates some dependencies cause of `npm audit`
+
+## [12.1.2] - 2022-12-06
+
+-   Fixes issue where if sendEmail is overridden with a different email, it will reset that email.
+
+## [12.1.1] - 2022-11-25
+
+-   Fixed an issue with importing the wrong recipe in the dashboard APIs
+
+## [12.1.0] - 2022-11-17
+
+### Added:
+
+-   Adds APIs for user details to the dashboard recipe
+
+### Changed:
+
+-   Updates dashboard version to 0.2
+
+## [12.0.6] - 2022-11-09
+
+### Fixes
+
+-   Adds updating of session claims in email verification token generation API in case the session claims are outdated.
+-   Fixed mergeIntoAccessTokenPayload not updating the JWT payload
+
+## [12.0.5] - 2022-10-17
+
+-   Updated google token endpoint.
+
+## [12.0.4] - 2022-10-14
+
+### Changed:
+
+-   Removed default defaultMaxAge from session claim base classes
+-   Added a 5 minute defaultMaxAge to UserRoleClaim, PermissionClaim and EmailVerificationClaim
+
+## [12.0.3] - 2022-09-29
+
+### Refactor:
+
+-   clear cookies logic refactored for unauthorised error response
+
+## [12.0.2] - 2022-09-22
+
+### Bug fix:
+
+-   Properly rethrowing generic errors in email verification endpoints.
+
+## [12.0.1] - 2022-09-22
+
+### Changed
+
+-   Email verification endpoints will now clear the session if called by a deleted/unknown user
+
+## [12.0.0] - 2022-09-14
+
+### Bug fix:
+
+-   Makes `SuperTokensError` extend the built-in `Error` class to fix serialization issues.
+
+### Changed
+
+-   Made the `email` parameter option in `unverifyEmail`, `revokeEmailVerificationTokens`, `isEmailVerified`, `verifyEmailUsingToken`, `createEmailVerificationToken` of the `EmailVerification` recipe.
+
+### Added
+
+-   Support for FDI 1.15
+-   Added support for session claims with related interfaces and classes.
+-   Added `onInvalidClaim` optional error handler to send InvalidClaim error responses.
+-   Added `INVALID_CLAIMS` to `SessionErrors`.
+-   Added `invalidClaimStatusCode` optional config to set the status code of InvalidClaim errors.
+-   Added `overrideGlobalClaimValidators` to options of `getSession` and `verifySession`.
+-   Added `mergeIntoAccessTokenPayload` to the Session recipe and session objects which should be preferred to the now deprecated `updateAccessTokenPayload`.
+-   Added `EmailVerificationClaim`, `UserRoleClaim` and `PermissionClaim`. These claims are now added to the access token payload by default by their respective recipes.
+-   Added `assertClaims`, `validateClaimsForSessionHandle`, `validateClaimsInJWTPayload` to the Session recipe to support validation of the newly added claims.
+-   Added `fetchAndSetClaim`, `getClaimValue`, `setClaimValue` and `removeClaim` to the Session recipe to manage claims.
+-   Added `assertClaims`, `fetchAndSetClaim`, `getClaimValue`, `setClaimValue` and `removeClaim` to session objects to manage claims.
+-   Added session to the input of `generateEmailVerifyTokenPOST`, `verifyEmailPOST`, `isEmailVerifiedGET`.
+-   Adds default userContext for verifySession calls that contains the request object.
+
+### Breaking changes
+
+-   Removes support for FDI < 1.15
+-   Changed `signInUp` third party recipe function to accept an email string instead of an object that takes `{id: string, isVerified: boolean}`.
+-   Renames `STMP` to `SMTP` everywhere (typo).
+-   The frontend SDK should be updated to a version supporting session claims!
+    -   supertokens-auth-react: >= 0.25.0
+    -   supertokens-web-js: >= 0.2.0
+-   `EmailVerification` recipe is now not initialized as part of auth recipes, it should be added to the `recipeList` directly instead.
+-   Email verification related overrides (`emailVerificationFeature` prop of `override`) moved from auth recipes into the `EmailVerification` recipe config.
+-   Email verificitaion related configs (`emailVerificationFeature` props) moved from auth recipes into the `EmailVerification` config object root.
+-   ThirdParty recipe no longer takes emailDelivery config -> use emailverification recipe's emailDelivery instead.
+-   Moved email verification related configs from the `emailDelivery` config of auth recipes into a separate `EmailVerification` email delivery config.
+-   Updated return type of `getEmailForUserId` in the `EmailVerification` recipe config. It should now return an object with status.
+-   Removed `getResetPasswordURL`, `getEmailVerificationURL`, `getLinkDomainAndPath`. Changing these urls can be done in the email delivery configs instead.
+-   Removed `unverifyEmail`, `revokeEmailVerificationTokens`, `isEmailVerified`, `verifyEmailUsingToken` and `createEmailVerificationToken` from auth recipes. These should be called on the `EmailVerification` recipe instead.
+-   Changed function signature for email verification APIs to accept a session as an input.
+-   Changed Session API interface functions:
+    -   `refreshPOST` now returns a Session container object.
+    -   `signOutPOST` now takes in an optional session object as a parameter.
+
+### Migration
+
+Before:
+
+```
+SuperTokens.init({
+    appInfo: {
+        apiDomain: "...",
+        appName: "...",
+        websiteDomain: "...",
+    },
+    recipeList: [
+        EmailPassword.init({
+            emailVerificationFeature: {
+                // these options should be moved into the config of the EmailVerification recipe
+            },
+            override: {
+                emailVerificationFeature: {
+                    // these overrides should be moved into the overrides of the EmailVerification recipe
+                }
+            }
+        })
+    ]
+})
+```
+
+After the update:
+
+```
+SuperTokens.init({
+    appInfo: {
+        apiDomain: "...",
+        appName: "...",
+        websiteDomain: "...",
+    },
+    recipeList: [
+        EmailVerification.init({
+            // all config should be moved here from the emailVerificationFeature prop of the EmailPassword recipe config
+            override: {
+                // move the overrides from the emailVerificationFeature prop of the override config in the EmailPassword init here
+            }
+        }),
+        EmailPassword.init()
+    ]
+})
+```
+
+#### Passwordless users and email verification
+
+If you turn on email verification your email-based passwordless users may be redirected to an email verification screen in their existing session.
+Logging out and logging in again will solve this problem or they could click the link in the email to verify themselves.
+
+You can avoid this by running a script that will:
+
+1. list all users of passwordless
+2. create an emailverification token for each of them if they have email addresses
+3. user the token to verify their address
+
+Something similar to this script:
+
+```ts
+const SuperTokens = require("supertokens-node");
+const Session = require("supertokens-node/recipe/session");
+const Passwordless = require("supertokens-node/recipe/passwordless");
+const EmailVerification = require("supertokens-node/recipe/emailverification");
+
+SuperTokens.init({
+    supertokens: {
+        // TODO: This is a core hosted for demo purposes. You can use this, but make sure to change it to your core instance URI eventually.
+        connectionURI: "https://try.supertokens.com",
+        apiKey: "<REQUIRED FOR MANAGED SERVICE, ELSE YOU CAN REMOVE THIS FIELD>",
+    },
+    appInfo: {
+        apiDomain: "...",
+        appName: "...",
+        websiteDomain: "...",
+    },
+    recipeList: [
+        EmailVerification.init({
+            mode: "REQUIRED",
+        }),
+        Passwordless.init({
+            contactMethod: "EMAIL_OR_PHONE",
+            flowType: "USER_INPUT_CODE_AND_MAGIC_LINK",
+        }),
+        Session.init(),
+    ],
+});
+
+async function main() {
+    let paginationToken = undefined;
+    let done = false;
+    while (!done) {
+        const userList = await SuperTokens.getUsersNewestFirst({
+            includeRecipeIds: ["passwordless"],
+            limit: 100,
+            paginationToken,
+        });
+
+        for (const { recipeId, user } of userList.users) {
+            if (recipeId === "passwordless" && user.email) {
+                const tokenResp = await EmailVerification.createEmailVerificationToken(user.id, user.email);
+                if (tokenResp.status === "OK") {
+                    await EmailVerification.verifyEmailUsingToken(tokenResp.token);
+                }
+            }
+        }
+
+        done = userList.nextPaginationToken !== undefined;
+        if (!done) {
+            paginationToken = userList.nextPaginationToken;
+        }
+    }
+}
+
+main().then(console.log, console.error);
+```
+
+#### User roles
+
+The UserRoles recipe now adds role and permission information into the access token payload by default. If you are already doing this manually, this will result in duplicate data in the access token.
+
+-   You can disable this behaviour by setting `skipAddingRolesToAccessToken` and `skipAddingPermissionsToAccessToken` to true in the recipe init.
+-   Check how to use the new claims in our user roles docs on our website.
+
+#### Next.js integration
+
+-   Since a new exception type has been added, there is a required change in SRR (`getServerSideProps`). You should handle the new (`INVALID_CLAIMS`) exception in the same way as you handle `UNAUTHORISED`
+-   Please check our updated guide on our website
+
+#### AWS integration
+
+-   The new exception type and error code requires changes if you are using SuperTokens as as an Authorizer in API Gateways.
+-   You need to handle the new exception type in the authorizer code.
+-   You need to configure the "Access Denied" response.
+-   Please check our updated guide on our website
+
+## [11.3.0] - 2022-08-30
+
+### Added:
+
+-   `authUsername` option in smtp config for when email is different than the username for auth.
+
+## [11.2.0] - 2022-08-26
+
+### Adds:
+
+-   Adds a Dashboard recipe
+
+## [11.1.2] - 2022-08-25
+
+### Type fix:
+
+-   Makes `userContext` optional in `sendEmail` and `sendSms` function in all recipe exposed functions.
+
 ## [11.1.1] - 2022-08-11
 
 ### Bug fix:

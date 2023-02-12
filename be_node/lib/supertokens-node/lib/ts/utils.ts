@@ -1,9 +1,11 @@
-import type { AppInfo, NormalisedAppinfo, HTTPMethod } from "./types";
-import { HEADER_RID } from "./constants";
+import * as psl from "psl";
+
+import type { AppInfo, NormalisedAppinfo, HTTPMethod, JSONObject } from "./types";
 import NormalisedURLDomain from "./normalisedURLDomain";
 import NormalisedURLPath from "./normalisedURLPath";
 import type { BaseRequest, BaseResponse } from "./framework";
 import { logDebugMessage } from "./logger";
+import { HEADER_RID } from "./constants";
 
 export function getLargestVersionFromIntersection(v1: string[], v2: string[]): string | undefined {
     let intersection = v1.filter((value) => v2.indexOf(value) !== -1);
@@ -53,10 +55,16 @@ export function normaliseInputAppInfoOrThrowError(appInfo: AppInfo): NormalisedA
         appInfo.apiGatewayPath !== undefined
             ? new NormalisedURLPath(appInfo.apiGatewayPath)
             : new NormalisedURLPath("");
+
+    const websiteDomain = new NormalisedURLDomain(appInfo.websiteDomain);
+    const apiDomain = new NormalisedURLDomain(appInfo.apiDomain);
+    const topLevelAPIDomain = getTopLevelDomainForSameSiteResolution(apiDomain.getAsStringDangerous());
+    const topLevelWebsiteDomain = getTopLevelDomainForSameSiteResolution(websiteDomain.getAsStringDangerous());
+
     return {
         appName: appInfo.appName,
-        websiteDomain: new NormalisedURLDomain(appInfo.websiteDomain),
-        apiDomain: new NormalisedURLDomain(appInfo.apiDomain),
+        websiteDomain,
+        apiDomain,
         apiBasePath: apiGatewayPath.appendPath(
             appInfo.apiBasePath === undefined
                 ? new NormalisedURLPath("/auth")
@@ -67,24 +75,26 @@ export function normaliseInputAppInfoOrThrowError(appInfo: AppInfo): NormalisedA
                 ? new NormalisedURLPath("/auth")
                 : new NormalisedURLPath(appInfo.websiteBasePath),
         apiGatewayPath,
+        topLevelAPIDomain,
+        topLevelWebsiteDomain,
     };
-}
-
-export function getRIDFromRequest(req: BaseRequest): string | undefined {
-    return req.getHeaderValue(HEADER_RID);
 }
 
 export function normaliseHttpMethod(method: string): HTTPMethod {
     return method.toLowerCase() as HTTPMethod;
 }
 
-export function sendNon200Response(res: BaseResponse, message: string, statusCode: number) {
+export function sendNon200ResponseWithMessage(res: BaseResponse, message: string, statusCode: number) {
+    sendNon200Response(res, statusCode, { message });
+}
+
+export function sendNon200Response(res: BaseResponse, statusCode: number, body: JSONObject) {
     if (statusCode < 300) {
         throw new Error("Calling sendNon200Response with status code < 300");
     }
     logDebugMessage("Sending response to client with status code: " + statusCode);
     res.setStatusCode(statusCode);
-    res.sendJSONResponse({ message });
+    res.sendJSONResponse(body);
 }
 
 export function send200Response(res: BaseResponse, responseJson: any) {
@@ -99,8 +109,12 @@ export function isAnIpAddress(ipaddress: string) {
     );
 }
 
+export function getRidFromHeader(req: BaseRequest): string | undefined {
+    return req.getHeaderValue(HEADER_RID);
+}
+
 export function frontendHasInterceptor(req: BaseRequest): boolean {
-    return getRIDFromRequest(req) !== undefined;
+    return getRidFromHeader(req) !== undefined;
 }
 
 export function humaniseMilliseconds(ms: number): string {
@@ -127,4 +141,18 @@ export function makeDefaultUserContextFromAPI(request: BaseRequest): any {
             request,
         },
     };
+}
+
+export function getTopLevelDomainForSameSiteResolution(url: string): string {
+    let urlObj = new URL(url);
+    let hostname = urlObj.hostname;
+    if (hostname.startsWith("localhost") || hostname.startsWith("localhost.org") || isAnIpAddress(hostname)) {
+        // we treat these as the same TLDs since we can use sameSite lax for all of them.
+        return "localhost";
+    }
+    let parsedURL = psl.parse(hostname) as psl.ParsedDomain;
+    if (parsedURL.domain === null) {
+        throw new Error("Please make sure that the apiDomain and websiteDomain have correct values");
+    }
+    return parsedURL.domain;
 }

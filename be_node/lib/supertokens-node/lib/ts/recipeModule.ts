@@ -37,7 +37,7 @@ export default abstract class RecipeModule {
     };
 
     returnAPIIdIfCanHandleRequest = (path: NormalisedURLPath, method: HTTPMethod): string | undefined => {
-        let apisHandled = this.getAPIsHandled(); // READCODE BUNI: misnomer, it doesn't really get apis handled. it just gets apis-handled.
+        let apisHandled = this.getAPIsHandled();
         for (let i = 0; i < apisHandled.length; i++) {
             let currAPI = apisHandled[i];
             if (

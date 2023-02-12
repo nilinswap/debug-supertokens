@@ -44,3 +44,9 @@ only supports supertokens-auth-react and supertokens-node for now.
 
 go to http://localhost:1234/inner 
 
+
+
+## WhatCanBe
+
+[] publish both node and react library as your own npm package.
+

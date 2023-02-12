@@ -1,11 +1,11 @@
 import { APIInterface } from "../";
 import { logDebugMessage } from "../../../logger";
+import EmailVerification from "../../emailverification/recipe";
 import Session from "../../session";
 
 export default function getAPIImplementation(): APIInterface {
     return {
         consumeCodePOST: async function (input) {
-            // READCODE BUNI AL3: this is where we call consume api. with otp, that is what they call userInputCode
             let response = await input.options.recipeImplementation.consumeCode(
                 "deviceId" in input
                     ? {
@@ -20,15 +20,42 @@ export default function getAPIImplementation(): APIInterface {
                           userContext: input.userContext,
                       }
             );
-        
-            // READCODE BUNI AL3: if response.status is not ok like otp expired etc, then don't call createNewSession and don't set cookie. 
+
             if (response.status !== "OK") {
                 return response;
             }
 
             let user = response.user;
 
-            const session = await Session.createNewSession(input.options.res, user.id, {}, {}, input.userContext);
+            if (user.email !== undefined) {
+                const emailVerificationInstance = EmailVerification.getInstance();
+                if (emailVerificationInstance) {
+                    const tokenResponse = await emailVerificationInstance.recipeInterfaceImpl.createEmailVerificationToken(
+                        {
+                            userId: user.id,
+                            email: user.email,
+                            userContext: input.userContext,
+                        }
+                    );
+
+                    if (tokenResponse.status === "OK") {
+                        await emailVerificationInstance.recipeInterfaceImpl.verifyEmailUsingToken({
+                            token: tokenResponse.token,
+                            userContext: input.userContext,
+                        });
+                    }
+                }
+            }
+
+            const session = await Session.createNewSession(
+                input.options.req,
+                input.options.res,
+                user.id,
+                {},
+                {},
+                input.userContext
+            );
+
             return {
                 status: "OK",
                 createdNewUser: response.createdNewUser,
@@ -37,7 +64,6 @@ export default function getAPIImplementation(): APIInterface {
             };
         },
         createCodePOST: async function (input) {
-            //READCODE BUNI AL3: this is where create otp code. of course, it is done from the backend. we get the response from backend with otp but we don't send otp to the frontend.
             let response = await input.options.recipeImplementation.createCode(
                 "email" in input
                     ? {
@@ -64,16 +90,9 @@ export default function getAPIImplementation(): APIInterface {
             const flowType = input.options.config.flowType;
             if (flowType === "MAGIC_LINK" || flowType === "USER_INPUT_CODE_AND_MAGIC_LINK") {
                 magicLink =
-                    (await input.options.config.getLinkDomainAndPath(
-                        "phoneNumber" in input
-                            ? {
-                                  phoneNumber: input.phoneNumber!,
-                              }
-                            : {
-                                  email: input.email,
-                              },
-                        input.userContext
-                    )) +
+                    input.options.appInfo.websiteDomain.getAsStringDangerous() +
+                    input.options.appInfo.websiteBasePath.getAsStringDangerous() +
+                    "/verify" +
                     "?rid=" +
                     input.options.recipeId +
                     "&preAuthSessionId=" +
@@ -104,7 +123,6 @@ export default function getAPIImplementation(): APIInterface {
                 });
             } else {
                 logDebugMessage(`Sending passwordless login email to ${(input as any).email}`);
-                //READCODE BUNI AL3: this is where we send email
                 await input.options.emailDelivery.ingredientInterfaceImpl.sendEmail({
                     type: "PASSWORDLESS_LOGIN",
                     email: (input as any).email!,
@@ -195,16 +213,9 @@ export default function getAPIImplementation(): APIInterface {
                     const flowType = input.options.config.flowType;
                     if (flowType === "MAGIC_LINK" || flowType === "USER_INPUT_CODE_AND_MAGIC_LINK") {
                         magicLink =
-                            (await input.options.config.getLinkDomainAndPath(
-                                deviceInfo.email === undefined
-                                    ? {
-                                          phoneNumber: deviceInfo.phoneNumber!,
-                                      }
-                                    : {
-                                          email: deviceInfo.email,
-                                      },
-                                input.userContext
-                            )) +
+                            input.options.appInfo.websiteDomain.getAsStringDangerous() +
+                            input.options.appInfo.websiteBasePath.getAsStringDangerous() +
+                            "/verify" +
                             "?rid=" +
                             input.options.recipeId +
                             "&preAuthSessionId=" +

@@ -14,7 +14,15 @@
  */
 
 import RecipeModule from "../../recipeModule";
-import { TypeInput, TypeNormalisedInput, RecipeInterface, APIInterface, VerifySessionOptions } from "./types";
+import {
+    TypeInput,
+    TypeNormalisedInput,
+    RecipeInterface,
+    APIInterface,
+    VerifySessionOptions,
+    SessionClaimValidator,
+    SessionClaim,
+} from "./types";
 import STError from "./error";
 import { validateAndNormaliseUserInput } from "./utils";
 import { NormalisedAppinfo, RecipeListFunction, APIHandled, HTTPMethod } from "../../types";
@@ -22,7 +30,10 @@ import handleRefreshAPI from "./api/refresh";
 import signOutAPI from "./api/signout";
 import { REFRESH_API_PATH, SIGNOUT_API_PATH } from "./constants";
 import NormalisedURLPath from "../../normalisedURLPath";
-import { getCORSAllowedHeaders as getCORSAllowedHeadersFromCookiesAndHeaders } from "./cookieAndHeaders";
+import {
+    clearSessionFromAllTokenTransferMethods,
+    getCORSAllowedHeaders as getCORSAllowedHeadersFromCookiesAndHeaders,
+} from "./cookieAndHeaders";
 import RecipeImplementation from "./recipeImplementation";
 import RecipeImplementationWithJWT from "./with-jwt";
 import { Querier } from "../../querier";
@@ -32,11 +43,15 @@ import OverrideableBuilder from "supertokens-js-override";
 import { APIOptions } from ".";
 import OpenIdRecipe from "../openid/recipe";
 import { logDebugMessage } from "../../logger";
+import { makeDefaultUserContextFromAPI } from "../../utils";
 
 // For Express
 export default class SessionRecipe extends RecipeModule {
     private static instance: SessionRecipe | undefined = undefined;
     static RECIPE_ID = "session";
+
+    private claimsAddedByOtherRecipes: SessionClaim<any>[] = [];
+    private claimValidatorsAddedByOtherRecipes: SessionClaimValidator[] = [];
 
     config: TypeNormalisedInput;
 
@@ -49,7 +64,6 @@ export default class SessionRecipe extends RecipeModule {
 
     constructor(recipeId: string, appInfo: NormalisedAppinfo, isInServerlessEnv: boolean, config?: TypeInput) {
         super(recipeId, appInfo);
-        console.log("session imported");
         this.config = validateAndNormaliseUserInput(this, appInfo, config);
         logDebugMessage("session init: antiCsrf: " + this.config.antiCsrf);
         logDebugMessage("session init: cookieDomain: " + this.config.cookieDomain);
@@ -70,6 +84,7 @@ export default class SessionRecipe extends RecipeModule {
                 RecipeImplementation(
                     Querier.getNewInstanceOrThrowError(recipeId),
                     this.config,
+                    this.getAppInfo(),
                     () => this.recipeInterfaceImpl
                 )
             );
@@ -90,6 +105,7 @@ export default class SessionRecipe extends RecipeModule {
                     RecipeImplementation(
                         Querier.getNewInstanceOrThrowError(recipeId),
                         this.config,
+                        this.getAppInfo(),
                         () => this.recipeInterfaceImpl
                     )
                 );
@@ -98,7 +114,6 @@ export default class SessionRecipe extends RecipeModule {
         }
         {
             let builder = new OverrideableBuilder(APIImplementation());
-            // READCODE BUNI: apiImpl is important, we set the actual implementation class here. these methods get called per recipe
             this.apiImpl = builder.override(this.config.override.apis).build();
         }
     }
@@ -127,6 +142,28 @@ export default class SessionRecipe extends RecipeModule {
         }
         SessionRecipe.instance = undefined;
     }
+
+    addClaimFromOtherRecipe = (claim: SessionClaim<any>) => {
+        // We are throwing here (and not in addClaimValidatorFromOtherRecipe) because if multiple
+        // claims are added with the same key they will overwrite each other. Validators will all run
+        // and work as expected even if they are added multiple times.
+        if (this.claimsAddedByOtherRecipes.some((c) => c.key === claim.key)) {
+            throw new Error("Claim added by multiple recipes");
+        }
+        this.claimsAddedByOtherRecipes.push(claim);
+    };
+
+    getClaimsAddedByOtherRecipes = (): SessionClaim<any>[] => {
+        return this.claimsAddedByOtherRecipes;
+    };
+
+    addClaimValidatorFromOtherRecipe = (builder: SessionClaimValidator) => {
+        this.claimValidatorsAddedByOtherRecipes.push(builder);
+    };
+
+    getClaimValidatorsAddedByOtherRecipes = (): SessionClaimValidator[] => {
+        return this.claimValidatorsAddedByOtherRecipes;
+    };
 
     // abstract instance functions below...............
 
@@ -169,7 +206,6 @@ export default class SessionRecipe extends RecipeModule {
             res,
         };
         if (id === REFRESH_API_PATH) {
-            // READCODE BUNI RSL3: this is where refresh api is handled specifically. Notice that for refresh api, recipe is session.
             return await handleRefreshAPI(this.apiImpl, options);
         } else if (id === SIGNOUT_API_PATH) {
             return await signOutAPI(this.apiImpl, options);
@@ -184,18 +220,30 @@ export default class SessionRecipe extends RecipeModule {
         if (err.fromRecipe === SessionRecipe.RECIPE_ID) {
             if (err.type === STError.UNAUTHORISED) {
                 logDebugMessage("errorHandler: returning UNAUTHORISED");
+                if (
+                    err.payload === undefined ||
+                    err.payload.clearTokens === undefined ||
+                    err.payload.clearTokens === true
+                ) {
+                    logDebugMessage("errorHandler: Clearing tokens because of UNAUTHORISED response");
+                    clearSessionFromAllTokenTransferMethods(this.config, response);
+                }
                 return await this.config.errorHandlers.onUnauthorised(err.message, request, response);
             } else if (err.type === STError.TRY_REFRESH_TOKEN) {
                 logDebugMessage("errorHandler: returning TRY_REFRESH_TOKEN");
                 return await this.config.errorHandlers.onTryRefreshToken(err.message, request, response);
             } else if (err.type === STError.TOKEN_THEFT_DETECTED) {
                 logDebugMessage("errorHandler: returning TOKEN_THEFT_DETECTED");
+                logDebugMessage("errorHandler: Clearing tokens because of TOKEN_THEFT_DETECTED response");
+                clearSessionFromAllTokenTransferMethods(this.config, response);
                 return await this.config.errorHandlers.onTokenTheftDetected(
                     err.payload.sessionHandle,
                     err.payload.userId,
                     request,
                     response
                 );
+            } else if (err.type === STError.INVALID_CLAIMS) {
+                return await this.config.errorHandlers.onInvalidClaim(err.payload, request, response);
             } else {
                 throw err;
             }
@@ -235,7 +283,7 @@ export default class SessionRecipe extends RecipeModule {
                 isInServerlessEnv: this.isInServerlessEnv,
                 recipeImplementation: this.recipeInterfaceImpl,
             },
-            userContext: {},
+            userContext: makeDefaultUserContextFromAPI(request),
         });
     };
 }
