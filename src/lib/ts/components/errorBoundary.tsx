@@ -17,9 +17,7 @@
  * Imports.
  */
 import React from "react";
-import { Fragment } from "react";
-
-import type { ErrorInfo, ReactNode } from "react";
+import { ErrorInfo, ReactNode, Fragment } from "react";
 
 type ErrorBoundaryState = { hasError: boolean };
 /*

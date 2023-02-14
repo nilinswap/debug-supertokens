@@ -16,19 +16,15 @@
 /*
  * Imports.
  */
-import React, { useEffect, useState, useRef, useCallback } from "react";
-
-import SuperTokens from "../../superTokens";
+import React, { useEffect, useState, useRef, PropsWithChildren, useCallback } from "react";
+import SessionContext from "./sessionContext";
+import Session from "./recipe";
+import { LoadedSessionContext, RecipeEventWithSessionContext, SessionContextType } from "./types";
 import { useUserContext } from "../../usercontext";
 import UserContextWrapper from "../../usercontext/userContextWrapper";
 import { popInvalidClaimRedirectPathFromContext, useOnMountAPICall } from "../../utils";
-
-import Session from "./recipe";
-import SessionContext from "./sessionContext";
-
-import type { LoadedSessionContext, RecipeEventWithSessionContext, SessionContextType } from "./types";
-import type { PropsWithChildren } from "react";
-import type { SessionClaimValidator } from "supertokens-web-js/recipe/session";
+import SuperTokens from "../../superTokens";
+import { SessionClaimValidator } from "supertokens-website";
 
 export type SessionAuthProps = {
     /**

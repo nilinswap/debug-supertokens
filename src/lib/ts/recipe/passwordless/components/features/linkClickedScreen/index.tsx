@@ -17,24 +17,26 @@
  */
 import React from "react";
 import { Fragment, useCallback, useState } from "react";
-import STGeneralError from "supertokens-web-js/utils/error";
 
-import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
-import FeatureWrapper from "../../../../../components/featureWrapper";
-import SuperTokens from "../../../../../superTokens";
-import { useUserContext } from "../../../../../usercontext";
+import { FeatureBaseProps } from "../../../../../types";
 import { getQueryParams, getURLHash, useOnMountAPICall } from "../../../../../utils";
-import Session from "../../../../session/recipe";
-import { getLoginAttemptInfo } from "../../../utils";
+import FeatureWrapper from "../../../../../components/featureWrapper";
+import { StyleProvider } from "../../../../../styles/styleContext";
+import { defaultPalette } from "../../../../../styles/styles";
+import { getStyles } from "../../themes/styles";
+import { Awaited } from "../../../../../types";
 import { LinkClickedScreen as LinkClickedScreenTheme } from "../../themes/linkClickedScreen";
+import Recipe from "../../../recipe";
+import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
 import { defaultTranslationsPasswordless } from "../../themes/translations";
+import { useUserContext } from "../../../../../usercontext";
+import { getLoginAttemptInfo } from "../../../utils";
+import STGeneralError from "supertokens-web-js/utils/error";
+import Session from "../../../../session/recipe";
+import SuperTokens from "../../../../../superTokens";
+import { useRecipeComponentOverrideContext } from "../../../componentOverrideContext";
 
-import type { Awaited } from "../../../../../types";
-import type { FeatureBaseProps } from "../../../../../types";
-import type Recipe from "../../../recipe";
-import type { ComponentOverrideMap } from "../../../types";
-
-type PropType = FeatureBaseProps & { recipe: Recipe; useComponentOverrides: () => ComponentOverrideMap };
+type PropType = FeatureBaseProps & { recipe: Recipe };
 
 const LinkClickedScreen: React.FC<PropType> = (props) => {
     const userContext = useUserContext();
@@ -139,7 +141,9 @@ const LinkClickedScreen: React.FC<PropType> = (props) => {
     );
     useOnMountAPICall(consumeCodeAtMount, handleConsumeResp, handleConsumeError);
 
-    const recipeComponentOverrides = props.useComponentOverrides();
+    const recipeComponentOverrides = useRecipeComponentOverrideContext();
+
+    const linkClickedScreen = props.recipe.config.linkClickedScreenFeature;
 
     const childProps = {
         recipeImplementation: props.recipe.recipeImpl,
@@ -172,20 +176,27 @@ const LinkClickedScreen: React.FC<PropType> = (props) => {
             <FeatureWrapper
                 useShadowDom={props.recipe.config.useShadowDom}
                 defaultStore={defaultTranslationsPasswordless}>
-                <Fragment>
-                    {/* No custom theme, use default. */}
-                    {props.children === undefined && <LinkClickedScreenTheme {...childProps} />}
+                <StyleProvider
+                    rawPalette={props.recipe.config.palette}
+                    defaultPalette={defaultPalette}
+                    styleFromInit={linkClickedScreen.style}
+                    rootStyleFromInit={props.recipe.config.rootStyle}
+                    getDefaultStyles={getStyles}>
+                    <Fragment>
+                        {/* No custom theme, use default. */}
+                        {props.children === undefined && <LinkClickedScreenTheme {...childProps} />}
 
-                    {/* Otherwise, custom theme is provided, propagate props. */}
-                    {props.children &&
-                        React.Children.map(props.children, (child) => {
-                            if (React.isValidElement(child)) {
-                                return React.cloneElement(child, childProps);
-                            }
+                        {/* Otherwise, custom theme is provided, propagate props. */}
+                        {props.children &&
+                            React.Children.map(props.children, (child) => {
+                                if (React.isValidElement(child)) {
+                                    return React.cloneElement(child, childProps);
+                                }
 
-                            return child;
-                        })}
-                </Fragment>
+                                return child;
+                            })}
+                    </Fragment>
+                </StyleProvider>
             </FeatureWrapper>
         </ComponentOverrideContext.Provider>
     );

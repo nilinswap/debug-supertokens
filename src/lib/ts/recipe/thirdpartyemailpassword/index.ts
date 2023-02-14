@@ -12,26 +12,24 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+import ThirdPartyEmailPassword from "./recipe";
+import ResetPasswordUsingTokenTheme from "../emailpassword/components/themes/resetPasswordUsingToken";
+
+import { UserInput, GetRedirectionURLContext, PreAPIHookContext, OnHandleEventContext } from "./types";
+import SignInAndUpTheme from "./components/themes/signInAndUp";
+import { Apple, Google, Facebook, Github } from "../thirdparty/";
+import { getNormalisedUserContext } from "../../utils";
 import {
     RecipeInterface,
     EmailPasswordUserType as UserType,
     ThirdPartyUserType,
+    RecipeFunctionOptions,
 } from "supertokens-web-js/recipe/thirdpartyemailpassword";
-
-import { getNormalisedUserContext } from "../../utils";
-import ResetPasswordUsingTokenTheme from "../emailpassword/components/themes/resetPasswordUsingToken";
-import { Apple, Google, Facebook, Github } from "../thirdparty/";
-import { SignInAndUpCallbackTheme as ThirdPartySignInAndUpCallbackTheme } from "../thirdparty/components/themes/signInAndUpCallback";
 import { redirectToThirdPartyLogin as UtilsRedirectToThirdPartyLogin } from "../thirdparty/utils";
-
+import { SignInAndUpCallbackTheme as ThirdPartySignInAndUpCallbackTheme } from "../thirdparty/components/themes/signInAndUpCallback";
+import { StateObject } from "supertokens-web-js/recipe/thirdparty";
+import { PropsWithChildren } from "react";
 import { RecipeComponentsOverrideContextProvider } from "./componentOverrideContext";
-import SignInAndUpTheme from "./components/themes/signInAndUp";
-import ThirdPartyEmailPassword from "./recipe";
-import { UserInput, GetRedirectionURLContext, PreAPIHookContext, OnHandleEventContext } from "./types";
-
-import type { PropsWithChildren } from "react";
-import type { StateObject } from "supertokens-web-js/recipe/thirdparty";
-import type { RecipeFunctionOptions } from "supertokens-web-js/recipe/thirdpartyemailpassword";
 
 export default class Wrapper {
     static init(config: UserInput) {

@@ -17,23 +17,33 @@
  * Imports.
  */
 
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-
+import root from "react-shadow/emotion";
 import { ST_ROOT_ID } from "../constants";
+import ErrorBoundary from "./errorBoundary";
+import { CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
 import SuperTokens from "../superTokens";
 import { TranslationContextProvider } from "../translation/translationContext";
+import { TranslationStore } from "../translation/translationHelpers";
 import { mergeObjects } from "../utils";
+import { PropsWithChildren } from "react";
 
-import ErrorBoundary from "./errorBoundary";
+const superTokensEmotionCache = createCache({
+    key: "supertokens",
+});
 
-import type { TranslationStore } from "../translation/translationHelpers";
-import type { PropsWithChildren } from "react";
+/*
+ * Props.
+ */
 
 type FeatureWrapperProps = {
     useShadowDom?: boolean;
     defaultStore: TranslationStore;
 };
+
+/*
+ * Component.
+ */
 
 export default function FeatureWrapper({
     children,
@@ -54,25 +64,6 @@ export default function FeatureWrapper({
     );
 }
 
-function WithShadowDom({ children }: PropsWithChildren<unknown>) {
-    const rootDiv = useRef<HTMLDivElement | null>(null);
-    const [shadowRoot, setShadowRoot] = useState<ShadowRoot>();
-
-    useEffect(() => {
-        if (rootDiv.current) {
-            // defaults from react-shadow
-            setShadowRoot((os) => os || rootDiv.current!.attachShadow({ mode: "open", delegatesFocus: false }));
-        }
-    }, [rootDiv]);
-
-    // Otherwise, use shadow dom.
-    return (
-        <div id={ST_ROOT_ID} ref={rootDiv}>
-            {shadowRoot && createPortal(children, shadowRoot)}
-        </div>
-    );
-}
-
 type WithOrWithoutShadowDomProps = {
     useShadowDom?: boolean;
 };
@@ -85,16 +76,18 @@ function WithOrWithoutShadowDom({
     if (useShadowDom === false) {
         return (
             <div id={ST_ROOT_ID}>
-                {children}
+                <CacheProvider value={superTokensEmotionCache}>{children}</CacheProvider>
                 <DisableAutoFillInput />
             </div>
         );
     }
+
+    // Otherwise, use shadow dom.
     return (
-        <WithShadowDom>
+        <root.div id={ST_ROOT_ID}>
             {children}
             <DisableAutoFillInput />
-        </WithShadowDom>
+        </root.div>
     );
 }
 

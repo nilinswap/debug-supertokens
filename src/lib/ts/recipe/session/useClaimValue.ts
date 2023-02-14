@@ -1,6 +1,6 @@
-import useSessionContext from "./useSessionContext";
+import { SessionClaim } from "supertokens-web-js/recipe/session";
 
-import type { SessionClaim } from "supertokens-web-js/recipe/session";
+import useSessionContext from "./useSessionContext";
 
 export const useClaimValue = <T>(
     claim: SessionClaim<T>

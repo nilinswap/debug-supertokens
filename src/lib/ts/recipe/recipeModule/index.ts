@@ -14,11 +14,10 @@
  */
 
 import SuperTokens from "../../superTokens";
-import { appendQueryParamsToURL } from "../../utils";
+import { RecipeFeatureComponentMap } from "../../types";
 
-import type { NormalisedConfig } from "./types";
-import type { GenericComponentOverrideMap } from "../../components/componentOverride/componentOverrideContext";
-import type { RecipeFeatureComponentMap } from "../../types";
+import { appendQueryParamsToURL } from "../../utils";
+import { NormalisedConfig } from "./types";
 
 /*
  * Class.
@@ -65,11 +64,7 @@ export default abstract class RecipeModule<
         throw new Error("getDefaultRedirectionURL is not implemented.");
     }
 
-    abstract getFeatures(useComponentOverrides?: () => GenericComponentOverrideMap<any>): RecipeFeatureComponentMap;
+    abstract getFeatures(): RecipeFeatureComponentMap;
 
-    abstract getFeatureComponent(
-        componentName: string,
-        props: any,
-        useComponentOverrides?: () => GenericComponentOverrideMap<any>
-    ): JSX.Element;
+    abstract getFeatureComponent(componentName: string, props: any): JSX.Element;
 }

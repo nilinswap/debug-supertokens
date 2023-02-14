@@ -23,12 +23,7 @@
 
 export default function ArrowRightIcon({ color }: { color: string }): JSX.Element {
     return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="11.272"
-            height="9.49"
-            viewBox="0 0 11.272 9.49"
-            data-supertokens="arrowRightIcon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="11.272" height="9.49" viewBox="0 0 11.272 9.49">
             <path
                 fill={color}
                 stroke="#fff"

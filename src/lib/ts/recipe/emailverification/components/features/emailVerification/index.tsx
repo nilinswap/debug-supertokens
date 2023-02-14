@@ -18,29 +18,27 @@
  */
 import * as React from "react";
 import { useContext, useState, useMemo, useCallback, Fragment } from "react";
-
+import { clearQueryParams, getQueryParams, useOnMountAPICall } from "../../../../../utils";
+import { EmailVerificationTheme } from "../../themes/emailVerification";
+import { FeatureBaseProps } from "../../../../../types";
+import FeatureWrapper from "../../../../../components/featureWrapper";
+import Recipe from "../../../recipe";
+import { SessionContext } from "../../../../session";
+import { defaultTranslationsEmailVerification } from "../../themes/translations";
+import { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
+import { useUserContext } from "../../../../../usercontext";
+import Session from "../../../../session/recipe";
 import { redirectToAuth } from "../../../../..";
 import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
-import FeatureWrapper from "../../../../../components/featureWrapper";
-import { useUserContext } from "../../../../../usercontext";
-import { clearQueryParams, getQueryParams, useOnMountAPICall } from "../../../../../utils";
-import { SessionContext } from "../../../../session";
-import Session from "../../../../session/recipe";
-import EmailVerificationTheme from "../../themes/emailVerification";
-import { defaultTranslationsEmailVerification } from "../../themes/translations";
+import { useRecipeComponentOverrideContext } from "../../../componentOverrideContext";
 
-import type { FeatureBaseProps } from "../../../../../types";
-import type Recipe from "../../../recipe";
-import type { ComponentOverrideMap } from "../../../types";
-import type { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
-
-type Prop = FeatureBaseProps & { recipe: Recipe; userContext?: any; useComponentOverrides: () => ComponentOverrideMap };
+type Prop = FeatureBaseProps & { recipe: Recipe; userContext?: any };
 
 export const EmailVerification: React.FC<Prop> = (props) => {
     const sessionContext = useContext(SessionContext);
     const [status, setStatus] = useState("LOADING");
     const userContext = useUserContext();
-    const recipeComponentOverrides = props.useComponentOverrides();
+    const recipeComponentOverrides = useRecipeComponentOverrideContext();
 
     const redirectToAuthWithHistory = useCallback(async () => {
         await redirectToAuth({ redirectBack: false, history: props.history });

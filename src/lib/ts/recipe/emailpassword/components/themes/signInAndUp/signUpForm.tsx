@@ -15,12 +15,12 @@
 /*
  * Imports.
  */
-import { withOverride } from "../../../../../components/componentOverride/withOverride";
-import { useUserContext } from "../../../../../usercontext";
-import { validateForm } from "../../../../../utils";
-import FormBase from "../../library/formBase";
+import { SignUpThemeProps } from "../../../types";
 
-import type { SignUpThemeProps } from "../../../types";
+import FormBase from "../../library/formBase";
+import { withOverride } from "../../../../../components/componentOverride/withOverride";
+import { validateForm } from "../../../../../utils";
+import { useUserContext } from "../../../../../usercontext";
 
 /*
  * Component.

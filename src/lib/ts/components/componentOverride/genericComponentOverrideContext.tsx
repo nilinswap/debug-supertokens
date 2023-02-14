@@ -1,6 +1,4 @@
-import React from "react";
-
-import type { FC, PropsWithChildren } from "react";
+import React, { FC, PropsWithChildren } from "react";
 
 export const createGenericComponentsOverrideContext = <T extends Record<string, unknown>>(v: T = {} as T) => {
     const genericContext = React.createContext<T>(v);

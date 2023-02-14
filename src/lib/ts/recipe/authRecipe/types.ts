@@ -13,7 +13,7 @@
  * under the License.
  */
 
-import type {
+import {
     Config as RecipeModuleConfig,
     NormalisedConfig as NormalisedRecipeModuleConfig,
     UserInput as UserInputRecipeModule,

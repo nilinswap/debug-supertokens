@@ -17,29 +17,27 @@
  */
 import * as React from "react";
 import { Fragment } from "react";
-
-import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
+import { FeatureBaseProps } from "../../../../../types";
 import FeatureWrapper from "../../../../../components/featureWrapper";
-import {
-    useChildProps as useEmailPasswordChildProps,
-    useFeatureReducer as useEmailPasswordFeatureReducer,
-} from "../../../../emailpassword/components/features/signInAndUp";
+import Recipe from "../../../recipe";
+import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
+import SignInAndUpTheme from "../../themes/signInAndUp";
+import { defaultTranslationsThirdPartyEmailPassword } from "../../themes/translations";
 import {
     useChildProps as useThirdPartyChildProps,
     useFeatureReducer as useThirdPartyFeatureReducer,
 } from "../../../../thirdparty/components/features/signInAndUp";
-import SignInAndUpTheme from "../../themes/signInAndUp";
-import { defaultTranslationsThirdPartyEmailPassword } from "../../themes/translations";
+import {
+    useChildProps as useEmailPasswordChildProps,
+    useFeatureReducer as useEmailPasswordFeatureReducer,
+} from "../../../../emailpassword/components/features/signInAndUp";
 
-import type { FeatureBaseProps } from "../../../../../types";
-import type { EmailPasswordSignInAndUpAction } from "../../../../emailpassword/types";
-import type { ThirdPartySignInUpActions } from "../../../../thirdparty/types";
-import type Recipe from "../../../recipe";
-import type { ComponentOverrideMap } from "../../../types";
+import { ThirdPartySignInUpActions } from "../../../../thirdparty/types";
+import { EmailPasswordSignInAndUpAction } from "../../../../emailpassword/types";
+import { useRecipeComponentOverrideContext } from "../../../componentOverrideContext";
 
 type PropType = FeatureBaseProps & {
     recipe: Recipe;
-    useComponentOverrides: () => ComponentOverrideMap;
 };
 
 const SignInAndUp: React.FC<PropType> = (props) => {
@@ -70,7 +68,7 @@ const SignInAndUp: React.FC<PropType> = (props) => {
         { error: tpState.error || epState.error }
     );
 
-    const recipeComponentOverrides = props.useComponentOverrides();
+    const recipeComponentOverrides = useRecipeComponentOverrideContext();
 
     const combinedTPDispatch = React.useCallback<typeof tpDispatch>(
         (action) => {

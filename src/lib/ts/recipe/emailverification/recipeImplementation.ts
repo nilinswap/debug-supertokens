@@ -1,13 +1,12 @@
+import { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
+import { OnHandleEventContext, PreAndPostAPIHookAction } from "./types";
 import { getRecipeImplementation as WebJSRecipeImplementation } from "supertokens-web-js/recipe/emailverification/recipeImplementation";
-
-import type { OnHandleEventContext, PreAndPostAPIHookAction } from "./types";
-import type { NormalisedAppInfo } from "../../types";
-import type {
+import { NormalisedAppInfo } from "../../types";
+import {
     RecipeOnHandleEventFunction,
     RecipePostAPIHookFunction,
     RecipePreAPIHookFunction,
 } from "../recipeModule/types";
-import type { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
 
 export default function getRecipeImplementation(recipeInput: {
     recipeId: string;

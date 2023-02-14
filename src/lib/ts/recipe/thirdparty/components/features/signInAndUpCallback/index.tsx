@@ -16,22 +16,25 @@
  * Imports.
  */
 import { Fragment, useCallback } from "react";
-import STGeneralError from "supertokens-web-js/utils/error";
 
-import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
-import FeatureWrapper from "../../../../../components/featureWrapper";
-import SuperTokens from "../../../../../superTokens";
-import { useUserContext } from "../../../../../usercontext";
+import { Awaited, FeatureBaseProps } from "../../../../../types";
 import { useOnMountAPICall } from "../../../../../utils";
-import Session from "../../../../session/recipe";
+import FeatureWrapper from "../../../../../components/featureWrapper";
+import { StyleProvider } from "../../../../../styles/styleContext";
+import { defaultPalette } from "../../../../../styles/styles";
+import { getStyles } from "../../themes/styles";
+import { CustomStateProperties } from "../../../types";
 import { SignInAndUpCallbackTheme } from "../../themes/signInAndUpCallback";
+import Recipe from "../../../recipe";
+import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
 import { defaultTranslationsThirdParty } from "../../themes/translations";
+import STGeneralError from "supertokens-web-js/utils/error";
+import { useUserContext } from "../../../../../usercontext";
+import Session from "../../../../session/recipe";
+import SuperTokens from "../../../../../superTokens";
+import { useRecipeComponentOverrideContext } from "../../../componentOverrideContext";
 
-import type { Awaited, FeatureBaseProps } from "../../../../../types";
-import type Recipe from "../../../recipe";
-import type { ComponentOverrideMap, CustomStateProperties } from "../../../types";
-
-type PropType = FeatureBaseProps & { recipe: Recipe; useComponentOverrides: () => ComponentOverrideMap };
+type PropType = FeatureBaseProps & { recipe: Recipe };
 
 const SignInAndUpCallback: React.FC<PropType> = (props) => {
     const userContext = useUserContext();
@@ -103,20 +106,29 @@ const SignInAndUpCallback: React.FC<PropType> = (props) => {
 
     useOnMountAPICall(verifyCode, handleVerifyResponse, handleError);
 
-    const recipeComponentOverrides = props.useComponentOverrides();
+    const recipeComponentOverrides = useRecipeComponentOverrideContext();
+
+    const oAuthCallbackScreen = props.recipe.config.oAuthCallbackScreen;
 
     return (
         <ComponentOverrideContext.Provider value={recipeComponentOverrides}>
             <FeatureWrapper
                 useShadowDom={props.recipe.config.useShadowDom}
                 defaultStore={defaultTranslationsThirdParty}>
-                <Fragment>
-                    {/* No custom theme, use default. */}
-                    {props.children === undefined && <SignInAndUpCallbackTheme config={props.recipe.config} />}
+                <StyleProvider
+                    rawPalette={props.recipe.config.palette}
+                    defaultPalette={defaultPalette}
+                    styleFromInit={oAuthCallbackScreen.style}
+                    rootStyleFromInit={props.recipe.config.rootStyle}
+                    getDefaultStyles={getStyles}>
+                    <Fragment>
+                        {/* No custom theme, use default. */}
+                        {props.children === undefined && <SignInAndUpCallbackTheme />}
 
-                    {/* Otherwise, custom theme is provided, propagate props. */}
-                    {props.children}
-                </Fragment>
+                        {/* Otherwise, custom theme is provided, propagate props. */}
+                        {props.children}
+                    </Fragment>
+                </StyleProvider>
             </FeatureWrapper>
         </ComponentOverrideContext.Provider>
     );

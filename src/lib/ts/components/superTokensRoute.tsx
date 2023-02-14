@@ -17,9 +17,8 @@
  * Imports.
  */
 
+import SuperTokens from "../superTokens";
 import { RoutingComponent } from "./routingComponent";
-
-import type SuperTokens from "../superTokens";
 
 /*
  * Component.

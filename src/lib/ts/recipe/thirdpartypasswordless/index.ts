@@ -12,26 +12,24 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-import { RecipeInterface } from "supertokens-web-js/recipe/thirdpartypasswordless";
-
-import { getNormalisedUserContext } from "../../utils";
-import { LinkClickedScreen } from "../passwordless/components/themes/linkClickedScreen";
-import * as PasswordlessUtilFunctions from "../passwordless/utils";
-import { Apple, Google, Facebook, Github } from "../thirdparty/";
-import { redirectToThirdPartyLogin as UtilsRedirectToThirdPartyLogin } from "../thirdparty/utils";
-
-import { RecipeComponentsOverrideContextProvider } from "./componentOverrideContext";
-import SignInUpTheme from "./components/themes/signInUp";
 import ThirdPartyPasswordless from "./recipe";
-import { UserInput, GetRedirectionURLContext, PreAPIHookContext, OnHandleEventContext } from "./types";
 
-import type { PropsWithChildren } from "react";
-import type { StateObject, ThirdPartyUserType as UserType } from "supertokens-web-js/recipe/thirdparty";
-import type {
+import { UserInput, GetRedirectionURLContext, PreAPIHookContext, OnHandleEventContext } from "./types";
+import SignInUpTheme from "./components/themes/signInUp";
+import { Apple, Google, Facebook, Github } from "../thirdparty/";
+import { LinkClickedScreen } from "../passwordless/components/themes/linkClickedScreen";
+import { getNormalisedUserContext } from "../../utils";
+import {
     PasswordlessFlowType,
     PasswordlessUser,
     RecipeFunctionOptions,
+    RecipeInterface,
 } from "supertokens-web-js/recipe/thirdpartypasswordless";
+import { StateObject, ThirdPartyUserType as UserType } from "supertokens-web-js/recipe/thirdparty";
+import { redirectToThirdPartyLogin as UtilsRedirectToThirdPartyLogin } from "../thirdparty/utils";
+import * as PasswordlessUtilFunctions from "../passwordless/utils";
+import { PropsWithChildren } from "react";
+import { RecipeComponentsOverrideContextProvider } from "./componentOverrideContext";
 
 export default class Wrapper {
     static init(config: UserInput) {

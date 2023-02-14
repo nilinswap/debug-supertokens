@@ -13,19 +13,7 @@
  * under the License.
  */
 
-import type { InputProps } from "./components/library/input";
-import type { ResetPasswordEmail } from "./components/themes/resetPasswordUsingToken/resetPasswordEmail";
-import type { SubmitNewPassword } from "./components/themes/resetPasswordUsingToken/submitNewPassword";
-import type { SignIn } from "./components/themes/signInAndUp/signIn";
-import type { SignInFooter } from "./components/themes/signInAndUp/signInFooter";
-import type { SignInForm } from "./components/themes/signInAndUp/signInForm";
-import type { SignInHeader } from "./components/themes/signInAndUp/signInHeader";
-import type { SignUp } from "./components/themes/signInAndUp/signUp";
-import type { SignUpFooter } from "./components/themes/signInAndUp/signUpFooter";
-import type { SignUpForm } from "./components/themes/signInAndUp/signUpForm";
-import type { SignUpHeader } from "./components/themes/signInAndUp/signUpHeader";
-import type { ComponentOverride } from "../../components/componentOverride/componentOverride";
-import type {
+import {
     APIFormField,
     FeatureBaseConfig,
     FormField,
@@ -34,7 +22,8 @@ import type {
     NormalisedFormField,
     ThemeBaseProps,
 } from "../../types";
-import type {
+import React, { Dispatch } from "react";
+import {
     GetRedirectionURLContext as AuthRecipeModuleGetRedirectionURLContext,
     OnHandleEventContext as AuthRecipeModuleOnHandleEventContext,
     User,
@@ -42,10 +31,21 @@ import type {
     NormalisedConfig as NormalisedAuthRecipeModuleConfig,
     UserInput as AuthRecipeModuleUserInput,
 } from "../authRecipe/types";
-import type React from "react";
-import type { Dispatch } from "react";
-import type { OverrideableBuilder } from "supertokens-js-override";
-import type { RecipeInterface } from "supertokens-web-js/recipe/emailpassword";
+import OverrideableBuilder from "supertokens-js-override";
+
+import { ComponentOverride } from "../../components/componentOverride/componentOverride";
+import { SignInHeader } from "./components/themes/signInAndUp/signInHeader";
+import { SignIn } from "./components/themes/signInAndUp/signIn";
+import { SignInFooter } from "./components/themes/signInAndUp/signInFooter";
+import { SignInForm } from "./components/themes/signInAndUp/signInForm";
+import { SignUp } from "./components/themes/signInAndUp/signUp";
+import { SignUpFooter } from "./components/themes/signInAndUp/signUpFooter";
+import { SignUpForm } from "./components/themes/signInAndUp/signUpForm";
+import { SignUpHeader } from "./components/themes/signInAndUp/signUpHeader";
+import { ResetPasswordEmail } from "./components/themes/resetPasswordUsingToken/resetPasswordEmail";
+import { SubmitNewPassword } from "./components/themes/resetPasswordUsingToken/submitNewPassword";
+import { InputProps } from "./components/library/input";
+import { RecipeInterface } from "supertokens-web-js/recipe/emailpassword";
 
 export type ComponentOverrideMap = {
     EmailPasswordSignIn_Override?: ComponentOverride<typeof SignIn>;

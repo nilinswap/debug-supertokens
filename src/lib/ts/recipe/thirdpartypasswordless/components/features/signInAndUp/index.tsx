@@ -17,31 +17,29 @@
  */
 import * as React from "react";
 import { Fragment } from "react";
-
-import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
+import { FeatureBaseProps } from "../../../../../types";
 import FeatureWrapper from "../../../../../components/featureWrapper";
-import { useUserContext } from "../../../../../usercontext";
+import Recipe from "../../../recipe";
+import SignInUpTheme from "../../themes/signInUp";
+import { defaultTranslationsThirdPartyPasswordless } from "../../themes/translations";
+import {
+    useChildProps as useThirdPartyChildProps,
+    useFeatureReducer as useThirdPartyFeatureReducer,
+} from "../../../../thirdparty/components/features/signInAndUp";
 import {
     useChildProps as usePasswordlessChildProps,
     useFeatureReducer as usePasswordlessFeatureReducer,
     useSuccessInAnotherTabChecker,
 } from "../../../../passwordless/components/features/signInAndUp";
-import {
-    useChildProps as useThirdPartyChildProps,
-    useFeatureReducer as useThirdPartyFeatureReducer,
-} from "../../../../thirdparty/components/features/signInAndUp";
-import SignInUpTheme from "../../themes/signInUp";
-import { defaultTranslationsThirdPartyPasswordless } from "../../themes/translations";
 
-import type { FeatureBaseProps } from "../../../../../types";
-import type { PasswordlessSignInUpAction } from "../../../../passwordless/types";
-import type { ThirdPartySignInUpActions } from "../../../../thirdparty/types";
-import type Recipe from "../../../recipe";
-import type { ComponentOverrideMap } from "../../../types";
+import { ThirdPartySignInUpActions } from "../../../../thirdparty/types";
+import { PasswordlessSignInUpAction } from "../../../../passwordless/types";
+import { useUserContext } from "../../../../../usercontext";
+import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
+import { useRecipeComponentOverrideContext } from "../../../componentOverrideContext";
 
 type PropType = FeatureBaseProps & {
     recipe: Recipe;
-    useComponentOverrides: () => ComponentOverrideMap;
 };
 
 const SignInAndUp: React.FC<PropType> = (props) => {
@@ -52,7 +50,7 @@ const SignInAndUp: React.FC<PropType> = (props) => {
         userContext
     );
 
-    const recipeComponentOverrides = props.useComponentOverrides();
+    const recipeComponentOverrides = useRecipeComponentOverrideContext();
 
     const [combinedState, dispatch] = React.useReducer(
         (state: { error: string | undefined }, action: ThirdPartySignInUpActions | PasswordlessSignInUpAction) => {

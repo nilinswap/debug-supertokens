@@ -17,32 +17,32 @@
  * Imports.
  */
 import * as React from "react";
-
-import { useTranslation } from "../../../../..";
-import { SuperTokensBranding } from "../../../../../components/SuperTokensBranding";
-import { hasFontDefined } from "../../../../../styles/styles";
-import GeneralError from "../../../../emailpassword/components/library/generalError";
-import { getActiveScreen, SignInUpScreens } from "../../../../passwordless/components/themes/signInUp";
-import { CloseTabScreen } from "../../../../passwordless/components/themes/signInUp/closeTabScreen";
-import { EmailForm } from "../../../../passwordless/components/themes/signInUp/emailForm";
-import { EmailOrPhoneForm } from "../../../../passwordless/components/themes/signInUp/emailOrPhoneForm";
-import { LinkSent } from "../../../../passwordless/components/themes/signInUp/linkSent";
-import { PhoneForm } from "../../../../passwordless/components/themes/signInUp/phoneForm";
-import { UserInputCodeForm } from "../../../../passwordless/components/themes/signInUp/userInputCodeForm";
-import { UserInputCodeFormHeader } from "../../../../passwordless/components/themes/signInUp/userInputCodeFormHeader";
-import { ProvidersForm } from "../../../../thirdparty/components/themes/signInAndUp/providersForm";
-import { ThemeBase } from "../themeBase";
-
-import { Header } from "./header";
-
-import type { SignInUpChildProps as PwlessSignInUpChildProps } from "../../../../passwordless/types";
-import type {
+import {
     ThirdPartyPasswordlessSignInAndUpThemeProps,
     ThirdPartyPasswordlessSignInAndUpThemePropsWithActiveScreen,
 } from "../../../types";
+import { Header } from "./header";
+import StyleContext, { StyleProvider } from "../../../../../styles/styleContext";
+import { defaultPalette, hasFontDefined } from "../../../../../styles/styles";
+import { getStyles } from "../styles";
+import { getActiveScreen, SignInUpScreens } from "../../../../passwordless/components/themes/signInUp";
+import { ThemeBase } from "../themeBase";
+import { useTranslation } from "../../../../..";
+import GeneralError from "../../../../emailpassword/components/library/generalError";
+import { ProvidersForm } from "../../../../thirdparty/components/themes/signInAndUp/providersForm";
+import { CloseTabScreen } from "../../../../passwordless/components/themes/signInUp/closeTabScreen";
+import { LinkSent } from "../../../../passwordless/components/themes/signInUp/linkSent";
+import { UserInputCodeFormHeader } from "../../../../passwordless/components/themes/signInUp/userInputCodeFormHeader";
+import { SuperTokensBranding } from "../../../../../components/SuperTokensBranding";
+import { UserInputCodeForm } from "../../../../passwordless/components/themes/signInUp/userInputCodeForm";
+import { EmailOrPhoneForm } from "../../../../passwordless/components/themes/signInUp/emailOrPhoneForm";
+import { PhoneForm } from "../../../../passwordless/components/themes/signInUp/phoneForm";
+import { EmailForm } from "../../../../passwordless/components/themes/signInUp/emailForm";
+import { SignInUpChildProps as PwlessSignInUpChildProps } from "../../../../passwordless/types";
 
 const SignInUpTheme: React.FC<ThirdPartyPasswordlessSignInAndUpThemePropsWithActiveScreen> = (props) => {
     const t = useTranslation();
+    const styles = React.useContext(StyleContext);
 
     if (props.activeScreen === SignInUpScreens.CloseTab) {
         return <CloseTabScreen {...props.pwlessChildProps} />;
@@ -56,8 +56,8 @@ const SignInUpTheme: React.FC<ThirdPartyPasswordlessSignInAndUpThemePropsWithAct
     }
 
     return (
-        <div data-supertokens="container">
-            <div data-supertokens="row">
+        <div data-supertokens="container" css={styles.container}>
+            <div data-supertokens="row" css={styles.row}>
                 {(props.pwlessChildProps === undefined || props.pwlessState.loaded === true) && (
                     <React.Fragment>
                         {props.activeScreen === SignInUpScreens.UserInputCodeForm ? (
@@ -80,12 +80,16 @@ const SignInUpTheme: React.FC<ThirdPartyPasswordlessSignInAndUpThemePropsWithAct
                         {props.thirdPartyRecipe !== undefined &&
                             props.passwordlessRecipe !== undefined &&
                             props.activeScreen !== SignInUpScreens.UserInputCodeForm && (
-                                <div data-supertokens="thirdPartyPasswordlessDivider">
-                                    <div data-supertokens="divider"></div>
-                                    <div data-supertokens="thirdPartyPasswordlessDividerText">
+                                <div
+                                    data-supertokens="thirdPartyPasswordlessDivider"
+                                    css={styles.thirdPartyPasswordlessDivider}>
+                                    <div data-supertokens="divider" css={styles.divider}></div>
+                                    <div
+                                        data-supertokens="thirdPartyPasswordlessDividerText"
+                                        css={styles.thirdPartyPasswordlessDividerText}>
                                         {t("THIRD_PARTY_PASSWORDLESS_SIGN_IN_AND_UP_DIVIDER_OR")}
                                     </div>
-                                    <div data-supertokens="divider"></div>
+                                    <div data-supertokens="divider" css={styles.divider}></div>
                                 </div>
                             )}
                         {props.activeScreen === SignInUpScreens.EmailForm ? (
@@ -145,8 +149,15 @@ function SignInUpThemeWrapper(props: ThirdPartyPasswordlessSignInAndUpThemeProps
 
     // This style provider will override the parent with the screen specific user config
     return (
-        <ThemeBase loadDefaultFont={!hasFont} userStyles={[props.config.rootStyle, activeStyle]}>
-            <SignInUpTheme {...childProps} />
+        <ThemeBase loadDefaultFont={!hasFont}>
+            <StyleProvider
+                rawPalette={props.config.palette}
+                defaultPalette={defaultPalette}
+                styleFromInit={activeStyle}
+                rootStyleFromInit={props.config.rootStyle}
+                getDefaultStyles={getStyles}>
+                <SignInUpTheme {...childProps} />
+            </StyleProvider>
         </ThemeBase>
     );
 }

@@ -17,14 +17,13 @@
  * Imports.
  */
 
-import STGeneralError from "supertokens-web-js/utils/error";
+import { SignInThemeProps } from "../../../types";
 
-import { withOverride } from "../../../../../components/componentOverride/withOverride";
-import { useUserContext } from "../../../../../usercontext";
-import { validateForm } from "../../../../../utils";
 import FormBase from "../../library/formBase";
-
-import type { SignInThemeProps } from "../../../types";
+import { withOverride } from "../../../../../components/componentOverride/withOverride";
+import { validateForm } from "../../../../../utils";
+import STGeneralError from "supertokens-web-js/utils/error";
+import { useUserContext } from "../../../../../usercontext";
 
 export const SignInForm = withOverride(
     "EmailPasswordSignInForm",

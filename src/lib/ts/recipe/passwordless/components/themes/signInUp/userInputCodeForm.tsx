@@ -13,20 +13,18 @@
  * under the License.
  */
 
-import React, { useEffect, useState } from "react";
-import STGeneralError from "supertokens-web-js/utils/error";
-
+import { SignInUpUserInputCodeFormProps } from "../../../types";
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
-import { useTranslation } from "../../../../../translation/translationContext";
-import { useUserContext } from "../../../../../usercontext";
-import { Label } from "../../../../emailpassword/components/library";
 import FormBase from "../../../../emailpassword/components/library/formBase";
 import { userInputCodeValidate } from "../../../validators";
-
+import { Label } from "../../../../emailpassword/components/library";
+import React, { useContext, useEffect, useState } from "react";
+import StyleContext from "../../../../../styles/styleContext";
 import { ResendButton } from "./resendButton";
+import { useTranslation } from "../../../../../translation/translationContext";
+import STGeneralError from "supertokens-web-js/utils/error";
+import { useUserContext } from "../../../../../usercontext";
 import { UserInputCodeFormFooter } from "./userInputCodeFormFooter";
-
-import type { SignInUpUserInputCodeFormProps } from "../../../types";
 
 export const UserInputCodeForm = withOverride(
     "PasswordlessUserInputCodeForm",
@@ -36,6 +34,7 @@ export const UserInputCodeForm = withOverride(
             footer?: JSX.Element;
         }
     ): JSX.Element {
+        const styles = useContext(StyleContext);
         const t = useTranslation();
         const userContext = useUserContext();
 
@@ -91,7 +90,7 @@ export const UserInputCodeForm = withOverride(
         return (
             <React.Fragment>
                 {clearResendNotifTimeout !== undefined && (
-                    <div data-supertokens="generalSuccess">
+                    <div data-supertokens="generalSuccess" css={[styles.generalSuccess]}>
                         {props.loginAttemptInfo.contactMethod === "EMAIL"
                             ? t("PWLESS_RESEND_SUCCESS_EMAIL")
                             : t("PWLESS_RESEND_SUCCESS_PHONE")}
@@ -106,7 +105,7 @@ export const UserInputCodeForm = withOverride(
                             id: "userInputCode",
                             label: "",
                             labelComponent: (
-                                <div data-supertokens="codeInputLabelWrapper">
+                                <div css={styles.codeInputLabelWrapper} data-supertokens="codeInputLabelWrapper">
                                     <Label
                                         value={"PWLESS_USER_INPUT_CODE_INPUT_LABEL"}
                                         data-supertokens="codeInputLabel"

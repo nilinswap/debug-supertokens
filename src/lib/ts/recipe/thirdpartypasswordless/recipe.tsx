@@ -17,25 +17,9 @@
  * Imports.
  */
 
-import { OverrideableBuilder } from "supertokens-js-override";
-import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
-
-import { SSR_ERROR } from "../../constants";
-import UserContextWrapper from "../../usercontext/userContextWrapper";
-import { isTest, matchRecipeIdUsingQueryParams } from "../../utils";
 import AuthRecipe from "../authRecipe";
-import AuthWidgetWrapper from "../authRecipe/authWidgetWrapper";
-import Passwordless from "../passwordless/recipe";
-import ThirdParty from "../thirdparty/recipe";
-
-import { useRecipeComponentOverrideContext } from "./componentOverrideContext";
-import SignInAndUp from "./components/features/signInAndUp";
-import RecipeImplementation from "./recipeImplementation";
-import getPasswordlessImpl from "./recipeImplementation/passwordlessImplementation";
-import getThirdPartyImpl from "./recipeImplementation/thirdPartyImplementation";
-import { normaliseThirdPartyPasswordlessConfig } from "./utils";
-
-import type {
+import { CreateRecipeFunction, RecipeFeatureComponentMap, NormalisedAppInfo, FeatureBaseProps } from "../../types";
+import {
     Config,
     GetRedirectionURLContext,
     NormalisedConfig,
@@ -43,10 +27,21 @@ import type {
     UserInput,
     PreAndPostAPIHookAction,
 } from "./types";
-import type { GenericComponentOverrideMap } from "../../components/componentOverride/componentOverrideContext";
-import type { CreateRecipeFunction, FeatureBaseProps, NormalisedAppInfo, RecipeFeatureComponentMap } from "../../types";
-import type RecipeModule from "../recipeModule";
-import type { RecipeInterface as TPPWlessRecipeInterface } from "supertokens-web-js/recipe/thirdpartypasswordless";
+import { isTest, matchRecipeIdUsingQueryParams } from "../../utils";
+import { normaliseThirdPartyPasswordlessConfig } from "./utils";
+import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
+import { SSR_ERROR } from "../../constants";
+import RecipeModule from "../recipeModule";
+import SignInAndUp from "./components/features/signInAndUp";
+import Passwordless from "../passwordless/recipe";
+import ThirdParty from "../thirdparty/recipe";
+import RecipeImplementation from "./recipeImplementation";
+import getPasswordlessImpl from "./recipeImplementation/passwordlessImplementation";
+import getThirdPartyImpl from "./recipeImplementation/thirdPartyImplementation";
+import AuthWidgetWrapper from "../authRecipe/authWidgetWrapper";
+import OverrideableBuilder from "supertokens-js-override";
+import { RecipeInterface as TPPWlessRecipeInterface } from "supertokens-web-js/recipe/thirdpartypasswordless";
+import UserContextWrapper from "../../usercontext/userContextWrapper";
 
 export default class ThirdPartyPasswordless extends AuthRecipe<
     GetRedirectionURLContext,
@@ -118,22 +113,20 @@ export default class ThirdPartyPasswordless extends AuthRecipe<
                   });
     }
 
-    getFeatures = (
-        useComponentOverrides: () => GenericComponentOverrideMap<any> = useRecipeComponentOverrideContext
-    ): RecipeFeatureComponentMap => {
+    getFeatures = (): RecipeFeatureComponentMap => {
         let features: RecipeFeatureComponentMap = {};
 
         if (this.passwordlessRecipe !== undefined) {
             features = {
                 ...features,
-                ...this.passwordlessRecipe.getFeatures(useComponentOverrides),
+                ...this.passwordlessRecipe.getFeatures(),
             };
         }
 
         if (this.thirdPartyRecipe !== undefined) {
             features = {
                 ...features,
-                ...this.thirdPartyRecipe.getFeatures(useComponentOverrides),
+                ...this.thirdPartyRecipe.getFeatures(),
             };
         }
 
@@ -146,7 +139,7 @@ export default class ThirdPartyPasswordless extends AuthRecipe<
             const normalisedFullPath = this.config.appInfo.websiteBasePath.appendPath(new NormalisedURLPath("/"));
             features[normalisedFullPath.getAsStringDangerous()] = {
                 matches: matchRecipeIdUsingQueryParams(this.config.recipeId),
-                component: (prop: any) => this.getFeatureComponent("signInUp", prop, useComponentOverrides),
+                component: (prop: any) => this.getFeatureComponent("signInUp", prop),
             };
         }
 
@@ -161,8 +154,7 @@ export default class ThirdPartyPasswordless extends AuthRecipe<
 
     getFeatureComponent = (
         componentName: "signInUp" | "linkClickedScreen" | "signinupcallback",
-        props: FeatureBaseProps & { redirectOnSessionExists?: boolean; userContext?: any },
-        useComponentOverrides: () => GenericComponentOverrideMap<any> = useRecipeComponentOverrideContext
+        props: FeatureBaseProps & { redirectOnSessionExists?: boolean; userContext?: any }
     ): JSX.Element => {
         if (componentName === "signInUp") {
             if (props.redirectOnSessionExists !== false) {
@@ -176,14 +168,14 @@ export default class ThirdPartyPasswordless extends AuthRecipe<
                         >
                             authRecipe={this}
                             history={props.history}>
-                            <SignInAndUp recipe={this} {...props} useComponentOverrides={useComponentOverrides} />
+                            <SignInAndUp recipe={this} {...props} />
                         </AuthWidgetWrapper>
                     </UserContextWrapper>
                 );
             } else {
                 return (
                     <UserContextWrapper userContext={props.userContext}>
-                        <SignInAndUp recipe={this} {...props} useComponentOverrides={useComponentOverrides} />
+                        <SignInAndUp recipe={this} {...props} />
                     </UserContextWrapper>
                 );
             }
@@ -193,14 +185,14 @@ export default class ThirdPartyPasswordless extends AuthRecipe<
                     "Embedding this component requires the passwordless recipe to be enabled. Please check the value of disablePasswordless in the configuration."
                 );
             }
-            return this.passwordlessRecipe.getFeatureComponent(componentName, props, useComponentOverrides);
+            return this.passwordlessRecipe.getFeatureComponent(componentName, props);
         } else if (componentName === "signinupcallback") {
             if (this.thirdPartyRecipe === undefined) {
                 throw new Error(
                     "Embedding this component requires the thirdparty recipe to be enabled. Please check the value of signInUpFeature.providers in the configuration."
                 );
             }
-            return this.thirdPartyRecipe.getFeatureComponent(componentName, props, useComponentOverrides);
+            return this.thirdPartyRecipe.getFeatureComponent(componentName, props);
         } else {
             throw new Error("Should never come here.");
         }

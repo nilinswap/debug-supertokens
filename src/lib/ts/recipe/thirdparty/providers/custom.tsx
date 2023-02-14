@@ -15,9 +15,8 @@
 /*
  * Imports.
  */
-import type { CustomProviderConfig } from "./types";
-
 import Provider from ".";
+import { CustomProviderConfig } from "./types";
 
 /*
  * Class.

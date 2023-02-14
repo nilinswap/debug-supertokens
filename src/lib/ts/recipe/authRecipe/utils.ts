@@ -13,9 +13,8 @@
  * under the License.
  */
 
+import { Config, NormalisedConfig } from "./types";
 import { normaliseRecipeModuleConfig } from "../recipeModule/utils";
-
-import type { Config, NormalisedConfig } from "./types";
 
 export function normaliseAuthRecipe<T, S, R>(config: Config<T, S, R>): NormalisedConfig<T, S, R> {
     return normaliseRecipeModuleConfig(config);

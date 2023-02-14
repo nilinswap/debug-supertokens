@@ -16,17 +16,13 @@
 /*
  * Imports.
  */
-import { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
-
-import { getNormalisedUserContext } from "../../utils";
-
-import { RecipeComponentsOverrideContextProvider } from "./componentOverrideContext";
-import EmailVerificationTheme from "./components/themes/emailVerification";
-import EmailVerificationRecipe from "./recipe";
 import { UserInput } from "./types";
+import EmailVerificationRecipe from "./recipe";
+import EmailVerificationTheme from "./components/themes/emailVerification";
 import { GetRedirectionURLContext, PreAPIHookContext, OnHandleEventContext } from "./types";
-
-import type { RecipeFunctionOptions } from "supertokens-web-js/recipe/emailverification";
+import { getNormalisedUserContext } from "../../utils";
+import { RecipeFunctionOptions, RecipeInterface } from "supertokens-web-js/recipe/emailverification";
+import { RecipeComponentsOverrideContextProvider } from "./componentOverrideContext";
 
 export default class Wrapper {
     static EmailVerification = (prop?: any) =>

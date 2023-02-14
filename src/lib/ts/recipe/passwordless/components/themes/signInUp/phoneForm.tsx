@@ -13,29 +13,20 @@
  * under the License.
  */
 
-import { useEffect, useMemo } from "react";
-import STGeneralError from "supertokens-web-js/utils/error";
-
+import { SignInUpPhoneFormProps } from "../../../types";
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
-import { useUserContext } from "../../../../../usercontext";
 import FormBase from "../../../../emailpassword/components/library/formBase";
-import { defaultValidate } from "../../../../emailpassword/validators";
-import { preloadPhoneNumberUtils } from "../../../phoneNumberUtils";
-
 import { phoneNumberInputWithInjectedProps } from "./phoneNumberInput";
+import { defaultValidate } from "../../../../emailpassword/validators";
 import { SignInUpFooter } from "./signInUpFooter";
-
-import type { SignInUpPhoneFormProps } from "../../../types";
+import STGeneralError from "supertokens-web-js/utils/error";
+import { useUserContext } from "../../../../../usercontext";
+import { useMemo } from "react";
 
 export const PhoneForm = withOverride(
     "PasswordlessPhoneForm",
     function PasswordlessPhoneForm(props: SignInUpPhoneFormProps): JSX.Element {
         const userContext = useUserContext();
-
-        useEffect(() => {
-            // We preload this here, since it will be used almost for sure, but loading it
-            void preloadPhoneNumberUtils();
-        }, []);
 
         const phoneInput = useMemo(
             () =>

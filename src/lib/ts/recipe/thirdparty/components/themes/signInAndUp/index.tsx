@@ -12,25 +12,32 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-import { SuperTokensBranding } from "../../../../../components/SuperTokensBranding";
+/*
+ * Imports.
+ */
+import { useContext } from "react";
+import StyleContext, { StyleProvider } from "../../../../../styles/styleContext";
+import { defaultPalette } from "../../../../../styles/styles";
+import { getStyles } from "../../../components/themes/styles";
 import { hasFontDefined } from "../../../../../styles/styles";
-import UserContextWrapper from "../../../../../usercontext/userContextWrapper";
-import GeneralError from "../../../../emailpassword/components/library/generalError";
-import { ThemeBase } from "../themeBase";
-
-import { ProvidersForm } from "./providersForm";
-import { SignInAndUpHeader } from "./signInAndUpHeader";
 import { SignUpFooter } from "./signUpFooter";
-
-import type { SignInAndUpThemeProps } from "../../../types";
+import { SignInAndUpThemeProps } from "../../../types";
+import { ThemeBase } from "../themeBase";
+import { ProvidersForm } from "./providersForm";
+import { SuperTokensBranding } from "../../../../../components/SuperTokensBranding";
+import GeneralError from "../../../../emailpassword/components/library/generalError";
+import UserContextWrapper from "../../../../../usercontext/userContextWrapper";
+import { SignInAndUpHeader } from "./signInAndUpHeader";
 
 const SignInAndUpTheme: React.FC<SignInAndUpThemeProps> = (props) => {
+    const styles = useContext(StyleContext);
+
     return (
-        <div data-supertokens="container">
-            <div data-supertokens="row">
+        <div data-supertokens="container" css={styles.container}>
+            <div data-supertokens="row" css={styles.row}>
                 <SignInAndUpHeader />
 
-                <div data-supertokens="divider"></div>
+                <div data-supertokens="divider" css={styles.divider}></div>
 
                 {props.featureState.error && <GeneralError error={props.featureState.error} />}
 
@@ -55,10 +62,15 @@ const SignInAndUpThemeWrapper: React.FC<SignInAndUpThemeProps> = (
 
     return (
         <UserContextWrapper userContext={props.userContext}>
-            <ThemeBase
-                loadDefaultFont={!hasFont}
-                userStyles={[props.config.rootStyle, props.config.signInAndUpFeature.style]}>
-                <SignInAndUpTheme {...props} />
+            <ThemeBase loadDefaultFont={!hasFont}>
+                <StyleProvider
+                    rawPalette={props.config.palette}
+                    defaultPalette={defaultPalette}
+                    styleFromInit={props.config.signInAndUpFeature.style}
+                    rootStyleFromInit={props.config.rootStyle}
+                    getDefaultStyles={getStyles}>
+                    <SignInAndUpTheme {...props} />
+                </StyleProvider>
             </ThemeBase>
         </UserContextWrapper>
     );

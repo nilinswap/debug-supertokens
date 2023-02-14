@@ -13,6 +13,12 @@
  * under the License.
  */
 
+/*
+ * Imports.
+ */
+
+import { useContext } from "react";
+import StyleContext from "../../../../../styles/styleContext";
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
 import { useTranslation } from "../../../../../translation/translationContext";
 
@@ -25,6 +31,7 @@ export const SignUpFooter = withOverride(
         privacyPolicyLink?: string;
         termsOfServiceLink?: string;
     }): JSX.Element | null {
+        const styles = useContext(StyleContext);
         const t = useTranslation();
 
         if (termsOfServiceLink === undefined && privacyPolicyLink === undefined) {
@@ -32,10 +39,17 @@ export const SignUpFooter = withOverride(
         }
 
         return (
-            <div data-supertokens="secondaryText privacyPolicyAndTermsAndConditions">
+            <div
+                data-supertokens="secondaryText privacyPolicyAndTermsAndConditions"
+                css={[styles.secondaryText, styles.privacyPolicyAndTermsAndConditions]}>
                 {t("EMAIL_PASSWORD_SIGN_UP_FOOTER_START")}
                 {termsOfServiceLink !== undefined && (
-                    <a data-supertokens="link" href={termsOfServiceLink} target="_blank" rel="noopener noreferer">
+                    <a
+                        data-supertokens="link"
+                        css={styles.link}
+                        href={termsOfServiceLink}
+                        target="_blank"
+                        rel="noopener noreferer">
                         {t("EMAIL_PASSWORD_SIGN_UP_FOOTER_TOS")}
                     </a>
                 )}
@@ -43,7 +57,12 @@ export const SignUpFooter = withOverride(
                     privacyPolicyLink !== undefined &&
                     t("EMAIL_PASSWORD_SIGN_UP_FOOTER_AND")}
                 {privacyPolicyLink !== undefined && (
-                    <a data-supertokens="link" href={privacyPolicyLink} target="_blank" rel="noopener noreferer">
+                    <a
+                        data-supertokens="link"
+                        css={styles.link}
+                        href={privacyPolicyLink}
+                        target="_blank"
+                        rel="noopener noreferer">
                         {t("EMAIL_PASSWORD_SIGN_UP_FOOTER_PP")}
                     </a>
                 )}

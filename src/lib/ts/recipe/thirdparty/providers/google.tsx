@@ -15,11 +15,9 @@
 /*
  * Imports.
  */
-import { isTest } from "../../../utils";
-
-import type { BuiltInProviderConfig } from "./types";
-
 import Provider from ".";
+import { isTest } from "../../../utils";
+import { BuiltInProviderConfig } from "./types";
 
 /*
  * Class.

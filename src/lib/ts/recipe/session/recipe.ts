@@ -16,9 +16,8 @@
 /*
  * Imports.
  */
-import { Recipe as WebJSSessionRecipe } from "supertokens-web-js/recipe/session/recipe";
-
-import SuperTokens from "../../superTokens";
+import RecipeModule from "../recipeModule";
+import { CreateRecipeFunction, NormalisedAppInfo, RecipeFeatureComponentMap } from "../../types";
 import {
     popInvalidClaimRedirectPathFromContext,
     getLocalStorage,
@@ -26,14 +25,13 @@ import {
     removeFromLocalStorage,
     setLocalStorage,
 } from "../../utils";
-import RecipeModule from "../recipeModule";
+import { RecipeEventWithSessionContext, InputType, SessionContextUpdate } from "./types";
+import { Recipe as WebJSSessionRecipe } from "supertokens-web-js/recipe/session/recipe";
+import { RecipeEvent } from "supertokens-web-js/recipe/session/types";
+import { ClaimValidationError, SessionClaimValidator } from "supertokens-website";
 import { normaliseRecipeModuleConfig } from "../recipeModule/utils";
-
-import type { RecipeEventWithSessionContext, InputType, SessionContextUpdate } from "./types";
-import type { CreateRecipeFunction, NormalisedAppInfo, RecipeFeatureComponentMap } from "../../types";
-import type { ClaimValidationError, SessionClaimValidator } from "supertokens-web-js/recipe/session";
-import type { SessionClaim } from "supertokens-web-js/recipe/session";
-import type { RecipeEvent } from "supertokens-web-js/recipe/session/types";
+import SuperTokens from "../../superTokens";
+import { SessionClaim } from "supertokens-web-js/recipe/session";
 
 type ConfigType = InputType & { recipeId: string; appInfo: NormalisedAppInfo; enableDebugLogs: boolean };
 
@@ -60,13 +58,14 @@ export default class Session extends RecipeModule<unknown, unknown, unknown, any
                 void this.notifyListeners(event);
             },
             preAPIHook: async (context) => {
-                const headers = new Headers(context.requestInit.headers);
-                headers.set("rid", config.recipeId);
                 const response = {
                     ...context,
                     requestInit: {
                         ...context.requestInit,
-                        headers,
+                        headers: {
+                            ...context.requestInit.headers,
+                            rid: config.recipeId,
+                        },
                     },
                 };
                 if (config.preAPIHook === undefined) {
@@ -89,10 +88,6 @@ export default class Session extends RecipeModule<unknown, unknown, unknown, any
 
     getUserId = (input: { userContext: any }): Promise<string> => {
         return this.webJsRecipe.getUserId(input);
-    };
-
-    getAccessToken = (input: { userContext: any }): Promise<string | undefined> => {
-        return this.webJsRecipe.getAccessToken(input);
     };
 
     getClaimValue = (input: { claim: SessionClaim<unknown>; userContext: any }): Promise<unknown> => {

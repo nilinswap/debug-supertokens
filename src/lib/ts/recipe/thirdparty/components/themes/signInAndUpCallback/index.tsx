@@ -16,28 +16,28 @@
  * Imports.
  */
 import { PureComponent } from "react";
-
 import SpinnerIcon from "../../../../../components/assets/spinnerIcon";
+import StyleContext from "../../../../../styles/styleContext";
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
-import { hasFontDefined } from "../../../../../styles/styles";
-import { ThemeBase } from "../themeBase";
-
-import type { NormalisedConfig } from "../../../types";
 
 /*
  * Component.
  */
 class ThirdPartySignInAndUpCallbackTheme extends PureComponent {
+    static contextType = StyleContext;
+
     /*
      * Methods.
      */
 
     render = (): JSX.Element => {
+        const styles = this.context;
+
         return (
-            <div data-supertokens="container">
-                <div data-supertokens="row">
-                    <div data-supertokens="spinner">
-                        <SpinnerIcon />
+            <div data-supertokens="container" css={styles.container}>
+                <div data-supertokens="row" css={styles.row}>
+                    <div data-supertokens="spinner" css={styles.spinner}>
+                        <SpinnerIcon color={styles.palette.colors.primary} />
                     </div>
                 </div>
             </div>
@@ -45,18 +45,7 @@ class ThirdPartySignInAndUpCallbackTheme extends PureComponent {
     };
 }
 
-const SignInAndUpCallbackThemeWithOverride = withOverride(
+export const SignInAndUpCallbackTheme = withOverride(
     "ThirdPartySignInAndUpCallbackTheme",
     ThirdPartySignInAndUpCallbackTheme
 );
-
-export const SignInAndUpCallbackTheme = (props: { config: NormalisedConfig }) => {
-    const hasFont = hasFontDefined(props.config.rootStyle);
-    return (
-        <ThemeBase
-            loadDefaultFont={!hasFont}
-            userStyles={[props.config.rootStyle, props.config.signInAndUpFeature.style]}>
-            <SignInAndUpCallbackThemeWithOverride />
-        </ThemeBase>
-    );
-};

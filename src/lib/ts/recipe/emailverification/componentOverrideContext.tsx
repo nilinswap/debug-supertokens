@@ -1,6 +1,5 @@
 import { createGenericComponentsOverrideContext } from "../../components/componentOverride/genericComponentOverrideContext";
-
-import type { ComponentOverrideMap } from "./types";
+import { ComponentOverrideMap } from "./types";
 
 const [useContext, Provider] = createGenericComponentsOverrideContext<ComponentOverrideMap>();
 

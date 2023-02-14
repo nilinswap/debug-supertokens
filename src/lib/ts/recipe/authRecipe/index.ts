@@ -18,13 +18,11 @@
  */
 
 import { PostSuperTokensInitCallbacks } from "supertokens-web-js/utils/postSuperTokensInitCallbacks";
-
-import { getNormalisedUserContext } from "../../utils";
-import RecipeModule from "../recipeModule";
 import Session from "../session/recipe";
+import RecipeModule from "../recipeModule";
+import { NormalisedConfig, GetRedirectionURLContext, OnHandleEventContext } from "./types";
+import { getNormalisedUserContext } from "../../utils";
 import SessionRecipe from "../session/recipe";
-
-import type { NormalisedConfig, GetRedirectionURLContext, OnHandleEventContext } from "./types";
 
 export default abstract class AuthRecipe<
     T,

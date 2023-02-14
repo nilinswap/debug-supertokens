@@ -16,30 +16,30 @@
 /*
  * Imports.
  */
-import React from "react";
-
-import { SuperTokensBranding } from "../../../../../components/SuperTokensBranding";
-import { hasFontDefined } from "../../../../../styles/styles";
-import { useTranslation } from "../../../../../translation/translationContext";
-import UserContextWrapper from "../../../../../usercontext/userContextWrapper";
-import GeneralError from "../../../../emailpassword/components/library/generalError";
-import { SignInFooter } from "../../../../emailpassword/components/themes/signInAndUp/signInFooter";
-import { SignInForm } from "../../../../emailpassword/components/themes/signInAndUp/signInForm";
-import { SignUpFooter } from "../../../../emailpassword/components/themes/signInAndUp/signUpFooter";
-import { SignUpForm } from "../../../../emailpassword/components/themes/signInAndUp/signUpForm";
-import { ProvidersForm } from "../../../../thirdparty/components/themes/signInAndUp/providersForm";
+import React, { useContext } from "react";
+import StyleContext, { StyleProvider } from "../../../../../styles/styleContext";
+import { ThirdPartyEmailPasswordSignInAndUpThemeProps } from "../../../types";
 import { ThemeBase } from "../themeBase";
-
 import { Header } from "./header";
-
-import type { ThirdPartyEmailPasswordSignInAndUpThemeProps } from "../../../types";
+import { ProvidersForm } from "../../../../thirdparty/components/themes/signInAndUp/providersForm";
+import { defaultPalette, hasFontDefined } from "../../../../../styles/styles";
+import { getStyles } from "../styles";
+import { SuperTokensBranding } from "../../../../../components/SuperTokensBranding";
+import { useTranslation } from "../../../../../translation/translationContext";
+import GeneralError from "../../../../emailpassword/components/library/generalError";
+import { SignUpFooter } from "../../../../emailpassword/components/themes/signInAndUp/signUpFooter";
+import { SignInForm } from "../../../../emailpassword/components/themes/signInAndUp/signInForm";
+import { SignUpForm } from "../../../../emailpassword/components/themes/signInAndUp/signUpForm";
+import { SignInFooter } from "../../../../emailpassword/components/themes/signInAndUp/signInFooter";
+import UserContextWrapper from "../../../../../usercontext/userContextWrapper";
 
 const SignInAndUpTheme: React.FC<ThirdPartyEmailPasswordSignInAndUpThemeProps> = (props) => {
     const t = useTranslation();
+    const styles = useContext(StyleContext);
 
     return (
-        <div data-supertokens="container">
-            <div data-supertokens="row">
+        <div data-supertokens="container" css={styles.container}>
+            <div data-supertokens="row" css={styles.row}>
                 <Header
                     isSignUp={props.epState.isSignUp}
                     setIsSignUp={(isSignUp) => props.epDispatch({ type: isSignUp ? "setSignUp" : "setSignIn" })}
@@ -49,12 +49,14 @@ const SignInAndUpTheme: React.FC<ThirdPartyEmailPasswordSignInAndUpThemeProps> =
                     <ProvidersForm {...props.tpChildProps} featureState={props.tpState} dispatch={props.tpDispatch} />
                 )}
                 {props.config.disableEmailPassword !== true && props.thirdPartyRecipe !== undefined && (
-                    <div data-supertokens="thirdPartyEmailPasswordDivider">
-                        <div data-supertokens="divider"></div>
-                        <div data-supertokens="thirdPartyEmailPasswordDividerOr">
+                    <div data-supertokens="thirdPartyEmailPasswordDivider" css={styles.thirdPartyEmailPasswordDivider}>
+                        <div data-supertokens="divider" css={styles.divider}></div>
+                        <div
+                            data-supertokens="thirdPartyEmailPasswordDividerOr"
+                            css={styles.thirdPartyEmailPasswordDividerOr}>
                             {t("THIRD_PARTY_EMAIL_PASSWORD_SIGN_IN_AND_UP_DIVIDER_OR")}
                         </div>
-                        <div data-supertokens="divider"></div>
+                        <div data-supertokens="divider" css={styles.divider}></div>
                     </div>
                 )}
                 {props.epChildProps !== undefined &&
@@ -93,10 +95,15 @@ export default function SignInAndUpThemeWrapper(
 
     return (
         <UserContextWrapper userContext={props.userContext}>
-            <ThemeBase
-                loadDefaultFont={!hasFont}
-                userStyles={[props.config.rootStyle, props.config.signInAndUpFeature.style]}>
-                <SignInAndUpTheme {...props} />
+            <ThemeBase loadDefaultFont={!hasFont}>
+                <StyleProvider
+                    rawPalette={props.config.palette}
+                    defaultPalette={defaultPalette}
+                    styleFromInit={props.config.signInAndUpFeature.style}
+                    rootStyleFromInit={props.config.rootStyle}
+                    getDefaultStyles={getStyles}>
+                    <SignInAndUpTheme {...props} />
+                </StyleProvider>
             </ThemeBase>
         </UserContextWrapper>
     );

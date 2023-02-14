@@ -13,8 +13,8 @@
  * under the License.
  */
 
-import type { ClaimValidationError } from "supertokens-web-js/recipe/session";
-import type { UserInput as WebJSInputType, RecipeEvent } from "supertokens-web-js/recipe/session/types";
+import { UserInput as WebJSInputType, RecipeEvent } from "supertokens-web-js/recipe/session/types";
+import { ClaimValidationError } from "supertokens-website";
 
 export type RecipeEventWithSessionContext = RecipeEvent & { sessionContext: SessionContextUpdate };
 

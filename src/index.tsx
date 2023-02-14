@@ -33,7 +33,7 @@ const root = createRoot(container!);
 root.render(
   <SuperTokensWrapper>
     <BrowserRouter>
-      <h1>Debug ST (rn!)</h1>
+      <h1 style={{ width: "100%", textAlign: "center" }}>Debug ST (rn!)</h1>
       <Routes>
         {/* This renders the login UI on the /auth route*/}
         {getSuperTokensRoutesForReactRouterDom(reactRouterDom)}

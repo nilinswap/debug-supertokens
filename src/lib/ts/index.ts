@@ -16,13 +16,12 @@
 /*
  * Imports.
  */
-import { SuperTokensWrapper } from "./components/supertokensWrapper";
-import SuperTokens from "./superTokens";
 import { useTranslation } from "./translation/translationContext";
+import SuperTokens from "./superTokens";
+import { TranslationStore } from "./translation/translationHelpers";
+import { SuperTokensConfig } from "./types";
 import { useUserContext } from "./usercontext";
-
-import type { TranslationStore } from "./translation/translationHelpers";
-import type { SuperTokensConfig } from "./types";
+import { SuperTokensWrapper } from "./components/supertokensWrapper";
 
 /*
  * API Wrapper exposed to user.

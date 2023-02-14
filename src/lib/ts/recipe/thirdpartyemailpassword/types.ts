@@ -16,22 +16,13 @@
 /*
  * Imports.
  */
-
-import type { Header } from "./components/themes/signInAndUp/header";
-import type { ComponentOverride } from "../../components/componentOverride/componentOverride";
-import type { FeatureBaseConfig, NormalisedBaseConfig } from "../../types";
-import type {
-    Config as AuthRecipeModuleConfig,
-    NormalisedConfig as NormalisedAuthRecipeModuleConfig,
-    UserInput as AuthRecipeModuleUserInput,
-} from "../authRecipe/types";
-import type {
+import { FeatureBaseConfig, NormalisedBaseConfig } from "../../types";
+import {
     GetRedirectionURLContext as EmailPasswordGetRedirectionURLContext,
     OnHandleEventContext as EmailPasswordOnHandleEventContext,
     PreAPIHookContext as EmailPasswordPreAPIHookContext,
 } from "../emailpassword";
-import type EPRecipe from "../emailpassword/recipe";
-import type {
+import {
     ResetPasswordUsingTokenUserInput,
     SignInFormFeatureUserInput,
     SignUpFormFeatureUserInput,
@@ -40,30 +31,36 @@ import type {
     EmailPasswordSignInAndUpAction,
     EmailPasswordSignInAndUpChildProps,
 } from "../emailpassword/types";
-import type { ComponentOverrideMap as EmailPasswordOverrideMap } from "../emailpassword/types";
-import type {
+import {
     GetRedirectionURLContext as ThirdPartyGetRedirectionURLContext,
     OnHandleEventContext as ThirdPartyOnHandleEventContext,
     PreAPIHookContext as ThirdPartyPreAPIHookContext,
 } from "../thirdparty";
-import type Provider from "../thirdparty/providers";
-import type { CustomProviderConfig } from "../thirdparty/providers/types";
-import type TPRecipe from "../thirdparty/recipe";
-import type {
+import {
     PreAndPostAPIHookAction as ThirdPartyPreAndPostAPIHookAction,
     ThirdPartySignInAndUpState,
     ThirdPartySignInUpActions,
     ThirdPartySignInUpChildProps,
 } from "../thirdparty/types";
-import type { ComponentOverrideMap as ThirdPartyOverrideMap } from "../thirdparty/types";
-import type { Dispatch } from "react";
-import type { OverrideableBuilder } from "supertokens-js-override";
-import type { RecipeInterface } from "supertokens-web-js/recipe/thirdpartyemailpassword";
+import Provider from "../thirdparty/providers";
+import { CustomProviderConfig } from "../thirdparty/providers/types";
+import {
+    Config as AuthRecipeModuleConfig,
+    NormalisedConfig as NormalisedAuthRecipeModuleConfig,
+    UserInput as AuthRecipeModuleUserInput,
+} from "../authRecipe/types";
+import EPRecipe from "../emailpassword/recipe";
+import TPRecipe from "../thirdparty/recipe";
+import OverrideableBuilder from "supertokens-js-override";
 
-export type ComponentOverrideMap = Omit<
-    EmailPasswordOverrideMap,
-    "EmailPasswordSignUp_Override" | "EmailPasswordSignIn_Override"
-> &
+import { ComponentOverride } from "../../components/componentOverride/componentOverride";
+import { ComponentOverrideMap as EmailPasswordOverrideMap } from "../emailpassword/types";
+import { ComponentOverrideMap as ThirdPartyOverrideMap } from "../thirdparty/types";
+import { Header } from "./components/themes/signInAndUp/header";
+import { Dispatch } from "react";
+import { RecipeInterface } from "supertokens-web-js/recipe/thirdpartyemailpassword";
+
+export type ComponentOverrideMap = EmailPasswordOverrideMap &
     ThirdPartyOverrideMap & {
         ThirdPartyEmailPasswordHeader_Override?: ComponentOverride<typeof Header>;
     };

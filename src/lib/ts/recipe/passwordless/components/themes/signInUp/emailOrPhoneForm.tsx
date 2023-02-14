@@ -13,20 +13,15 @@
  * under the License.
  */
 
-import { useMemo, useState } from "react";
-import { useEffect } from "react";
-import STGeneralError from "supertokens-web-js/utils/error";
-
+import { SignInUpEmailOrPhoneFormProps } from "../../../types";
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
-import { useUserContext } from "../../../../../usercontext";
 import FormBase from "../../../../emailpassword/components/library/formBase";
-import { preloadPhoneNumberUtils } from "../../../phoneNumberUtils";
-import { defaultEmailValidator, defaultValidate } from "../../../validators";
-
 import { phoneNumberInputWithInjectedProps } from "./phoneNumberInput";
+import { defaultEmailValidator, defaultValidate } from "../../../validators";
+import { useMemo, useState } from "react";
+import STGeneralError from "supertokens-web-js/utils/error";
+import { useUserContext } from "../../../../../usercontext";
 import { SignInUpFooter } from "./signInUpFooter";
-
-import type { SignInUpEmailOrPhoneFormProps } from "../../../types";
 
 export const EmailOrPhoneForm = withOverride(
     "PasswordlessEmailOrPhoneForm",
@@ -34,10 +29,6 @@ export const EmailOrPhoneForm = withOverride(
         const [isPhoneNumber, setIsPhoneNumber] = useState<boolean>(false);
         const userContext = useUserContext();
 
-        useEffect(() => {
-            // We preload this here, since it will be used almost for sure, but loading it
-            void preloadPhoneNumberUtils();
-        }, []);
         const emailOrPhoneInput = useMemo(
             () =>
                 isPhoneNumber

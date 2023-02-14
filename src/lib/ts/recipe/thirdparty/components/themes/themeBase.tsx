@@ -13,16 +13,14 @@
  * under the License.
  */
 
-import React from "react";
+import React, { PropsWithChildren } from "react";
 import { Fragment } from "react";
 
-import styles from "./styles.css";
+/*
+ * Component
+ */
 
-import type { PropsWithChildren } from "react";
-
-export const ThemeBase: React.FC<
-    PropsWithChildren<{ loadDefaultFont: boolean; userStyles: Array<string | undefined> }>
-> = ({ children, userStyles, loadDefaultFont }) => {
+export const ThemeBase: React.FC<PropsWithChildren<{ loadDefaultFont: boolean }>> = ({ children, loadDefaultFont }) => {
     return (
         <Fragment>
             {children}
@@ -32,10 +30,6 @@ export const ThemeBase: React.FC<
                     rel="stylesheet"
                     type="text/css"></link>
             )}
-            <style>
-                {styles}
-                {userStyles.join("\n")}
-            </style>
         </Fragment>
     );
 };

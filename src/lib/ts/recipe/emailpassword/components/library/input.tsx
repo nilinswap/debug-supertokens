@@ -12,16 +12,17 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+import { CSSObject } from "@emotion/react";
 
+import { ChangeEvent, useContext } from "react";
+
+import { APIFormField } from "../../../../types";
 import { useState } from "react";
-
-import { useTranslation } from "../../../..";
+import StyleContext from "../../../../styles/styleContext";
+import ShowPasswordIcon from "../../../../components/assets/showPasswordIcon";
 import CheckedIcon from "../../../../components/assets/checkedIcon";
 import ErrorIcon from "../../../../components/assets/errorIcon";
-import ShowPasswordIcon from "../../../../components/assets/showPasswordIcon";
-
-import type { APIFormField } from "../../../../types";
-import type { ChangeEvent } from "react";
+import { useTranslation } from "../../../..";
 
 export type InputProps = {
     type: string;
@@ -84,6 +85,8 @@ const Input: React.FC<InputProps> = ({
         }
     }
 
+    const styles = useContext(StyleContext);
+    const errorStyle: CSSObject | undefined = hasError === true ? styles.inputError : undefined;
     if (autoComplete === undefined) {
         autoComplete = "off";
     }
@@ -94,12 +97,13 @@ const Input: React.FC<InputProps> = ({
     }
 
     return (
-        <div data-supertokens="inputContainer">
-            <div data-supertokens={["inputWrapper", hasError ? "inputError" : ""].join(" ")}>
+        <div data-supertokens="inputContainer" css={styles.inputContainer}>
+            <div data-supertokens="inputWrapper inputError" css={[styles.inputWrapper, errorStyle]}>
                 <input
                     autoFocus={autofocus}
                     autoComplete={autoComplete}
                     data-supertokens="input"
+                    css={styles.input}
                     className="supertokens-input"
                     onFocus={handleFocus}
                     onBlur={handleBlur}
@@ -110,20 +114,29 @@ const Input: React.FC<InputProps> = ({
                     value={value}
                 />
                 {hasError === true && (
-                    <div data-supertokens="inputAdornment inputAdornmentError">
-                        <ErrorIcon />
+                    <div
+                        data-supertokens="inputAdornment inputAdornmentError"
+                        css={[styles.inputAdornment, styles.inputAdornmentError]}>
+                        <ErrorIcon color={styles.palette.colors.error} />
                     </div>
                 )}
                 {validated === true && hasError === false && (
-                    <div data-supertokens="inputAdornment inputAdornmentSuccess">
-                        <CheckedIcon />
+                    <div
+                        data-supertokens="inputAdornment inputAdornmentSuccess"
+                        css={[styles.inputAdornment, styles.inputAdornmentSuccess]}>
+                        <CheckedIcon color={styles.palette.colors.primary} />
                     </div>
                 )}
                 {type === "password" && value.length > 0 && (
                     <div
                         onClick={() => setShowPassword(showPassword === false)}
-                        data-supertokens="inputAdornment showPassword">
-                        <ShowPasswordIcon showPassword={showPassword} />
+                        data-supertokens="inputAdornment showPassword"
+                        css={[styles.showPassword, styles.inputAdornment]}>
+                        <ShowPasswordIcon
+                            primaryColor={styles.palette.colors.textPrimary}
+                            secondaryColor={styles.palette.colors.inputBackground}
+                            showPassword={showPassword}
+                        />
                     </div>
                 )}
             </div>

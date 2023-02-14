@@ -12,7 +12,17 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
+/*
+ * Imports.
+ */
+
+import { useContext } from "react";
 import { useTranslation } from "../../../..";
+import StyleContext from "../../../../styles/styleContext";
+/*
+ * Props.
+ */
 
 type ButtonProps = {
     label: string;
@@ -28,12 +38,13 @@ type ButtonProps = {
 
 export default function Button({ type, label, disabled, isLoading, onClick }: ButtonProps): JSX.Element {
     const t = useTranslation();
+    const styles = useContext(StyleContext);
 
     if (disabled === undefined) {
         disabled = false;
     }
     return (
-        <button type={type} disabled={disabled} onClick={onClick} data-supertokens="button">
+        <button type={type} disabled={disabled} onClick={onClick} css={styles.button} data-supertokens="button">
             {t(label)}
             {isLoading && "..."}
         </button>

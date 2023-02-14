@@ -14,15 +14,13 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { CookieHandlerReference } from "supertokens-web-js/utils/cookieHandler";
+import { DEFAULT_API_BASE_PATH, DEFAULT_WEBSITE_BASE_PATH, RECIPE_ID_QUERY_PARAM } from "./constants";
+import { CookieHandlerReference } from "supertokens-website/utils/cookieHandler";
 import NormalisedURLDomain from "supertokens-web-js/utils/normalisedURLDomain";
 import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
-import { WindowHandlerReference } from "supertokens-web-js/utils/windowHandler";
-
-import { DEFAULT_API_BASE_PATH, DEFAULT_WEBSITE_BASE_PATH, RECIPE_ID_QUERY_PARAM } from "./constants";
-
-import type { FormFieldError } from "./recipe/emailpassword/types";
-import type { APIFormField, AppInfoUserInput, NormalisedAppInfo, NormalisedFormField } from "./types";
+import { FormFieldError } from "./recipe/emailpassword/types";
+import { APIFormField, AppInfoUserInput, NormalisedAppInfo, NormalisedFormField } from "./types";
+import { WindowHandlerReference } from "supertokens-website/utils/windowHandler";
 
 /*
  * getRecipeIdFromPath
@@ -279,28 +277,28 @@ export function mergeObjects<T>(obj1: T, obj2: T): T {
 }
 
 export function normaliseCookieScopeOrThrowError(cookieScope: string): string {
-    function helper(cookieScope: string): string {
-        cookieScope = cookieScope.trim().toLowerCase();
+    function helper(sessionScope: string): string {
+        sessionScope = sessionScope.trim().toLowerCase();
 
         // first we convert it to a URL so that we can use the URL class
-        if (cookieScope.startsWith(".")) {
-            cookieScope = cookieScope.substr(1);
+        if (sessionScope.startsWith(".")) {
+            sessionScope = sessionScope.substr(1);
         }
 
-        if (!cookieScope.startsWith("http://") && !cookieScope.startsWith("https://")) {
-            cookieScope = "http://" + cookieScope;
+        if (!sessionScope.startsWith("http://") && !sessionScope.startsWith("https://")) {
+            sessionScope = "http://" + sessionScope;
         }
 
         try {
-            const urlObj = new URL(cookieScope);
-            cookieScope = urlObj.hostname;
+            const urlObj = new URL(sessionScope);
+            sessionScope = urlObj.hostname;
 
             // remove leading dot
-            if (cookieScope.startsWith(".")) {
-                cookieScope = cookieScope.substr(1);
+            if (sessionScope.startsWith(".")) {
+                sessionScope = sessionScope.substr(1);
             }
 
-            return cookieScope;
+            return sessionScope;
         } catch (err) {
             throw new Error("Please provide a valid cookie scope");
         }
