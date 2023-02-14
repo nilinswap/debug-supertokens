@@ -23,6 +23,7 @@ import type { PropsWithChildren } from "react";
 export const ThemeBase: React.FC<
     PropsWithChildren<{ loadDefaultFont: boolean; userStyles: Array<string | undefined> }>
 > = ({ children, userStyles, loadDefaultFont }) => {
+    console.log("adfs", styles);
     return (
         <Fragment>
             {children}
