@@ -23,22 +23,31 @@ import { RoutingComponent } from "./routingComponent";
  * Component.
  */
 
-export function getSuperTokensRoutesForReactRouterDomV6(supertokensInstance: SuperTokens): JSX.Element[] {
-    const routerInfo = supertokensInstance.getReactRouterDomWithCustomHistory();
-    if (routerInfo === undefined) {
-        return [];
-    }
+export function getSuperTokensRoutesForReactRouterDomV6(
+  supertokensInstance: SuperTokens
+): JSX.Element[] {
+  const routerInfo = supertokensInstance.getReactRouterDomWithCustomHistory();
+  if (routerInfo === undefined) {
+    return [];
+  }
 
-    const Route = routerInfo.router.Route;
-    const pathsToFeatureComponentWithRecipeIdMap = supertokensInstance.getPathsToFeatureComponentWithRecipeIdMap();
-    return Object.keys(pathsToFeatureComponentWithRecipeIdMap).map((path) => {
-        path = path === "" ? "/" : path;
-        return (
-            <Route
-                key={`st-${path}`}
-                path={path}
-                element={<RoutingComponent supertokensInstance={supertokensInstance} path={path} />}
-            />
-        );
-    });
+  const Route = routerInfo.router.Route;
+  const pathsToFeatureComponentWithRecipeIdMap =
+    supertokensInstance.getPathsToFeatureComponentWithRecipeIdMap();
+  // READCODE BURI ER3: here is where we return the routes that will extend
+  return Object.keys(pathsToFeatureComponentWithRecipeIdMap).map((path) => {
+    path = path === "" ? "/" : path;
+    return (
+      <Route
+        key={`st-${path}`}
+        path={path}
+        element={
+          <RoutingComponent
+            supertokensInstance={supertokensInstance}
+            path={path}
+          />
+        }
+      />
+    );
+  });
 }

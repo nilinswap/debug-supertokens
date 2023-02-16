@@ -44,6 +44,19 @@ only supports supertokens-auth-react and supertokens-node for now.
 
 go to http://localhost:1234/inner 
 
+## Todo 
+- match BURI and BUNI with new code. follow same debug steps to ensure that everything is fine. This time, we can't let it slip
+- publish both of them as npm libraries and make an app that uses it
+- focus on supertokens-core. 
+    - run it locally
+    - put debugger
+    - understand
+
+
+## things 
+1. I updated them to as new as 0.29 of supertokens-auth-react and 13.0.2 (from 11.0.2 I guess) of super-tokens node. Why I chose 0.29? and not latest (0.31) because I was struggling to compile with rollup. We will go with these versions only. No more the same thing of upgrading and then re-visiting code. 
+
+
 
 
 ## WhatCanBe

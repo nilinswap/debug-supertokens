@@ -222,18 +222,23 @@ export default class SuperTokens {
 
         const pathsToFeatureComponentWithRecipeIdMap: BaseFeatureComponentMap = {};
         for (let i = 0; i < this.recipeList.length; i++) {
-            const recipe = this.recipeList[i];
-            const features = recipe.getFeatures();
-            const featurePaths = Object.keys(features);
-            for (let j = 0; j < featurePaths.length; j++) {
-                // If no components yet for this route, initialize empty array.
-                const featurePath = featurePaths[j];
-                if (pathsToFeatureComponentWithRecipeIdMap[featurePath] === undefined) {
-                    pathsToFeatureComponentWithRecipeIdMap[featurePath] = [];
-                }
-
-                pathsToFeatureComponentWithRecipeIdMap[featurePath].push(features[featurePath]);
+          const recipe = this.recipeList[i];
+          // READCODE BURI ER3: below we tell which components to render based on recipe
+          const features = recipe.getFeatures();
+          const featurePaths = Object.keys(features);
+          for (let j = 0; j < featurePaths.length; j++) {
+            // If no components yet for this route, initialize empty array.
+            const featurePath = featurePaths[j];
+            if (
+              pathsToFeatureComponentWithRecipeIdMap[featurePath] === undefined
+            ) {
+              pathsToFeatureComponentWithRecipeIdMap[featurePath] = [];
             }
+
+            pathsToFeatureComponentWithRecipeIdMap[featurePath].push(
+              features[featurePath]
+            );
+          }
         }
 
         this.pathsToFeatureComponentWithRecipeIdMap = pathsToFeatureComponentWithRecipeIdMap;
