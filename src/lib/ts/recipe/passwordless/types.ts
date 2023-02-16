@@ -66,17 +66,17 @@ export type GetRedirectionURLContext = AuthRecipeModuleGetRedirectionURLContext;
 
 export type OnHandleEventContext =
     | {
-          action: "SUCCESS";
-          isNewUser: boolean;
-          user: PasswordlessUser;
-      }
+        action: "SUCCESS";
+        isNewUser: boolean;
+        user: PasswordlessUser;
+    }
     | {
-          action: "PASSWORDLESS_RESTART_FLOW";
-      }
+        action: "PASSWORDLESS_RESTART_FLOW";
+    }
     | {
-          action: "PASSWORDLESS_CODE_SENT";
-          isResend: boolean;
-      }
+        action: "PASSWORDLESS_CODE_SENT";
+        isResend: boolean;
+    }
     | AuthRecipeModuleOnHandleEventContext;
 
 export type PasswordlessNormalisedBaseConfig = {
@@ -123,6 +123,7 @@ export type PasswordlessFeatureBaseConfig = {
 
 export type SignInUpFeatureConfigInput = {
     disableDefaultUI?: boolean;
+    // READCODE BURI: set gap for resend otp. this is 15 sec by default. this is set by the config that we init supertokens with. it is extraced by normalise-config() methods like normalisePasswordlessConfig 
     resendEmailOrSMSGapInSeconds?: number;
 
     /*
@@ -142,42 +143,42 @@ export type SignInUpFeatureConfigInput = {
 
 export type UserInput = (
     | {
-          contactMethod: "EMAIL";
+        contactMethod: "EMAIL";
 
-          validateEmailAddress?: (email: string) => Promise<string | undefined> | string | undefined;
+        validateEmailAddress?: (email: string) => Promise<string | undefined> | string | undefined;
 
-          signInUpFeature?: SignInUpFeatureConfigInput;
-      }
+        signInUpFeature?: SignInUpFeatureConfigInput;
+    }
     | {
-          contactMethod: "PHONE";
+        contactMethod: "PHONE";
 
-          validatePhoneNumber?: (phoneNumber: string) => Promise<string | undefined> | string | undefined;
+        validatePhoneNumber?: (phoneNumber: string) => Promise<string | undefined> | string | undefined;
 
-          signInUpFeature?: SignInUpFeatureConfigInput & {
-              /*
-               * Must be a two-letter ISO country code (e.g.: "US")
-               */
-              defaultCountry?: CountryCode;
-          };
-      }
+        signInUpFeature?: SignInUpFeatureConfigInput & {
+            /*
+             * Must be a two-letter ISO country code (e.g.: "US")
+             */
+            defaultCountry?: CountryCode;
+        };
+    }
     | {
-          contactMethod: "EMAIL_OR_PHONE";
+        contactMethod: "EMAIL_OR_PHONE";
 
-          validateEmailAddress?: (email: string) => Promise<string | undefined> | string | undefined;
-          validatePhoneNumber?: (phoneNumber: string) => Promise<string | undefined> | string | undefined;
+        validateEmailAddress?: (email: string) => Promise<string | undefined> | string | undefined;
+        validatePhoneNumber?: (phoneNumber: string) => Promise<string | undefined> | string | undefined;
 
-          signInUpFeature?: SignInUpFeatureConfigInput & {
-              /*
-               * Must be a two-letter ISO country code (e.g.: "US")
-               */
-              defaultCountry?: CountryCode;
+        signInUpFeature?: SignInUpFeatureConfigInput & {
+            /*
+             * Must be a two-letter ISO country code (e.g.: "US")
+             */
+            defaultCountry?: CountryCode;
 
-              guessInternationPhoneNumberFromInputPhoneNumber?: (
-                  inputPhoneNumber: string,
-                  defaultCountryFromConfig?: CountryCode
-              ) => Promise<string | undefined> | string | undefined;
-          };
-      }
+            guessInternationPhoneNumberFromInputPhoneNumber?: (
+                inputPhoneNumber: string,
+                defaultCountryFromConfig?: CountryCode
+            ) => Promise<string | undefined> | string | undefined;
+        };
+    }
 ) & {
     override?: {
         functions?: (originalImplementation: RecipeInterface) => RecipeInterface;
@@ -274,29 +275,29 @@ export type CloseTabScreenProps = {
 
 export type PasswordlessSignInUpAction =
     | {
-          type: "load";
-          loginAttemptInfo: LoginAttemptInfo | undefined;
-          error: string | undefined;
-      }
+        type: "load";
+        loginAttemptInfo: LoginAttemptInfo | undefined;
+        error: string | undefined;
+    }
     | {
-          type: "startLogin";
-          loginAttemptInfo: LoginAttemptInfo;
-      }
+        type: "startLogin";
+        loginAttemptInfo: LoginAttemptInfo;
+    }
     | {
-          type: "resendCode";
-          timestamp: number;
-      }
+        type: "resendCode";
+        timestamp: number;
+    }
     | {
-          type: "restartFlow";
-          error: string | undefined;
-      }
+        type: "restartFlow";
+        error: string | undefined;
+    }
     | {
-          type: "setError";
-          error: string | undefined;
-      }
+        type: "setError";
+        error: string | undefined;
+    }
     | {
-          type: "successInAnotherTab";
-      };
+        type: "successInAnotherTab";
+    };
 
 export type SignInUpState = {
     error: string | undefined;

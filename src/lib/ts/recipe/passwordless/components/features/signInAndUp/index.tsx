@@ -173,10 +173,12 @@ export const useFeatureReducer = (
           error = messageQueryParam;
         }
       }
+      // READCODE BURI KEB3: it gets loginAttemptInfo and email happens to be a part of it. How it gets I really don't know there is device id part of login info. why? - probably because it wants to sandbox auth from different devices.
       const loginAttemptInfo = await getLoginAttemptInfo({
         recipeImplementation: recipeImpl!,
         userContext,
       });
+      // READCODE BURI KEB3: it is the only place where load is dispatched. this runs on onLoad right? so it sets the state and that state with login info is passed on to children.
       // No need to check if the component is unmounting, since this has no effect then.
       dispatch({ type: "load", loginAttemptInfo, error });
     }

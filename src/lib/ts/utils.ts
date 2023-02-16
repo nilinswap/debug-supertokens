@@ -216,6 +216,9 @@ export function matchRecipeIdUsingQueryParams(recipeId: string): () => boolean {
 }
 
 export function redirectWithFullPageReload(to: string): void {
+    // READCODE BURI: so if it is redirected to auth without any to..it get redirected to index.
+    // there is a with history version of this function too.
+
     if (to.trim() === "") {
         to = "/";
     }
