@@ -41,7 +41,7 @@ export class HandshakeInfo {
         public accessTokenValidity: number,
         public refreshTokenValidity: number,
         private rawJwtSigningPublicKeyList: KeyInfo[]
-    ) {}
+    ) { }
 
     setJwtSigningPublicKeyList(updatedList: KeyInfo[]) {
         this.rawJwtSigningPublicKeyList = updatedList;
@@ -80,6 +80,7 @@ export default function getRecipeInterface(
     appInfo: NormalisedAppinfo,
     getRecipeImplAfterOverrides: () => RecipeInterface
 ): RecipeInterface {
+    // READCODE BUNI RSL3: this is under OverrideableBuilder.
     let handshakeInfo: undefined | HandshakeInfo;
 
     async function getHandshakeInfo(forceRefetch = false): Promise<HandshakeInfo> {
@@ -435,6 +436,7 @@ export default function getRecipeInterface(
             this: RecipeInterface,
             { req, res, userContext }: { req: BaseRequest; res: BaseResponse; userContext: any }
         ): Promise<Session> {
+            // READCODE BUNI RSL3: this gets hit if it is without jwt
             logDebugMessage("refreshSession: Started");
 
             const refreshTokens: {
@@ -511,6 +513,7 @@ export default function getRecipeInterface(
                     }
                 }
 
+                // READCODE BUNI RSL3: this is where set-cookie is done
                 attachTokensToResponse(config, res, response, requestTransferMethod);
 
                 logDebugMessage("refreshSession: Success!");
@@ -537,6 +540,7 @@ export default function getRecipeInterface(
                         logDebugMessage(
                             "refreshSession: cleared legacy id refresh token because refresh is clearing other tokens"
                         );
+                        // READCODE BUNI RSL3: this is where the cookie is cleared for 401. 
                         setCookie(config, res, LEGACY_ID_REFRESH_TOKEN_COOKIE_NAME, "", 0, "accessTokenPath");
                     }
                 }
@@ -553,18 +557,18 @@ export default function getRecipeInterface(
             }
         ): Promise<
             | {
-                  status: "OK";
-                  session: {
-                      handle: string;
-                      userId: string;
-                      userDataInJWT: any;
-                  };
-                  accessToken?: {
-                      token: string;
-                      expiry: number;
-                      createdTime: number;
-                  };
-              }
+                status: "OK";
+                session: {
+                    handle: string;
+                    userId: string;
+                    userDataInJWT: any;
+                };
+                accessToken?: {
+                    token: string;
+                    expiry: number;
+                    createdTime: number;
+                };
+            }
             | undefined
         > {
             let newAccessTokenPayload =

@@ -135,6 +135,7 @@ export default class Recipe extends RecipeModule {
     // abstract instance functions below...............
 
     getAPIsHandled = (): APIHandled[] => {
+        // READCODE BUNI MW3 AL3: this attaches id to the pathWithoutApiBasePath and method. see id value is similar to path
         return [
             {
                 id: CONSUME_CODE_API,
@@ -176,6 +177,9 @@ export default class Recipe extends RecipeModule {
         _: NormalisedURLPath,
         __: HTTPMethod
     ): Promise<boolean> => {
+        // READCODE BUNI MW3 AL3: the options that we are passing here has recipeImplementation. 
+        // this contains createCodePost, consumeCode etc which eventually calls apis.
+        // Notice how similar it is to role of props in react library. both have exactly same class and object name
         const options = {
             config: this.config,
             recipeId: this.getRecipeId(),

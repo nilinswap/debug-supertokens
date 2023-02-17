@@ -114,6 +114,7 @@ export default class SessionRecipe extends RecipeModule {
         }
         {
             let builder = new OverrideableBuilder(APIImplementation());
+            // READCODE BUNI: apiImpl is important, we set the actual implementation class here. these methods get called per recipe
             this.apiImpl = builder.override(this.config.override.apis).build();
         }
     }
@@ -206,6 +207,7 @@ export default class SessionRecipe extends RecipeModule {
             res,
         };
         if (id === REFRESH_API_PATH) {
+            // READCODE BUNI RSL3: this is where refresh api is handled specifically. Notice that for refresh api, recipe is session.
             return await handleRefreshAPI(this.apiImpl, options);
         } else if (id === SIGNOUT_API_PATH) {
             return await signOutAPI(this.apiImpl, options);

@@ -333,7 +333,7 @@ export async function refreshSession(
             });
         }
     }
-
+    // READCODE BUNI RSL3: here is where the core is called to refresh the session. notice unlike react app, we don't rely on supertokens-web-js or another lib for calling supertokens-core api. we directly call from backend server
     let response = await helpers.querier.sendPostRequest(new NormalisedURLPath("/recipe/session/refresh"), requestBody);
     if (response.status === "OK") {
         delete response.status;

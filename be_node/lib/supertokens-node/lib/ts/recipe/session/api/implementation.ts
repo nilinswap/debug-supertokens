@@ -40,6 +40,7 @@ export default function getAPIInterface(): APIInterface {
             let refreshTokenPath = options.config.refreshTokenPath;
 
             if (incomingPath.equals(refreshTokenPath) && method === "post") {
+                // READCODE BUNI RSL3: below calls refreshSession from be_node/lib/supertokens-node/lib/ts/recipe/session/recipeImplementation.ts eventually
                 return options.recipeImplementation.refreshSession({
                     req: options.req,
                     res: options.res,

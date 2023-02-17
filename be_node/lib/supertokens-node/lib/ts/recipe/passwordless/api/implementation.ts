@@ -6,6 +6,7 @@ import Session from "../../session";
 export default function getAPIImplementation(): APIInterface {
     return {
         consumeCodePOST: async function (input) {
+            // READCODE BUNI AL3: this is where we call consume api. with otp, that is what they call userInputCode
             let response = await input.options.recipeImplementation.consumeCode(
                 "deviceId" in input
                     ? {
@@ -21,6 +22,7 @@ export default function getAPIImplementation(): APIInterface {
                     }
             );
 
+            // READCODE BUNI AL3: if response.status is not ok like otp expired etc, then don't call createNewSession and don't set cookie. 
             if (response.status !== "OK") {
                 return response;
             }

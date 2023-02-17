@@ -57,24 +57,26 @@ export default async function consumeCode(apiImplementation: APIInterface, optio
     }
 
     const userContext = makeDefaultUserContextFromAPI(options.req);
+    // READCODE BUNI AL3: consumeCode api is called.
     let result = await apiImplementation.consumeCodePOST(
         deviceId !== undefined
             ? {
-                  deviceId,
-                  userInputCode,
-                  preAuthSessionId,
-                  options,
-                  userContext,
-              }
+                deviceId,
+                userInputCode,
+                preAuthSessionId,
+                options,
+                userContext,
+            }
             : {
-                  linkCode,
-                  options,
-                  preAuthSessionId,
-                  userContext,
-              }
+                linkCode,
+                options,
+                preAuthSessionId,
+                userContext,
+            }
     );
 
     if (result.status === "OK") {
+        // READCODE BUNI AL3: we delete session object and send everything else in response (including userInfo)
         delete (result as any).session;
     }
 
