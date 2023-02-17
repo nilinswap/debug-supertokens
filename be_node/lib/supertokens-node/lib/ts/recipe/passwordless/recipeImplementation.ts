@@ -10,7 +10,7 @@ export default function getRecipeInterface(querier: Querier): RecipeInterface {
         delete result.userContext;
         return result;
     }
-
+    // READCODE BUNI AL3: all apis to core are listed here. 
     return {
         consumeCode: async function (input) {
             let response = await querier.sendPostRequest(
@@ -20,6 +20,7 @@ export default function getRecipeInterface(querier: Querier): RecipeInterface {
             return response;
         },
         createCode: async function (input) {
+            //READCODE BUNI AL3: this where we call api for generating otp. it probably goes to supertokens-core
             let response = await querier.sendPostRequest(
                 new NormalisedURLPath("/recipe/signinup/code"),
                 copyAndRemoveUserContext(input)

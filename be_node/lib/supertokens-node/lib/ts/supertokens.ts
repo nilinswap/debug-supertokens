@@ -79,6 +79,7 @@ export default class SuperTokens {
 
         this.isInServerlessEnv = config.isInServerlessEnv === undefined ? false : config.isInServerlessEnv;
 
+        // READCODE BUNI: this is ensures that the recipe "classes" are loaded. later we call methods on them. these are based on init method input
         this.recipeModules = config.recipeList.map((func) => {
             return func(this.appInfo, this.isInServerlessEnv);
         });
@@ -118,7 +119,7 @@ export default class SuperTokens {
                     "api-version": 2,
                 },
             });
-        } catch (ignored) {}
+        } catch (ignored) { }
     };
 
     static init(config: TypeInput) {
@@ -241,13 +242,13 @@ export default class SuperTokens {
         force?: boolean;
     }): Promise<
         | {
-              status: "OK" | "UNKNOWN_SUPERTOKENS_USER_ID_ERROR";
-          }
+            status: "OK" | "UNKNOWN_SUPERTOKENS_USER_ID_ERROR";
+        }
         | {
-              status: "USER_ID_MAPPING_ALREADY_EXISTS_ERROR";
-              doesSuperTokensUserIdExist: boolean;
-              doesExternalUserIdExist: boolean;
-          }
+            status: "USER_ID_MAPPING_ALREADY_EXISTS_ERROR";
+            doesSuperTokensUserIdExist: boolean;
+            doesExternalUserIdExist: boolean;
+        }
     > {
         let querier = Querier.getNewInstanceOrThrowError(undefined);
         let cdiVersion = await querier.getAPIVersion();
@@ -269,14 +270,14 @@ export default class SuperTokens {
         userIdType?: "SUPERTOKENS" | "EXTERNAL" | "ANY";
     }): Promise<
         | {
-              status: "OK";
-              superTokensUserId: string;
-              externalUserId: string;
-              externalUserIdInfo: string | undefined;
-          }
+            status: "OK";
+            superTokensUserId: string;
+            externalUserId: string;
+            externalUserIdInfo: string | undefined;
+        }
         | {
-              status: "UNKNOWN_MAPPING_ERROR";
-          }
+            status: "UNKNOWN_MAPPING_ERROR";
+        }
     > {
         let querier = Querier.getNewInstanceOrThrowError(undefined);
         let cdiVersion = await querier.getAPIVersion();
@@ -338,11 +339,12 @@ export default class SuperTokens {
         let path = this.appInfo.apiGatewayPath.appendPath(new NormalisedURLPath(request.getOriginalURL()));
         let method: HTTPMethod = normaliseHttpMethod(request.getMethod());
 
+        // READCODE BUNI MW3: See we match for path to start with apiBasePath 
         // if the prefix of the URL doesn't match the base path, we skip
         if (!path.startsWith(this.appInfo.apiBasePath)) {
             logDebugMessage(
                 "middleware: Not handling because request path did not start with config path. Request path: " +
-                    path.getAsStringDangerous()
+                path.getAsStringDangerous()
             );
             return false;
         }
@@ -356,6 +358,7 @@ export default class SuperTokens {
         if (requestRID !== undefined) {
             let matchedRecipe: RecipeModule | undefined = undefined;
 
+            // READCODE BUNI: Here we use requestRID to find which recipe to call method on. It is like implmenting abstraction (concept of abstract class) across the app (frontend and backend)
             // we loop through all recipe modules to find the one with the matching rId
             for (let i = 0; i < this.recipeModules.length; i++) {
                 logDebugMessage("middleware: Checking recipe ID for match: " + this.recipeModules[i].getRecipeId());
@@ -372,13 +375,14 @@ export default class SuperTokens {
             }
             logDebugMessage("middleware: Matched with recipe ID: " + matchedRecipe.getRecipeId());
 
+            // READCODE BUNI: for a recipe, if the path is the one that is expected (should be handled by the middleware). this is checked below.
             let id = matchedRecipe.returnAPIIdIfCanHandleRequest(path, method);
             if (id === undefined) {
                 logDebugMessage(
                     "middleware: Not handling because recipe doesn't handle request path or method. Request path: " +
-                        path.getAsStringDangerous() +
-                        ", request method: " +
-                        method
+                    path.getAsStringDangerous() +
+                    ", request method: " +
+                    method
                 );
                 // the matched recipe doesn't handle this path and http method
                 return false;
@@ -386,6 +390,7 @@ export default class SuperTokens {
 
             logDebugMessage("middleware: Request being handled by recipe. ID is: " + id);
 
+            // READCODE BUNI MW3: this is where exact request handling happens. we pass the response and it writes response with body inplace
             // give task to the matched recipe
             let requestHandled = await matchedRecipe.handleAPIRequest(id, request, response, path, method);
             if (!requestHandled) {

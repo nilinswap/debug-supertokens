@@ -223,7 +223,7 @@ export default class SuperTokens {
         const pathsToFeatureComponentWithRecipeIdMap: BaseFeatureComponentMap = {};
         for (let i = 0; i < this.recipeList.length; i++) {
           const recipe = this.recipeList[i];
-          // READCODE BURI ER3: below we tell which components to render based on recipe
+          // READCODE BURI ER3: below we tell which components (e.g. for signup, otp etc) to render based on recipe
           const features = recipe.getFeatures();
           const featurePaths = Object.keys(features);
           for (let j = 0; j < featurePaths.length; j++) {

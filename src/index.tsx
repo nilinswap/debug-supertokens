@@ -36,6 +36,7 @@ root.render(
       <h1 style={{ width: "100%", textAlign: "center" }}>Debug ST (rn!)</h1>
       <Routes>
         {/* This renders the login UI on the /auth route*/}
+        {/* READCODE BURI ER3: we components for every path */}
         {getSuperTokensRoutesForReactRouterDom(reactRouterDom)}
         {/*Your app routes */}
         <Route

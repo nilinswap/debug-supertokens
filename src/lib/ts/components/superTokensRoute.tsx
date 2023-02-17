@@ -25,19 +25,23 @@ import { RoutingComponent } from "./routingComponent";
  */
 
 export function getSuperTokensRoutesForReactRouterDom(supertokensInstance: SuperTokens): JSX.Element[] {
-    const routerInfo = supertokensInstance.getReactRouterDomWithCustomHistory();
-    if (routerInfo === undefined) {
-        return [];
-    }
+  const routerInfo = supertokensInstance.getReactRouterDomWithCustomHistory();
+  if (routerInfo === undefined) {
+    return [];
+  }
 
-    const Route = routerInfo.router.Route;
-    const pathsToFeatureComponentWithRecipeIdMap = supertokensInstance.getPathsToFeatureComponentWithRecipeIdMap();
-    return Object.keys(pathsToFeatureComponentWithRecipeIdMap).map((path) => {
-        path = path === "" ? "/" : path;
-        return (
-            <Route exact key={`st-${path}`} path={path}>
-                <RoutingComponent supertokensInstance={supertokensInstance} path={path} />
-            </Route>
-        );
-    });
+  const Route = routerInfo.router.Route;
+  const pathsToFeatureComponentWithRecipeIdMap =
+    supertokensInstance.getPathsToFeatureComponentWithRecipeIdMap();
+  return Object.keys(pathsToFeatureComponentWithRecipeIdMap).map((path) => {
+    path = path === "" ? "/" : path;
+    return (
+      <Route exact key={`st-${path}`} path={path}>
+        <RoutingComponent
+          supertokensInstance={supertokensInstance}
+          path={path}
+        />
+      </Route>
+    );
+  });
 }

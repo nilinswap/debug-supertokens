@@ -218,7 +218,7 @@ export function useChildProps(
   const recipeImplementation = React.useMemo(
     () =>
       recipe &&
-      getModifiedRecipeImplementation(
+        getModifiedRecipeImplementation(
         recipe.recipeImpl,
         dispatch,
         callingConsumeCodeRef
@@ -250,6 +250,8 @@ export function useChildProps(
           history
         );
       },
+      // READCODE BURI ER3: we attach recipeImplementation which is finally used inside formBase's callAPI for call createCode. 
+      // This is an essential link between recipe's component props and the final api that is called down below.
       recipeImplementation: recipeImplementation,
       config: recipe.config,
     };

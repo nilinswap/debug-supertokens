@@ -187,6 +187,7 @@ export default class Recipe extends RecipeModule {
             smsDelivery: this.smsDelivery,
             appInfo: this.getAppInfo(),
         };
+        // READCODE BUNI MW3 AL3: this is where we decide which API to call. createCode is send otp
         if (id === CONSUME_CODE_API) {
             return await consumeCodeAPI(this.apiImpl, options);
         } else if (id === CREATE_CODE_API) {
@@ -217,13 +218,13 @@ export default class Recipe extends RecipeModule {
     createMagicLink = async (
         input:
             | {
-                  email: string;
-                  userContext?: any;
-              }
+                email: string;
+                userContext?: any;
+            }
             | {
-                  phoneNumber: string;
-                  userContext?: any;
-              }
+                phoneNumber: string;
+                userContext?: any;
+            }
     ): Promise<string> => {
         let userInputCode =
             this.config.getCustomUserInputCode !== undefined
@@ -233,15 +234,15 @@ export default class Recipe extends RecipeModule {
         const codeInfo = await this.recipeInterfaceImpl.createCode(
             "email" in input
                 ? {
-                      email: input.email,
-                      userInputCode,
-                      userContext: input.userContext,
-                  }
+                    email: input.email,
+                    userInputCode,
+                    userContext: input.userContext,
+                }
                 : {
-                      phoneNumber: input.phoneNumber,
-                      userInputCode,
-                      userContext: input.userContext,
-                  }
+                    phoneNumber: input.phoneNumber,
+                    userInputCode,
+                    userContext: input.userContext,
+                }
         );
 
         const appInfo = this.getAppInfo();
@@ -263,39 +264,39 @@ export default class Recipe extends RecipeModule {
     signInUp = async (
         input:
             | {
-                  email: string;
-                  userContext?: any;
-              }
+                email: string;
+                userContext?: any;
+            }
             | {
-                  phoneNumber: string;
-                  userContext?: any;
-              }
+                phoneNumber: string;
+                userContext?: any;
+            }
     ) => {
         let codeInfo = await this.recipeInterfaceImpl.createCode(
             "email" in input
                 ? {
-                      email: input.email,
-                      userContext: input.userContext,
-                  }
+                    email: input.email,
+                    userContext: input.userContext,
+                }
                 : {
-                      phoneNumber: input.phoneNumber,
-                      userContext: input.userContext,
-                  }
+                    phoneNumber: input.phoneNumber,
+                    userContext: input.userContext,
+                }
         );
 
         let consumeCodeResponse = await this.recipeInterfaceImpl.consumeCode(
             this.config.flowType === "MAGIC_LINK"
                 ? {
-                      preAuthSessionId: codeInfo.preAuthSessionId,
-                      linkCode: codeInfo.linkCode,
-                      userContext: input.userContext,
-                  }
+                    preAuthSessionId: codeInfo.preAuthSessionId,
+                    linkCode: codeInfo.linkCode,
+                    userContext: input.userContext,
+                }
                 : {
-                      preAuthSessionId: codeInfo.preAuthSessionId,
-                      deviceId: codeInfo.deviceId,
-                      userInputCode: codeInfo.userInputCode,
-                      userContext: input.userContext,
-                  }
+                    preAuthSessionId: codeInfo.preAuthSessionId,
+                    deviceId: codeInfo.deviceId,
+                    userInputCode: codeInfo.userInputCode,
+                    userContext: input.userContext,
+                }
         );
 
         if (consumeCodeResponse.status === "OK") {

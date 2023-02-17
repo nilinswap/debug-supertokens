@@ -9,16 +9,16 @@ export default function getAPIImplementation(): APIInterface {
             let response = await input.options.recipeImplementation.consumeCode(
                 "deviceId" in input
                     ? {
-                          preAuthSessionId: input.preAuthSessionId,
-                          deviceId: input.deviceId,
-                          userInputCode: input.userInputCode,
-                          userContext: input.userContext,
-                      }
+                        preAuthSessionId: input.preAuthSessionId,
+                        deviceId: input.deviceId,
+                        userInputCode: input.userInputCode,
+                        userContext: input.userContext,
+                    }
                     : {
-                          preAuthSessionId: input.preAuthSessionId,
-                          linkCode: input.linkCode,
-                          userContext: input.userContext,
-                      }
+                        preAuthSessionId: input.preAuthSessionId,
+                        linkCode: input.linkCode,
+                        userContext: input.userContext,
+                    }
             );
 
             if (response.status !== "OK") {
@@ -64,24 +64,25 @@ export default function getAPIImplementation(): APIInterface {
             };
         },
         createCodePOST: async function (input) {
+            //READCODE BUNI AL3: this is where create otp code. of course, it is done from the backend. we get the response from backend with otp but we don't send otp to the frontend.
             let response = await input.options.recipeImplementation.createCode(
                 "email" in input
                     ? {
-                          userContext: input.userContext,
-                          email: input.email,
-                          userInputCode:
-                              input.options.config.getCustomUserInputCode === undefined
-                                  ? undefined
-                                  : await input.options.config.getCustomUserInputCode(input.userContext),
-                      }
+                        userContext: input.userContext,
+                        email: input.email,
+                        userInputCode:
+                            input.options.config.getCustomUserInputCode === undefined
+                                ? undefined
+                                : await input.options.config.getCustomUserInputCode(input.userContext),
+                    }
                     : {
-                          userContext: input.userContext,
-                          phoneNumber: input.phoneNumber,
-                          userInputCode:
-                              input.options.config.getCustomUserInputCode === undefined
-                                  ? undefined
-                                  : await input.options.config.getCustomUserInputCode(input.userContext),
-                      }
+                        userContext: input.userContext,
+                        phoneNumber: input.phoneNumber,
+                        userInputCode:
+                            input.options.config.getCustomUserInputCode === undefined
+                                ? undefined
+                                : await input.options.config.getCustomUserInputCode(input.userContext),
+                    }
             );
 
             // now we send the email / text message.
@@ -122,6 +123,7 @@ export default function getAPIImplementation(): APIInterface {
                     userContext: input.userContext,
                 });
             } else {
+                //READCODE BUNI AL3: this is where we send email. userInputCode is the otp
                 logDebugMessage(`Sending passwordless login email to ${(input as any).email}`);
                 await input.options.emailDelivery.ingredientInterfaceImpl.sendEmail({
                     type: "PASSWORDLESS_LOGIN",
