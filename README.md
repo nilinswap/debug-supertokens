@@ -63,3 +63,6 @@ go to http://localhost:1234/inner
 
 [] publish both node and react library as your own npm package.
 
+
+### LISTEN HERE
+read LISTEN_HERE.md  - it talks about versions and debugging.
