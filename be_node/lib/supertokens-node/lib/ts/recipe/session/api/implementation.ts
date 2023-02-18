@@ -30,6 +30,7 @@ export default function getAPIInterface(): APIInterface {
             options: APIOptions;
             userContext: any;
         }): Promise<SessionContainerInterface | undefined> {
+            // READCODE BUNI MW3: This gets called from this.apiImpl.verifySession and similar. It comes here for both authed api and to just verify session and refersh it in refresh-flow
             let method = normaliseHttpMethod(options.req.getMethod());
             if (method === "options" || method === "trace") {
                 return undefined;
@@ -38,7 +39,7 @@ export default function getAPIInterface(): APIInterface {
             let incomingPath = new NormalisedURLPath(options.req.getOriginalURL());
 
             let refreshTokenPath = options.config.refreshTokenPath;
-
+            // READCODE BUNI MW3: below if else differs the request that is using this function for refreshing token or authing the api.
             if (incomingPath.equals(refreshTokenPath) && method === "post") {
                 // READCODE BUNI RSL3: below calls refreshSession from be_node/lib/supertokens-node/lib/ts/recipe/session/recipeImplementation.ts eventually
                 return options.recipeImplementation.refreshSession({
@@ -76,8 +77,8 @@ export default function getAPIInterface(): APIInterface {
             userContext: any;
         }): Promise<
             | {
-                  status: "OK";
-              }
+                status: "OK";
+            }
             | GeneralErrorResponse
         > {
             if (session !== undefined) {

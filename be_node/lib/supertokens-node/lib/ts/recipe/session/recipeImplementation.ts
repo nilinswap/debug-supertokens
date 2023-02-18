@@ -159,7 +159,7 @@ export default function getRecipeInterface(
             }
 
             const disableAntiCSRF = outputTransferMethod === "header";
-
+            // READCODE BUNI: this is where the create session api for core is called. and below it is where we set cookies
             let response = await SessionFunctions.createNewSession(
                 helpers,
                 userId,
@@ -207,8 +207,10 @@ export default function getRecipeInterface(
             options?: VerifySessionOptions;
             userContext: any;
         }): Promise<Session | undefined> {
+            // READCODE BUNI MW3: this getSession is called from inside `be_node/lib/supertokens-node/lib/ts/recipe/session/api/implementation.ts`'s verifySession when the flow is to auth an express api.
             logDebugMessage("getSession: Started");
 
+            // READCODE BUNI MW3: if refreshToken doesn't exist, we return error unauthorised.
             // This token isn't handled by getToken to limit the scope of this legacy/migration code
             if (req.getCookieValue(LEGACY_ID_REFRESH_TOKEN_COOKIE_NAME) !== undefined) {
                 // This could create a spike on refresh calls during the update of the backend SDK
@@ -300,6 +302,7 @@ export default function getRecipeInterface(
 
             logDebugMessage("getSession: Value of doAntiCsrfCheck is: " + doAntiCsrfCheck);
 
+            // READCODE BUNI MW3: call SessionFunctions.getSession
             let response = await SessionFunctions.getSession(
                 helpers,
                 accessToken,
@@ -315,6 +318,7 @@ export default function getRecipeInterface(
                     response.accessToken.expiry,
                     response.session.userDataInJWT
                 );
+                // READCODE BUNI MW3: we attach accesstoken to response. 
                 setToken(
                     config,
                     res,

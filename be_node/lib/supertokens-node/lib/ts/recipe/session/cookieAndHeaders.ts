@@ -169,6 +169,7 @@ export function setCookie(
     } else if (pathType === "accessTokenPath") {
         path = "/";
     }
+    // READCODE BUNI MW3: if RT and AT are fresh, we don't verify if they are correct by making a backend call. we such guts because httponly flag is true so we don't need to worry about XSS attacks.
     let httpOnly = true;
 
     return res.setCookie(name, value, domain, secure, httpOnly, expires, path, sameSite);
