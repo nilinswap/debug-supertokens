@@ -13,7 +13,7 @@
  * under the License.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DEFAULT_API_BASE_PATH, DEFAULT_WEBSITE_BASE_PATH, RECIPE_ID_QUERY_PARAM } from "./constants";
 import { CookieHandlerReference } from "supertokens-website/utils/cookieHandler";
 import NormalisedURLDomain from "supertokens-web-js/utils/normalisedURLDomain";
@@ -199,6 +199,10 @@ export function appendQueryParamsToURL(stringUrl: string, queryParams?: Record<s
     }
 }
 
+export function appendTrailingSlashToURL(stringUrl: string): string {
+    return stringUrl.endsWith("/") ? stringUrl : stringUrl + "/";
+}
+
 /*
  * Default method for matching recipe route based on query params.
  */
@@ -213,6 +217,8 @@ export function matchRecipeIdUsingQueryParams(recipeId: string): () => boolean {
 
 export function redirectWithFullPageReload(to: string): void {
     // READCODE BURI: so if it is redirected to auth without any to..it get redirected to index.
+    // there is a with history version of this function too.
+
     if (to.trim() === "") {
         to = "/";
     }
@@ -410,6 +416,7 @@ export const useOnMountAPICall = <T>(
 ) => {
     const consumeReq = useRef<Promise<T>>();
 
+    const [error, setError] = useState<any>(undefined);
     useEffect(() => {
         const effect = async (signal: AbortSignal) => {
             let resp;
@@ -424,8 +431,12 @@ export const useOnMountAPICall = <T>(
                     void handleResponse(resp);
                 }
             } catch (err) {
-                if (!signal.aborted && handleError) {
-                    handleError(err, resp);
+                if (!signal.aborted) {
+                    if (handleError !== undefined) {
+                        handleError(err, resp);
+                    } else {
+                        setError(err);
+                    }
                 }
             }
         };
@@ -438,5 +449,29 @@ export const useOnMountAPICall = <T>(
             };
         }
         return;
-    }, [consumeReq, fetch, handleResponse, handleError, startLoading]);
+    }, [setError, consumeReq, fetch, handleResponse, handleError, startLoading]);
+
+    if (error) {
+        throw error;
+    }
 };
+
+export function saveInvalidClaimRedirectPathInContext(userContext: any, invalidClaimRedirectPath: string) {
+    if (userContext["_default"] === undefined) {
+        userContext["_default"] = {};
+    }
+    if (userContext["_default"].redirectPath === undefined) {
+        userContext["_default"] = {
+            ...userContext["_default"],
+            invalidClaimRedirectPath,
+        };
+    }
+}
+
+export function popInvalidClaimRedirectPathFromContext(userContext: any) {
+    const res = userContext["_default"]?.invalidClaimRedirectPath;
+    if (res !== undefined) {
+        delete userContext["_default"].invalidClaimRedirectPath;
+    }
+    return res;
+}

@@ -56,7 +56,7 @@
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
-    "express": "4.17.1",
+    "express": "4.18.1",
     "express-session": "*",
     "http-errors": "~1.6.3"
   },
@@ -70,8 +70,7 @@
     "@types/aws-lambda": "8.10.77",
     "@types/co-body": "^5.1.1",
     "@types/cookie": "0.3.3",
-    "@types/express": "^4.17.13",
-    "@types/express-serve-static-core": "^4.17.30",
+    "@types/express": "4.16.1",
     "@types/hapi__hapi": "20.0.8",
     "@types/jsonwebtoken": "8.5.0",
     "@types/koa": "^2.13.4",
@@ -81,7 +80,7 @@
     "@types/validator": "10.11.0",
     "aws-sdk-mock": "^5.4.0",
     "cookie-parser": "^1.4.5",
-    "express": "4.17.1",
+    "express": "4.18.1",
     "fastify": "3.18.1",
     "glob": "7.1.7",
     "koa": "^2.13.3",
@@ -96,7 +95,8 @@
     "react": "^17.0.2",
     "supertest": "4.0.2",
     "typedoc": "^0.22.5",
-    "typescript": "^4.1.0"
+    "typescript": "^4.1.0",
+    "sinon": "^14.0.0"
   },
   "browser": {
     "fs": false

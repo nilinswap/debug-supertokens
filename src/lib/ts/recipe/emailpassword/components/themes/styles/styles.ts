@@ -70,6 +70,13 @@ export function getStyles(palette: NormalisedPalette): NormalisedDefaultStyles {
                 border: "none",
                 outline: "none",
             },
+            [`&:-webkit-autofill,
+            &:-webkit-autofill:hover, 
+            &:-webkit-autofill:focus, 
+            &:-webkit-autofill:active`]: {
+                WebkitTextFillColor: palette.colors.textInput,
+                WebkitBoxShadow: `0 0 0 30px ${palette.colors.inputBackground} inset`,
+            },
         },
 
         inputAdornment: {

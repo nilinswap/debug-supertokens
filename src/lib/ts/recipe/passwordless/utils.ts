@@ -43,7 +43,6 @@ export function normalisePasswordlessConfig(config: Config): NormalisedConfig {
 
     const override: any = {
         functions: (originalImplementation: RecipeInterface) => originalImplementation,
-        components: {},
         ...config.override,
     };
 
@@ -247,7 +246,7 @@ export async function consumeCode(
 ): Promise<
     | {
           status: "OK";
-          createdUser: boolean;
+          createdNewUser: boolean;
           user: PasswordlessUser;
           fetchResponse: Response;
       }

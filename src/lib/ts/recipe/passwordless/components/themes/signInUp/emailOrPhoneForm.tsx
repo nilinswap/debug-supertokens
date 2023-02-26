@@ -17,7 +17,7 @@ import { SignInUpEmailOrPhoneFormProps } from "../../../types";
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
 import FormBase from "../../../../emailpassword/components/library/formBase";
 import { phoneNumberInputWithInjectedProps } from "./phoneNumberInput";
-import { defaultEmailValidator, defaultValidate } from "../../../../emailpassword/validators";
+import { defaultEmailValidator, defaultValidate } from "../../../validators";
 import { useMemo, useState } from "react";
 import STGeneralError from "supertokens-web-js/utils/error";
 import { useUserContext } from "../../../../../usercontext";
@@ -96,9 +96,27 @@ export const EmailOrPhoneForm = withOverride(
                             );
 
                         if (intPhoneNumber && isPhoneNumber !== true) {
-                            setValue("emailOrPhone", intPhoneNumber);
-                            setIsPhoneNumber(true);
-                            throw new STGeneralError("PWLESS_EMAIL_OR_PHONE_INVALID_INPUT_GUESS_PHONE_ERR");
+                            const phoneValidationResAfterGuess = await props.config.validatePhoneNumber(intPhoneNumber);
+                            if (phoneValidationResAfterGuess === undefined) {
+                                try {
+                                    return await props.recipeImplementation.createCode({
+                                        phoneNumber: intPhoneNumber,
+                                        userContext,
+                                    });
+                                } catch (ex) {
+                                    // General errors from the API can make createCode throw but we want to switch to the phone UI anyway
+                                    setValue("emailOrPhone", intPhoneNumber);
+                                    setIsPhoneNumber(true);
+                                    throw ex;
+                                }
+                            } else {
+                                // In this case we could get a phonenumber but not a completely valid one
+                                // We want to switch to the phone UI and pre-fill the number
+
+                                setValue("emailOrPhone", intPhoneNumber);
+                                setIsPhoneNumber(true);
+                                throw new STGeneralError("PWLESS_EMAIL_OR_PHONE_INVALID_INPUT_GUESS_PHONE_ERR");
+                            }
                         } else {
                             throw new STGeneralError(phoneValidationRes);
                         }

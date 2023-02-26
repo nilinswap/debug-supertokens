@@ -1,6 +1,7 @@
 import * as express from "express";
 import Supertokens from "../..";
-import Session, { RecipeInterface } from "../../recipe/session";
+import Session, { RecipeInterface, SessionClaimValidator } from "../../recipe/session";
+import EmailVerification from "../../recipe/emailverification";
 import EmailPassword from "../../recipe/emailpassword";
 import { verifySession } from "../../recipe/session/framework/express";
 import { middleware, errorHandler, SessionRequest } from "../../framework/express";
@@ -9,11 +10,10 @@ import ThirdPartyEmailPassword from "../../recipe/thirdpartyemailpassword";
 import ThirdParty from "../../recipe/thirdparty";
 import Passwordless from "../../recipe/passwordless";
 import ThirdPartyPasswordless from "../../recipe/thirdpartypasswordless";
-import { STMPService as STMPServiceTPP } from "../../recipe/thirdpartypasswordless/emaildelivery";
-import { STMPService as STMPServiceP } from "../../recipe/passwordless/emaildelivery";
-import { STMPService as STMPServiceTP } from "../../recipe/thirdparty/emaildelivery";
-import { STMPService as STMPServiceTPEP } from "../../recipe/thirdpartyemailpassword/emaildelivery";
-import { STMPService as STMPServiceEP } from "../../recipe/emailpassword/emaildelivery";
+import { SMTPService as SMTPServiceTPP } from "../../recipe/thirdpartypasswordless/emaildelivery";
+import { SMTPService as SMTPServiceP } from "../../recipe/passwordless/emaildelivery";
+import { SMTPService as SMTPServiceTPEP } from "../../recipe/thirdpartyemailpassword/emaildelivery";
+import { SMTPService as SMTPServiceEP } from "../../recipe/emailpassword/emaildelivery";
 import {
     TwilioService as TwilioServiceTPP,
     SupertokensService as SupertokensServiceTPP,
@@ -23,7 +23,10 @@ import {
     SupertokensService as SupertokensServiceP,
 } from "../../recipe/thirdpartypasswordless/smsdelivery";
 import UserMetadata from "../../recipe/usermetadata";
+import { BooleanClaim, PrimitiveClaim, SessionClaim } from "../../recipe/session/claims";
 import UserRoles from "../../recipe/userroles";
+import Dashboard from "../../recipe/dashboard";
+import JWT from "../../recipe/jwt";
 
 UserRoles.init({
     override: {
@@ -138,9 +141,6 @@ ThirdPartyPasswordless.init({
     getCustomUserInputCode: (userCtx) => {
         return "123";
     },
-    getLinkDomainAndPath: (contactInfo, userCtx) => {
-        return "";
-    },
     override: {
         apis: (oI) => {
             return {
@@ -176,9 +176,6 @@ ThirdPartyPasswordless.init({
     flowType: "USER_INPUT_CODE",
     getCustomUserInputCode: async (userCtx) => {
         return "123";
-    },
-    getLinkDomainAndPath: async (contactInfo, userCtx) => {
-        return "";
     },
     override: {
         apis: (oI) => {
@@ -235,9 +232,6 @@ Passwordless.init({
     getCustomUserInputCode: (userCtx) => {
         return "123";
     },
-    getLinkDomainAndPath: (contactInfo, userCtx) => {
-        return "";
-    },
     override: {
         apis: (oI) => {
             return {
@@ -273,9 +267,6 @@ Passwordless.init({
     flowType: "USER_INPUT_CODE",
     getCustomUserInputCode: async (userCtx) => {
         return "123";
-    },
-    getLinkDomainAndPath: async (contactInfo, userCtx) => {
-        return "";
     },
     override: {
         apis: (oI) => {
@@ -360,9 +351,6 @@ ThirdPartyPasswordless.init({
     getCustomUserInputCode: (userCtx) => {
         return "123";
     },
-    getLinkDomainAndPath: (contactInfo, userCtx) => {
-        return "";
-    },
     override: {
         apis: (oI) => {
             return {
@@ -408,9 +396,6 @@ ThirdPartyPasswordless.init({
     getCustomUserInputCode: (userCtx) => {
         return "123";
     },
-    getLinkDomainAndPath: (contactInfo, userCtx) => {
-        return "";
-    },
     override: {
         apis: (oI) => {
             return {
@@ -434,9 +419,10 @@ ThirdPartyPasswordless.init({
 ThirdPartyPasswordless.init({
     contactMethod: "EMAIL",
     emailDelivery: {
-        service: new STMPServiceTPP({
+        service: new SMTPServiceTPP({
             smtpSettings: {
                 host: "",
+                authUsername: "",
                 password: "",
                 port: 465,
                 from: {
@@ -451,8 +437,7 @@ ThirdPartyPasswordless.init({
                         await oI.sendRawEmail(input);
                     },
                     getContent: async (input) => {
-                        if (input.type === "EMAIL_VERIFICATION") {
-                        } else if (input.type === "PASSWORDLESS_LOGIN") {
+                        if (input.type === "PASSWORDLESS_LOGIN") {
                         }
                         return await oI.getContent(input);
                     },
@@ -463,8 +448,7 @@ ThirdPartyPasswordless.init({
             return {
                 ...oI,
                 sendEmail: async (input) => {
-                    if (input.type === "EMAIL_VERIFICATION") {
-                    } else if (input.type === "PASSWORDLESS_LOGIN") {
+                    if (input.type === "PASSWORDLESS_LOGIN") {
                     }
                     await oI.sendEmail(input);
                 },
@@ -474,9 +458,6 @@ ThirdPartyPasswordless.init({
     flowType: "USER_INPUT_CODE",
     getCustomUserInputCode: async (userCtx) => {
         return "123";
-    },
-    getLinkDomainAndPath: async (contactInfo, userCtx) => {
-        return "";
     },
     override: {
         apis: (oI) => {
@@ -489,7 +470,7 @@ ThirdPartyPasswordless.init({
 
 ThirdPartyPasswordless.init({
     emailDelivery: {
-        service: new STMPServiceTPP({
+        service: new SMTPServiceTPP({
             smtpSettings: {
                 host: "",
                 password: "",
@@ -584,9 +565,6 @@ Passwordless.init({
     getCustomUserInputCode: (userCtx) => {
         return "123";
     },
-    getLinkDomainAndPath: (contactInfo, userCtx) => {
-        return "";
-    },
     override: {
         apis: (oI) => {
             return {
@@ -626,9 +604,6 @@ Passwordless.init({
     getCustomUserInputCode: (userCtx) => {
         return "123";
     },
-    getLinkDomainAndPath: (contactInfo, userCtx) => {
-        return "";
-    },
     override: {
         apis: (oI) => {
             return {
@@ -652,7 +627,7 @@ Passwordless.init({
 Passwordless.init({
     contactMethod: "EMAIL",
     emailDelivery: {
-        service: new STMPServiceP({
+        service: new SMTPServiceP({
             smtpSettings: {
                 host: "",
                 password: "",
@@ -691,9 +666,6 @@ Passwordless.init({
     getCustomUserInputCode: async (userCtx) => {
         return "123";
     },
-    getLinkDomainAndPath: async (contactInfo, userCtx) => {
-        return "";
-    },
     override: {
         apis: (oI) => {
             return {
@@ -705,7 +677,7 @@ Passwordless.init({
 
 Passwordless.init({
     emailDelivery: {
-        service: new STMPServiceP({
+        service: new SMTPServiceP({
             smtpSettings: {
                 host: "",
                 password: "",
@@ -764,7 +736,7 @@ Passwordless.init({
 
 EmailPassword.init({
     emailDelivery: {
-        service: new STMPServiceEP({
+        service: new SMTPServiceEP({
             smtpSettings: {
                 host: "",
                 password: "",
@@ -781,8 +753,7 @@ EmailPassword.init({
                         await oI.sendRawEmail(input);
                     },
                     getContent: async (input) => {
-                        if (input.type === "EMAIL_VERIFICATION") {
-                        } else if (input.type === "PASSWORD_RESET") {
+                        if (input.type === "PASSWORD_RESET") {
                         }
                         return await oI.getContent(input);
                     },
@@ -793,8 +764,7 @@ EmailPassword.init({
             return {
                 ...oI,
                 sendEmail: async (input) => {
-                    if (input.type === "EMAIL_VERIFICATION") {
-                    } else if (input.type === "PASSWORD_RESET") {
+                    if (input.type === "PASSWORD_RESET") {
                     }
                     await oI.sendEmail(input);
                 },
@@ -805,7 +775,7 @@ EmailPassword.init({
 
 ThirdPartyEmailPassword.init({
     emailDelivery: {
-        service: new STMPServiceTPEP({
+        service: new SMTPServiceTPEP({
             smtpSettings: {
                 host: "",
                 password: "",
@@ -822,8 +792,7 @@ ThirdPartyEmailPassword.init({
                         await oI.sendRawEmail(input);
                     },
                     getContent: async (input) => {
-                        if (input.type === "EMAIL_VERIFICATION") {
-                        } else if (input.type === "PASSWORD_RESET") {
+                        if (input.type === "PASSWORD_RESET") {
                         }
                         return await oI.getContent(input);
                     },
@@ -834,8 +803,7 @@ ThirdPartyEmailPassword.init({
             return {
                 ...oI,
                 sendEmail: async (input) => {
-                    if (input.type === "EMAIL_VERIFICATION") {
-                    } else if (input.type === "PASSWORD_RESET") {
+                    if (input.type === "PASSWORD_RESET") {
                     }
                     await oI.sendEmail(input);
                 },
@@ -845,42 +813,6 @@ ThirdPartyEmailPassword.init({
 });
 
 ThirdParty.init({
-    emailDelivery: {
-        service: new STMPServiceTP({
-            smtpSettings: {
-                host: "",
-                password: "",
-                port: 465,
-                from: {
-                    name: "",
-                    email: "",
-                },
-            },
-            override: (oI) => {
-                return {
-                    ...oI,
-                    sendRawEmail: async (input) => {
-                        await oI.sendRawEmail(input);
-                    },
-                    getContent: async (input) => {
-                        if (input.type === "EMAIL_VERIFICATION") {
-                        }
-                        return await oI.getContent(input);
-                    },
-                };
-            },
-        }),
-        override: (oI) => {
-            return {
-                ...oI,
-                sendEmail: async (input) => {
-                    if (input.type === "EMAIL_VERIFICATION") {
-                    }
-                    await oI.sendEmail(input);
-                },
-            };
-        },
-    },
     signInAndUpFeature: {
         providers: [],
     },
@@ -909,6 +841,12 @@ let sessionConfig: SessionTypeInput = {
                         revokeSession: session.revokeSession,
                         updateAccessTokenPayload: session.updateAccessTokenPayload,
                         updateSessionData: session.updateSessionData,
+                        mergeIntoAccessTokenPayload: session.mergeIntoAccessTokenPayload,
+                        assertClaims: session.assertClaims,
+                        fetchAndSetClaim: session.fetchAndSetClaim,
+                        setClaimValue: session.setClaimValue,
+                        getClaimValue: session.getClaimValue,
+                        removeClaim: session.removeClaim,
                         getExpiry: session.getExpiry,
                         getTimeCreated: session.getTimeCreated,
                     };
@@ -924,6 +862,14 @@ let sessionConfig: SessionTypeInput = {
                 getRefreshTokenLifeTimeMS: originalImpl.getRefreshTokenLifeTimeMS,
                 getSessionInformation: originalImpl.getSessionInformation,
                 regenerateAccessToken: originalImpl.regenerateAccessToken,
+                mergeIntoAccessTokenPayload: originalImpl.mergeIntoAccessTokenPayload,
+                getGlobalClaimValidators: originalImpl.getGlobalClaimValidators,
+                fetchAndSetClaim: originalImpl.fetchAndSetClaim,
+                setClaimValue: originalImpl.setClaimValue,
+                getClaimValue: originalImpl.getClaimValue,
+                removeClaim: originalImpl.removeClaim,
+                validateClaims: originalImpl.validateClaims,
+                validateClaimsInJWTPayload: originalImpl.validateClaimsInJWTPayload,
             };
         },
     },
@@ -949,6 +895,41 @@ let config: TypeInput = {
     telemetry: true,
 };
 
+class StringClaim extends PrimitiveClaim<string> {
+    constructor(key: string) {
+        super({ key, fetchValue: (userId) => userId });
+
+        this.validators = {
+            ...this.validators,
+            startsWith: (str) => ({
+                claim: this,
+                id: key,
+                shouldRefetch: () => false,
+                validate: async (payload) => {
+                    const value = this.getValueFromPayload(payload);
+                    if (!value || !value.startsWith(str)) {
+                        return {
+                            isValid: false,
+                            reason: {
+                                expectedPrefix: str,
+                                value,
+                                message: "wrong prefix",
+                            },
+                        };
+                    }
+                    return { isValid: true };
+                },
+            }),
+        };
+    }
+
+    validators: PrimitiveClaim<string>["validators"] & {
+        startsWith: (prefix: string) => SessionClaimValidator;
+    };
+}
+const stringClaim = new StringClaim("cust-str");
+const boolClaim = new BooleanClaim({ key: "asdf", fetchValue: (userId) => userId.startsWith("5") });
+
 Supertokens.init(config);
 
 app.use(middleware());
@@ -957,11 +938,23 @@ app.use(
     verifySession({
         antiCsrfCheck: true,
         sessionRequired: false,
+        overrideGlobalClaimValidators: (globalClaimValidators) => {
+            return [...globalClaimValidators, stringClaim.validators.startsWith("5")];
+        },
     }),
     async (req: SessionRequest, res) => {
         let session = req.session;
         if (session !== undefined) {
             session.getAccessToken();
+            const oldValue = await session.getClaimValue(stringClaim);
+            await session.setClaimValue(stringClaim, oldValue + "!!!!");
+            await session.removeClaim(boolClaim);
+            await session.fetchAndSetClaim(boolClaim);
+
+            await session.assertClaims([
+                stringClaim.validators.startsWith("!!!!"),
+                boolClaim.validators.hasValue(true),
+            ]);
         }
 
         // nextJS types
@@ -985,7 +978,11 @@ app.use(
             res
         );
         if (session2 !== undefined) {
-            session2.getHandle();
+            const handle = session2.getHandle();
+            await Session.fetchAndSetClaim(handle, boolClaim);
+            const oldValue = await Session.getClaimValue(handle, stringClaim);
+            await Session.setClaimValue(handle, stringClaim, oldValue + "!!!");
+            await Session.removeClaim(handle, boolClaim);
         }
 
         await NextJS.superTokensNextWrapper(
@@ -1019,10 +1016,7 @@ Supertokens.init({
         websiteDomain: "",
     },
     recipeList: [
-        Session.init({
-            antiCsrf: "NONE",
-            cookieDomain: "",
-        }),
+        Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "NONE", cookieDomain: "" }),
         EmailPassword.init({
             override: {},
         }),
@@ -1206,7 +1200,7 @@ EmailPassword.init({
 
                     if (isAllowed) {
                         // import Session from "supertokens-node/recipe/session"
-                        let session = await Session.createNewSession(options.res, user.id);
+                        let session = await Session.createNewSession(options.req, options.res, user.id);
                         return {
                             status: "OK",
                             session,
@@ -1241,12 +1235,200 @@ Session.init({
 
                     return session;
                 },
+                getGlobalClaimValidators: ({ claimValidatorsAddedByOtherRecipes }) => [
+                    ...claimValidatorsAddedByOtherRecipes,
+                    boolClaim.validators.hasValue(true),
+                ],
                 createNewSession: async function (input) {
+                    input.accessTokenPayload = stringClaim.removeFromPayload(input.accessTokenPayload);
                     input.accessTokenPayload = {
                         ...input.accessTokenPayload,
+                        ...(await boolClaim.build(input.userId, input.userContext)),
                         lastTokenRefresh: Date.now(),
                     };
                     return originalImplementation.createNewSession(input);
+                },
+            };
+        },
+    },
+});
+
+Session.validateClaimsForSessionHandle("asdf");
+Session.validateClaimsForSessionHandle("asdf", (globalClaimValidators) => [
+    ...globalClaimValidators,
+    boolClaim.validators.isTrue(),
+]);
+Session.validateClaimsForSessionHandle(
+    "asdf",
+    (globalClaimValidators, info) => [...globalClaimValidators, boolClaim.validators.isTrue(info.expiry)],
+    { test: 1 }
+);
+
+Session.validateClaimsInJWTPayload("userId", {});
+Session.validateClaimsInJWTPayload("userId", {}, (globalClaimValidators) => [
+    ...globalClaimValidators,
+    boolClaim.validators.isTrue(),
+]);
+Session.validateClaimsInJWTPayload(
+    "userId",
+    {},
+    (globalClaimValidators, userId) => [...globalClaimValidators, stringClaim.validators.startsWith(userId)],
+    { test: 1 }
+);
+EmailVerification.sendEmail({
+    emailVerifyLink: "",
+    type: "EMAIL_VERIFICATION",
+    user: {
+        email: "",
+        id: "",
+    },
+});
+
+ThirdPartyEmailPassword.sendEmail({
+    type: "PASSWORD_RESET",
+    passwordResetLink: "",
+    user: {
+        email: "",
+        id: "",
+    },
+});
+ThirdPartyEmailPassword.sendEmail({
+    type: "PASSWORD_RESET",
+    passwordResetLink: "",
+    user: {
+        email: "",
+        id: "",
+    },
+    userContext: {},
+});
+
+ThirdPartyPasswordless.sendEmail({
+    codeLifetime: 234,
+    email: "",
+    type: "PASSWORDLESS_LOGIN",
+    preAuthSessionId: "",
+    userInputCode: "",
+    urlWithLinkCode: "",
+});
+ThirdPartyPasswordless.sendEmail({
+    codeLifetime: 234,
+    email: "",
+    type: "PASSWORDLESS_LOGIN",
+    preAuthSessionId: "",
+    userContext: {},
+});
+
+ThirdPartyPasswordless.sendSms({
+    codeLifetime: 234,
+    phoneNumber: "",
+    type: "PASSWORDLESS_LOGIN",
+    preAuthSessionId: "",
+    userInputCode: "",
+    urlWithLinkCode: "",
+});
+ThirdPartyPasswordless.sendSms({
+    codeLifetime: 234,
+    phoneNumber: "",
+    type: "PASSWORDLESS_LOGIN",
+    preAuthSessionId: "",
+    userContext: {},
+});
+
+Supertokens.init({
+    appInfo: {
+        apiDomain: "",
+        appName: "",
+        websiteDomain: "",
+    },
+    recipeList: [
+        Dashboard.init({
+            apiKey: "",
+            override: {
+                functions: () => {
+                    return {
+                        getDashboardBundleLocation: async () => {
+                            return "";
+                        },
+                        shouldAllowAccess: async () => {
+                            return false;
+                        },
+                    };
+                },
+                apis: () => {
+                    return {
+                        dashboardGET: async () => {
+                            return "";
+                        },
+                    };
+                },
+            },
+        }),
+    ],
+});
+
+Dashboard.init({
+    apiKey: "",
+});
+
+Session.init({
+    getTokenTransferMethod: () => "cookie",
+});
+
+Session.init({
+    getTokenTransferMethod: () => "header",
+});
+
+Supertokens.init({
+    appInfo: {
+        apiDomain: "..",
+        appName: "..",
+        websiteDomain: "..",
+    },
+    recipeList: [JWT.init()],
+});
+
+app.post("/create-anonymous-session", async (req, res) => {
+    let token = await JWT.createJWT(
+        {
+            sub: "<Generate random ID>",
+            isAnonymous: true,
+            // other info...
+        },
+        3153600000
+    ); // 100 years validity.
+    if (token.status !== "OK") {
+        throw new Error("Should never come here");
+    }
+    res.json({
+        token: token.jwt,
+    });
+});
+
+Passwordless.init({
+    contactMethod: "EMAIL",
+    flowType: "MAGIC_LINK",
+    override: {
+        functions: (original) => {
+            return {
+                ...original,
+                consumeCode: async function (input) {
+                    let device = await Passwordless.listCodesByPreAuthSessionId({
+                        preAuthSessionId: input.preAuthSessionId,
+                    });
+                    if (device !== undefined && input.userContext.calledManually === undefined) {
+                        if (device.phoneNumber === "TEST_PHONE_NUMBER") {
+                            let user = await Passwordless.signInUp({
+                                phoneNumber: "TEST_PHONE_NUMBER",
+                                userContext: { calledManually: true },
+                            });
+                            return {
+                                status: "OK",
+                                createdNewUser: user.createdNewUser,
+                                user: user.user,
+                            };
+                        }
+                    }
+                    return original.consumeCode(input);
                 },
             };
         },

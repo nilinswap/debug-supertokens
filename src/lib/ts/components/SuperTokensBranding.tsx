@@ -27,7 +27,7 @@ export function SuperTokensBranding(): JSX.Element {
             href="https://supertokens.com?utm_campaign=poweredby"
             target="_blank">
             {t("BRANDING_POWERED_BY_START")}
-            <strong>Noone</strong>
+            <strong>SuperTokens</strong>
             {t("BRANDING_POWERED_BY_END")}
         </a>
     );

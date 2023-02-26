@@ -27,6 +27,7 @@ let SuperTokens = require("../../");
 let FastifyFramework = require("../../framework/fastify");
 const Fastify = require("fastify");
 let EmailPassword = require("../../recipe/emailpassword");
+const EmailVerification = require("../../recipe/emailverification");
 let Session = require("../../recipe/session");
 let { verifySession } = require("../../recipe/session/framework/fastify");
 
@@ -40,7 +41,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
 
     afterEach(async function () {
         try {
-            await this.sever.close();
+            await this.server.close();
         } catch (err) {}
     });
     after(async function () {
@@ -63,6 +64,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             },
             recipeList: [
                 Session.init({
+                    getTokenTransferMethod: () => "cookie",
                     override: {
                         apis: (oI) => {
                             return {
@@ -77,7 +79,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
         });
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "", {}, {});
+            await Session.createNewSession(req, res, "", {}, {});
             return res.send("").code(200);
         });
 
@@ -94,7 +96,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/auth/session/refresh",
             headers: {
-                Cookie: `sRefreshToken=${res.refreshToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sRefreshToken=${res.refreshToken}`,
                 "anti-csrf": res.antiCsrf,
             },
         });
@@ -116,6 +118,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             },
             recipeList: [
                 Session.init({
+                    getTokenTransferMethod: () => "cookie",
                     override: {
                         apis: (oI) => {
                             return {
@@ -130,7 +133,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
         });
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "", {}, {});
+            await Session.createNewSession(req, res, "", {}, {});
             return res.send("").code(200);
         });
 
@@ -164,6 +167,14 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             },
             recipeList: [
                 Session.init({
+                    errorHandlers: {
+                        onTokenTheftDetected: async (sessionHandle, userId, request, response) => {
+                            response.sendJSONResponse({
+                                success: true,
+                            });
+                        },
+                    },
+                    getTokenTransferMethod: () => "cookie",
                     antiCsrf: "VIA_TOKEN",
                     override: {
                         apis: (oI) => {
@@ -177,27 +188,21 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             ],
         });
 
+        this.server.setErrorHandler(FastifyFramework.errorHandler());
+
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "", {}, {});
+            await Session.createNewSession(req, res, "", {}, {});
             return res.send("").code(200);
         });
 
         this.server.post("/session/verify", async (req, res) => {
-            await Session.getSession(req, res, true);
+            await Session.getSession(req, res);
             return res.send("").code(200);
         });
 
         this.server.post("/auth/session/refresh", async (req, res) => {
-            try {
-                await Session.refreshSession(req, res);
-                return res.send({ success: false }).code(200);
-            } catch (err) {
-                return res
-                    .send({
-                        success: err.type === Session.Error.TOKEN_THEFT_DETECTED,
-                    })
-                    .code(200);
-            }
+            await Session.refreshSession(req, res);
+            return res.send({ success: false }).code(200);
         });
 
         await this.server.register(FastifyFramework.plugin);
@@ -214,7 +219,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 method: "post",
                 url: "/auth/session/refresh",
                 headers: {
-                    Cookie: `sRefreshToken=${res.refreshToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                    Cookie: `sRefreshToken=${res.refreshToken}`,
                     "anti-csrf": res.antiCsrf,
                 },
             })
@@ -224,7 +229,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/verify",
             headers: {
-                Cookie: `sAccessToken=${res2.accessToken}; sIdRefreshToken=${res2.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res2.accessToken}`,
                 "anti-csrf": res2.antiCsrf,
             },
         });
@@ -233,7 +238,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/auth/session/refresh",
             headers: {
-                Cookie: `sRefreshToken=${res.refreshToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sRefreshToken=${res.refreshToken}`,
                 "anti-csrf": res.antiCsrf,
             },
         });
@@ -243,14 +248,10 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
         assert.strictEqual(cookies.antiCsrf, undefined);
         assert.strictEqual(cookies.accessToken, "");
         assert.strictEqual(cookies.refreshToken, "");
-        assert.strictEqual(cookies.idRefreshTokenFromHeader, "remove");
-        assert.strictEqual(cookies.idRefreshTokenFromCookie, "");
         assert.strictEqual(cookies.accessTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert.strictEqual(cookies.idRefreshTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
         assert.strictEqual(cookies.refreshTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(cookies.accessTokenDomain === undefined);
         assert(cookies.refreshTokenDomain === undefined);
-        assert(cookies.idRefreshTokenDomain === undefined);
     });
 
     // - check for token theft detection
@@ -266,22 +267,18 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         this.server.setErrorHandler(FastifyFramework.errorHandler());
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "", {}, {});
+            await Session.createNewSession(req, res, "", {}, {});
             return res.send("").code(200);
         });
 
         this.server.post("/session/verify", async (req, res) => {
-            await Session.getSession(req, res, true);
+            await Session.getSession(req, res);
             return res.send("").code(200);
         });
 
@@ -299,7 +296,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 method: "post",
                 url: "/auth/session/refresh",
                 headers: {
-                    Cookie: `sRefreshToken=${res.refreshToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                    Cookie: `sRefreshToken=${res.refreshToken}`,
                     "anti-csrf": res.antiCsrf,
                 },
             })
@@ -309,7 +306,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/verify",
             headers: {
-                Cookie: `sAccessToken=${res2.accessToken}; sIdRefreshToken=${res2.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res2.accessToken}`,
                 "anti-csrf": res2.antiCsrf,
             },
         });
@@ -318,7 +315,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/auth/session/refresh",
             headers: {
-                Cookie: `sRefreshToken=${res.refreshToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sRefreshToken=${res.refreshToken}`,
                 "anti-csrf": res.antiCsrf,
             },
         });
@@ -329,10 +326,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
         assert.strictEqual(cookies.antiCsrf, undefined);
         assert.strictEqual(cookies.accessToken, "");
         assert.strictEqual(cookies.refreshToken, "");
-        assert.strictEqual(cookies.idRefreshTokenFromHeader, "remove");
-        assert.strictEqual(cookies.idRefreshTokenFromCookie, "");
         assert.strictEqual(cookies.accessTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert.strictEqual(cookies.idRefreshTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
         assert.strictEqual(cookies.refreshTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
     });
 
@@ -349,20 +343,16 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "", {}, {});
+            await Session.createNewSession(req, res, "", {}, {});
             return res.send("").code(200);
         });
 
         this.server.post("/session/verify", async (req, res) => {
-            await Session.getSession(req, res, true);
+            await Session.getSession(req, res);
             return res.send("").code(200);
         });
 
@@ -380,7 +370,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 method: "post",
                 url: "/auth/session/refresh",
                 headers: {
-                    Cookie: `sRefreshToken=${res.refreshToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                    Cookie: `sRefreshToken=${res.refreshToken}`,
                     "anti-csrf": res.antiCsrf,
                 },
             })
@@ -390,7 +380,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/verify",
             headers: {
-                Cookie: `sAccessToken=${res2.accessToken}; sIdRefreshToken=${res2.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res2.accessToken}`,
                 "anti-csrf": res2.antiCsrf,
             },
         });
@@ -399,7 +389,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/auth/session/refresh",
             headers: {
-                Cookie: `sRefreshToken=${res.refreshToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sRefreshToken=${res.refreshToken}`,
                 "anti-csrf": res.antiCsrf,
             },
         });
@@ -410,10 +400,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
         assert.strictEqual(cookies.antiCsrf, undefined);
         assert.strictEqual(cookies.accessToken, "");
         assert.strictEqual(cookies.refreshToken, "");
-        assert.strictEqual(cookies.idRefreshTokenFromHeader, "remove");
-        assert.strictEqual(cookies.idRefreshTokenFromCookie, "");
         assert.strictEqual(cookies.accessTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert.strictEqual(cookies.idRefreshTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
         assert.strictEqual(cookies.refreshTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
     });
 
@@ -430,11 +417,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         this.server.post(
@@ -471,25 +454,21 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "", {}, {});
+            await Session.createNewSession(req, res, "", {}, {});
             return res.send("").code(200);
         });
 
         this.server.post("/session/verify", async (req, res) => {
-            await Session.getSession(req, res, true);
+            await Session.getSession(req, res);
             return res.send("").code(200);
         });
 
         this.server.post("/session/revoke", async (req, res) => {
-            let session = await Session.getSession(req, res, true);
+            let session = await Session.getSession(req, res);
             await session.revokeSession();
             return res.send("").code(200);
         });
@@ -505,15 +484,13 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
 
         assert(res.accessToken !== undefined);
         assert(res.antiCsrf !== undefined);
-        assert(res.idRefreshTokenFromCookie !== undefined);
-        assert(res.idRefreshTokenFromHeader !== undefined);
         assert(res.refreshToken !== undefined);
 
         await this.server.inject({
             method: "post",
             url: "/session/verify",
             headers: {
-                Cookie: `sAccessToken=${res.accessToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res.accessToken}`,
                 "anti-csrf": res.antiCsrf,
             },
         });
@@ -526,7 +503,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 method: "post",
                 url: "/auth/session/refresh",
                 headers: {
-                    Cookie: `sRefreshToken=${res.refreshToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                    Cookie: `sRefreshToken=${res.refreshToken}`,
                     "anti-csrf": res.antiCsrf,
                 },
             })
@@ -534,8 +511,6 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
 
         assert(res2.accessToken !== undefined);
         assert(res2.antiCsrf !== undefined);
-        assert(res2.idRefreshTokenFromCookie !== undefined);
-        assert(res2.idRefreshTokenFromHeader !== undefined);
         assert(res2.refreshToken !== undefined);
 
         let res3 = extractInfoFromResponse(
@@ -543,7 +518,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 method: "post",
                 url: "/session/verify",
                 headers: {
-                    Cookie: `sAccessToken=${res2.accessToken}; sIdRefreshToken=${res2.idRefreshTokenFromCookie}`,
+                    Cookie: `sAccessToken=${res2.accessToken}`,
                     "anti-csrf": res2.antiCsrf,
                 },
             })
@@ -558,7 +533,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/verify",
             headers: {
-                Cookie: `sAccessToken=${res3.accessToken}; sIdRefreshToken=${res3.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res3.accessToken}`,
                 "anti-csrf": res2.antiCsrf,
             },
         });
@@ -569,18 +544,15 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/revoke",
             headers: {
-                Cookie: `sAccessToken=${res3.accessToken}; sIdRefreshToken=${res3.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res3.accessToken}`,
                 "anti-csrf": res2.antiCsrf,
             },
         });
         let sessionRevokedResponseExtracted = extractInfoFromResponse(sessionRevokedResponse);
         assert(sessionRevokedResponseExtracted.accessTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.refreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.accessToken === "");
         assert(sessionRevokedResponseExtracted.refreshToken === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromCookie === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromHeader === "remove");
     });
 
     it("test signout API works", async function () {
@@ -595,15 +567,11 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "", {}, {});
+            await Session.createNewSession(req, res, "", {}, {});
             return res.send("").code(200);
         });
 
@@ -620,7 +588,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/auth/signout",
             headers: {
-                Cookie: `sAccessToken=${res.accessToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res.accessToken}`,
                 "anti-csrf": res.antiCsrf,
             },
         });
@@ -628,11 +596,8 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
         let sessionRevokedResponseExtracted = extractInfoFromResponse(sessionRevokedResponse);
         assert(sessionRevokedResponseExtracted.accessTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.refreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.accessToken === "");
         assert(sessionRevokedResponseExtracted.refreshToken === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromCookie === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromHeader === "remove");
     });
 
     // check basic usage of session
@@ -649,25 +614,21 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 websiteDomain: "supertokens.io",
                 apiBasePath: "/",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "", {}, {});
+            await Session.createNewSession(req, res, "", {}, {});
             return res.send("").code(200);
         });
 
         this.server.post("/session/verify", async (req, res) => {
-            await Session.getSession(req, res, true);
+            await Session.getSession(req, res);
             return res.send("").code(200);
         });
 
         this.server.post("/session/revoke", async (req, res) => {
-            let session = await Session.getSession(req, res, true);
+            let session = await Session.getSession(req, res);
             await session.revokeSession();
             return res.send("").code(200);
         });
@@ -683,15 +644,13 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
 
         assert(res.accessToken !== undefined);
         assert(res.antiCsrf !== undefined);
-        assert(res.idRefreshTokenFromCookie !== undefined);
-        assert(res.idRefreshTokenFromHeader !== undefined);
         assert(res.refreshToken !== undefined);
 
         await this.server.inject({
             method: "post",
             url: "/session/verify",
             headers: {
-                Cookie: `sAccessToken=${res.accessToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res.accessToken}`,
                 "anti-csrf": res.antiCsrf,
             },
         });
@@ -704,15 +663,13 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 method: "post",
                 url: "/session/refresh",
                 headers: {
-                    Cookie: `sRefreshToken=${res.refreshToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                    Cookie: `sRefreshToken=${res.refreshToken}`,
                     "anti-csrf": res.antiCsrf,
                 },
             })
         );
         assert(res2.accessToken !== undefined);
         assert(res2.antiCsrf !== undefined);
-        assert(res2.idRefreshTokenFromCookie !== undefined);
-        assert(res2.idRefreshTokenFromHeader !== undefined);
         assert(res2.refreshToken !== undefined);
 
         let res3 = extractInfoFromResponse(
@@ -720,7 +677,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 method: "post",
                 url: "/session/verify",
                 headers: {
-                    Cookie: `sAccessToken=${res2.accessToken}; sIdRefreshToken=${res2.idRefreshTokenFromCookie}`,
+                    Cookie: `sAccessToken=${res2.accessToken}`,
                     "anti-csrf": res2.antiCsrf,
                 },
             })
@@ -735,7 +692,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/verify",
             headers: {
-                Cookie: `sAccessToken=${res3.accessToken}; sIdRefreshToken=${res3.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res3.accessToken}`,
                 "anti-csrf": res2.antiCsrf,
             },
         });
@@ -746,18 +703,15 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/revoke",
             headers: {
-                Cookie: `sAccessToken=${res3.accessToken}; sIdRefreshToken=${res3.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res3.accessToken}`,
                 "anti-csrf": res2.antiCsrf,
             },
         });
         let sessionRevokedResponseExtracted = extractInfoFromResponse(sessionRevokedResponse);
         assert(sessionRevokedResponseExtracted.accessTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.refreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.accessToken === "");
         assert(sessionRevokedResponseExtracted.refreshToken === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromCookie === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromHeader === "remove");
     });
 
     // check session verify for with / without anti-csrf present
@@ -773,20 +727,16 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "id1", {}, {});
+            await Session.createNewSession(req, res, "id1", {}, {});
             return res.send("").code(200);
         });
 
         this.server.post("/session/verify", async (req, res) => {
-            let sessionResponse = await Session.getSession(req, res, true);
+            let sessionResponse = await Session.getSession(req, res);
             return res.send({ userId: sessionResponse.userId }).code(200);
         });
 
@@ -808,7 +758,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/verify",
             headers: {
-                Cookie: `sAccessToken=${res.accessToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res.accessToken}`,
                 "anti-csrf": res.antiCsrf,
             },
         });
@@ -818,7 +768,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/verifyAntiCsrfFalse",
             headers: {
-                Cookie: `sAccessToken=${res.accessToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res.accessToken}`,
                 "anti-csrf": res.antiCsrf,
             },
         });
@@ -838,17 +788,13 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         await this.server.register(FastifyFramework.plugin);
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "id1", {}, {});
+            await Session.createNewSession(req, res, "id1", {}, {});
             return res.send("").code(200);
         });
 
@@ -880,7 +826,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/verifyAntiCsrfFalse",
             headers: {
-                Cookie: `sAccessToken=${res.accessToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res.accessToken}`,
             },
         });
         assert.strictEqual(response2.json().userId, "id1");
@@ -889,7 +835,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/verify",
             headers: {
-                Cookie: `sAccessToken=${res.accessToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res.accessToken}`,
             },
         });
         assert.strictEqual(response.json().success, true);
@@ -908,29 +854,25 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "", {}, {});
+            await Session.createNewSession(req, res, "", {}, {});
             return res.send("").code(200);
         });
         this.server.post("/usercreate", async (req, res) => {
-            await Session.createNewSession(res, "someUniqueUserId", {}, {});
+            await Session.createNewSession(req, res, "someUniqueUserId", {}, {});
             return res.send("").code(200);
         });
         this.server.post("/session/revoke", async (req, res) => {
-            let session = await Session.getSession(req, res, true);
+            let session = await Session.getSession(req, res);
             await session.revokeSession();
             return res.send("").code(200);
         });
 
         this.server.post("/session/revokeUserid", async (req, res) => {
-            let session = await Session.getSession(req, res, true);
+            let session = await Session.getSession(req, res);
             await Session.revokeAllSessionsForUser(session.getUserId());
             return res.send("").code(200);
         });
@@ -952,18 +894,15 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/revoke",
             headers: {
-                Cookie: `sAccessToken=${res.accessToken}; sIdRefreshToken=${res.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${res.accessToken}`,
                 "anti-csrf": res.antiCsrf,
             },
         });
         let sessionRevokedResponseExtracted = extractInfoFromResponse(sessionRevokedResponse);
         assert(sessionRevokedResponseExtracted.accessTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.refreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.accessToken === "");
         assert(sessionRevokedResponseExtracted.refreshToken === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromCookie === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromHeader === "remove");
 
         await this.server.inject({
             method: "post",
@@ -980,7 +919,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/session/revokeUserid",
             headers: {
-                Cookie: `sAccessToken=${userCreateResponse.accessToken}; sIdRefreshToken=${userCreateResponse.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${userCreateResponse.accessToken}`,
                 "anti-csrf": userCreateResponse.antiCsrf,
             },
         });
@@ -1004,15 +943,11 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "", {}, {});
+            await Session.createNewSession(req, res, "", {}, {});
             return res.send("").code(200);
         });
 
@@ -1069,7 +1004,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/updateSessionData",
             headers: {
-                Cookie: `sAccessToken=${response.accessToken}; sIdRefreshToken=${response.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${response.accessToken}`,
                 "anti-csrf": response.antiCsrf,
             },
         });
@@ -1079,7 +1014,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/getSessionData",
             headers: {
-                Cookie: `sAccessToken=${response.accessToken}; sIdRefreshToken=${response.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${response.accessToken}`,
                 "anti-csrf": response.antiCsrf,
             },
         });
@@ -1092,7 +1027,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/updateSessionData2",
             headers: {
-                Cookie: `sAccessToken=${response.accessToken}; sIdRefreshToken=${response.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${response.accessToken}`,
                 "anti-csrf": response.antiCsrf,
             },
         });
@@ -1102,7 +1037,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/getSessionData",
             headers: {
-                Cookie: `sAccessToken=${response.accessToken}; sIdRefreshToken=${response.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${response.accessToken}`,
                 "anti-csrf": response.antiCsrf,
             },
         });
@@ -1115,7 +1050,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/updateSessionDataInvalidSessionHandle",
             headers: {
-                Cookie: `sAccessToken=${response.accessToken}; sIdRefreshToken=${response.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${response.accessToken}`,
                 "anti-csrf": response.antiCsrf,
             },
         });
@@ -1135,15 +1070,11 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "user1", {}, {});
+            await Session.createNewSession(req, res, "user1", {}, {});
             return res.send("").code(200);
         });
 
@@ -1210,7 +1141,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 method: "post",
                 url: "/updateAccessTokenPayload",
                 headers: {
-                    Cookie: `sAccessToken=${response.accessToken}; sIdRefreshToken=${response.idRefreshTokenFromCookie}`,
+                    Cookie: `sAccessToken=${response.accessToken}`,
                     "anti-csrf": response.antiCsrf,
                 },
             })
@@ -1225,7 +1156,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/getAccessTokenPayload",
             headers: {
-                Cookie: `sAccessToken=${updatedResponse.accessToken}; sIdRefreshToken=${response.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${updatedResponse.accessToken}`,
                 "anti-csrf": response.antiCsrf,
             },
         });
@@ -1238,7 +1169,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 method: "post",
                 url: "/auth/session/refresh",
                 headers: {
-                    Cookie: `sRefreshToken=${response.refreshToken}; sIdRefreshToken=${response.idRefreshTokenFromCookie}`,
+                    Cookie: `sRefreshToken=${response.refreshToken}`,
                     "anti-csrf": response.antiCsrf,
                 },
             })
@@ -1254,7 +1185,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 method: "post",
                 url: "/updateAccessTokenPayload2",
                 headers: {
-                    Cookie: `sAccessToken=${response2.accessToken}; sIdRefreshToken=${response2.idRefreshTokenFromCookie}`,
+                    Cookie: `sAccessToken=${response2.accessToken}`,
                     "anti-csrf": response2.antiCsrf,
                 },
             })
@@ -1269,7 +1200,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/getAccessTokenPayload",
             headers: {
-                Cookie: `sAccessToken=${updatedResponse2.accessToken}; sIdRefreshToken=${response2.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${updatedResponse2.accessToken}`,
                 "anti-csrf": response2.antiCsrf,
             },
         });
@@ -1281,7 +1212,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             method: "post",
             url: "/updateAccessTokenPayloadInvalidSessionHandle",
             headers: {
-                Cookie: `sAccessToken=${updatedResponse2.accessToken}; sIdRefreshToken=${response2.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${updatedResponse2.accessToken}`,
                 "anti-csrf": response2.antiCsrf,
             },
         });
@@ -1317,7 +1248,7 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                         },
                     },
                 }),
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
             ],
         });
 
@@ -1346,7 +1277,11 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [EmailPassword.init(), Session.init()],
+            recipeList: [
+                EmailVerification.init({ mode: "OPTIONAL" }),
+                EmailPassword.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
+            ],
         });
 
         await this.server.register(FastifyFramework.plugin);
@@ -1377,12 +1312,12 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
             url: "/auth/user/email/verify/token",
             payload: {},
             headers: {
-                Cookie: `sAccessToken=${response.accessToken}; sIdRefreshToken=${response.idRefreshTokenFromCookie}`,
+                Cookie: `sAccessToken=${response.accessToken}`,
                 "Content-Type": "application/json",
             },
         });
 
-        assert(res2.statusCode === 200);
+        assert.equal(res2.statusCode, 200);
     });
 
     it("test same cookie is not getting set multiple times", async function () {
@@ -1397,17 +1332,13 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         await this.server.register(FastifyFramework.plugin);
 
         this.server.post("/create", async (req, res) => {
-            await Session.createNewSession(res, "id1", {}, {});
+            await Session.createNewSession(req, res, "id1", {}, {});
             return res.send("").code(200);
         });
 
@@ -1419,6 +1350,5 @@ describe(`Fastify: ${printPath("[test/framework/fastify.test.js]")}`, function (
         );
         assert.strictEqual(res.accessToken, 1);
         assert.strictEqual(res.refreshToken, 1);
-        assert.strictEqual(res.idRefreshToken, 1);
     });
 });

@@ -18,13 +18,23 @@
  */
 import * as React from "react";
 import RecipeModule from "./recipe/recipeModule";
-import { ComponentWithRecipeAndMatchingMethod, NormalisedAppInfo, SuperTokensConfig } from "./types";
 import {
+    ComponentWithRecipeAndMatchingMethod,
+    GetRedirectionURLContext,
+    NormalisedAppInfo,
+    SuperTokensConfig,
+} from "./types";
+import {
+    appendQueryParamsToURL,
+    appendTrailingSlashToURL,
     getCurrentNormalisedUrlPath,
     getDefaultCookieScope,
+    getOriginOfPage,
     isTest,
     normaliseCookieScopeOrThrowError,
     normaliseInputAppInfoOrThrowError,
+    redirectWithFullPageReload,
+    redirectWithHistory,
 } from "./utils";
 import NormalisedURLPath from "supertokens-web-js/utils/normalisedURLPath";
 import { getSuperTokensRoutesForReactRouterDom } from "./components/superTokensRoute";
@@ -41,6 +51,7 @@ import {
 } from "./translation/translationHelpers";
 import { CookieHandlerReference } from "supertokens-website/utils/cookieHandler";
 import { WindowHandlerReference } from "supertokens-website/utils/windowHandler";
+import { PostSuperTokensInitCallbacks } from "supertokens-web-js/utils/postSuperTokensInitCallbacks";
 
 /*
  * Class.
@@ -68,7 +79,7 @@ export default class SuperTokens {
     };
     recipeList: RecipeModule<any, any, any, any>[] = [];
     private pathsToFeatureComponentWithRecipeIdMap?: BaseFeatureComponentMap;
-
+    private userGetRedirectionURL: SuperTokensConfig["getRedirectionURL"];
     /*
      * Constructor.
      */
@@ -98,6 +109,8 @@ export default class SuperTokens {
             enableDebugLogs = config.enableDebugLogs;
         }
 
+        this.userGetRedirectionURL = config.getRedirectionURL;
+
         this.recipeList = config.recipeList.map((recipe) => {
             return recipe(this.appInfo, enableDebugLogs);
         });
@@ -116,6 +129,8 @@ export default class SuperTokens {
         }
 
         SuperTokens.instance = new SuperTokens(config);
+
+        PostSuperTokensInitCallbacks.runPostInitCallbacks();
     }
 
     static getInstanceOrThrow(): SuperTokens {
@@ -207,18 +222,23 @@ export default class SuperTokens {
 
         const pathsToFeatureComponentWithRecipeIdMap: BaseFeatureComponentMap = {};
         for (let i = 0; i < this.recipeList.length; i++) {
-            const recipe = this.recipeList[i];
-            const features = recipe.getFeatures();
-            const featurePaths = Object.keys(features);
-            for (let j = 0; j < featurePaths.length; j++) {
-                // If no components yet for this route, initialize empty array.
-                const featurePath = featurePaths[j];
-                if (pathsToFeatureComponentWithRecipeIdMap[featurePath] === undefined) {
-                    pathsToFeatureComponentWithRecipeIdMap[featurePath] = [];
-                }
-
-                pathsToFeatureComponentWithRecipeIdMap[featurePath].push(features[featurePath]);
+          const recipe = this.recipeList[i];
+          // READCODE BURI ER3: below we tell which components (e.g. for signup, otp etc) to render based on recipe
+          const features = recipe.getFeatures();
+          const featurePaths = Object.keys(features);
+          for (let j = 0; j < featurePaths.length; j++) {
+            // If no components yet for this route, initialize empty array.
+            const featurePath = featurePaths[j];
+            if (
+              pathsToFeatureComponentWithRecipeIdMap[featurePath] === undefined
+            ) {
+              pathsToFeatureComponentWithRecipeIdMap[featurePath] = [];
             }
+
+            pathsToFeatureComponentWithRecipeIdMap[featurePath].push(
+              features[featurePath]
+            );
+          }
         }
 
         this.pathsToFeatureComponentWithRecipeIdMap = pathsToFeatureComponentWithRecipeIdMap;
@@ -269,6 +289,64 @@ export default class SuperTokens {
     loadTranslation(store: TranslationStore): void {
         this.languageTranslations.translationEventSource.emit("TranslationLoaded", store);
     }
+
+    async getRedirectUrl(context: GetRedirectionURLContext): Promise<string> {
+        if (this.userGetRedirectionURL) {
+            const userRes = await this.userGetRedirectionURL(context);
+            if (userRes !== undefined) {
+                return userRes;
+            }
+        }
+        if (context.action === "TO_AUTH") {
+            const redirectUrl = this.appInfo.websiteBasePath.getAsStringDangerous();
+            return appendTrailingSlashToURL(redirectUrl);
+        }
+        throw new Error("Should never come here: unexpected redirection context");
+    }
+
+    redirectToAuth = async (options: {
+        show?: "signin" | "signup";
+        history?: any;
+        queryParams?: any;
+        redirectBack: boolean;
+    }) => {
+        const queryParams = options.queryParams === undefined ? {} : options.queryParams;
+        if (options.show !== undefined) {
+            queryParams.show = options.show;
+        }
+        if (options.redirectBack === true) {
+            queryParams.redirectToPath = getCurrentNormalisedUrlPath().getAsStringDangerous();
+        }
+
+        let redirectUrl = await this.getRedirectUrl({
+            action: "TO_AUTH",
+            showSignIn: options.show === "signin",
+        });
+        redirectUrl = appendQueryParamsToURL(redirectUrl, queryParams);
+        return this.redirectToUrl(redirectUrl, options.history);
+    };
+
+    redirectToUrl = async (redirectUrl: string, history?: any): Promise<void> => {
+        try {
+            new URL(redirectUrl); // If full URL, no error thrown, skip in app redirection.
+        } catch (e) {
+            // For multi tenancy, If mismatch between websiteDomain and current location, prepend URL relative path with websiteDomain.
+            const origin = getOriginOfPage().getAsStringDangerous();
+            if (origin !== this.appInfo.websiteDomain.getAsStringDangerous()) {
+                redirectUrl = `${this.appInfo.websiteDomain.getAsStringDangerous()}${redirectUrl}`;
+                redirectWithFullPageReload(redirectUrl);
+                return;
+            }
+
+            // If history was provided, use to redirect without reloading.
+            if (history !== undefined) {
+                redirectWithHistory(redirectUrl, history);
+                return;
+            }
+        }
+        // Otherwise, redirect in app.
+        redirectWithFullPageReload(redirectUrl);
+    };
 
     /*
      * Tests methods.

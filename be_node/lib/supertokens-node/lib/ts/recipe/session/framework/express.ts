@@ -20,11 +20,13 @@ import type { NextFunction, Response } from "express";
 import SuperTokens from "../../../supertokens";
 
 export function verifySession(options?: VerifySessionOptions) {
+    // READCODE BUNI MW3: auth securing an express api goes through this middleware. 
     return async (req: SessionRequest, res: Response, next: NextFunction) => {
         const request = new ExpressRequest(req);
         const response = new ExpressResponse(res);
         try {
             const sessionRecipe = Session.getInstanceOrThrowError();
+            // READCODE BUNI MW3: we make session a part of request so that now doing post-auth is easy.
             req.session = await sessionRecipe.verifySession(options, request, response);
             next();
         } catch (err) {

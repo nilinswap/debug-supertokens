@@ -22,6 +22,7 @@ let nock = require("nock");
 const express = require("express");
 const request = require("supertest");
 let Session = require("../../recipe/session");
+const EmailVerification = require("../../recipe/emailverification");
 let { Querier } = require("../../lib/build/querier");
 let { maxVersion } = require("../../lib/build/utils");
 let { middleware, errorHandler } = require("../../framework/express");
@@ -215,7 +216,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                         },
                     },
                 }),
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
             ],
         });
 
@@ -241,9 +242,8 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
+                EmailVerification.init({ mode: "OPTIONAL" }),
+                Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" }),
                 ThirdPartyEmailPassword.init({
                     providers: [this.customProvider1],
                 }),
@@ -281,7 +281,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
         assert.strictEqual(response1.body.user.thirdParty.userId, "user");
         assert.strictEqual(response1.body.user.email, "email@test.com");
 
-        assert.strictEqual(await ThirdPartyEmailPassword.isEmailVerified(response1.body.user.id), true);
+        assert.strictEqual(await EmailVerification.isEmailVerified(response1.body.user.id), true);
     });
 
     it("test signUpAPI works when input is fine", async function () {
@@ -296,7 +296,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [ThirdPartyEmailPassword.init(), Session.init()],
+            recipeList: [ThirdPartyEmailPassword.init(), Session.init({ getTokenTransferMethod: () => "cookie" })],
         });
 
         const app = express();
@@ -333,9 +333,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
+                Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" }),
                 ThirdPartyEmailPassword.init({
                     providers: [this.customProvider1],
                     override: {
@@ -422,7 +420,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                         },
                     },
                 }),
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
             ],
         });
 
@@ -455,7 +453,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [ThirdPartyEmailPassword.init(), Session.init()],
+            recipeList: [ThirdPartyEmailPassword.init(), Session.init({ getTokenTransferMethod: () => "cookie" })],
         });
 
         const app = express();
@@ -495,7 +493,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyEmailPassword.init({
                     providers: [this.customProvider2],
                 }),
@@ -547,7 +545,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyEmailPassword.init({
                     providers: [this.customProvider3],
                 }),
@@ -594,7 +592,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 websiteDomain: "supertokens.io",
             },
             recipeList: [
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
                 ThirdPartyEmailPassword.init({
                     providers: [this.customProvider4],
                 }),
@@ -651,7 +649,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 ThirdPartyEmailPassword.init({
                     providers: [this.customProvider1],
                 }),
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
             ],
         });
 
@@ -708,7 +706,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 ThirdPartyEmailPassword.init({
                     providers: [this.customProvider1],
                 }),
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
             ],
         });
 
@@ -761,7 +759,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 appName: "SuperTokens",
                 websiteDomain: "supertokens.io",
             },
-            recipeList: [ThirdPartyEmailPassword.init(), Session.init()],
+            recipeList: [ThirdPartyEmailPassword.init(), Session.init({ getTokenTransferMethod: () => "cookie" })],
         });
 
         let currCDIVersion = await Querier.getNewInstanceOrThrowError(undefined).getAPIVersion();
@@ -785,10 +783,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
         assert((await STExpress.getUserCount(["emailpassword"])) === 1);
         assert((await STExpress.getUserCount(["emailpassword", "thirdparty"])) === 1);
 
-        await ThirdPartyEmailPassword.thirdPartySignInUp("google", "randomUserId", {
-            id: "test@example.com",
-            isVerified: false,
-        });
+        await ThirdPartyEmailPassword.thirdPartySignInUp("google", "randomUserId", "test@example.com");
 
         assert((await STExpress.getUserCount()) === 2);
         assert((await STExpress.getUserCount(["emailpassword"])) === 1);
@@ -836,7 +831,7 @@ describe(`signupTest: ${printPath("[test/thirdpartyemailpassword/signupFeature.t
                 ThirdPartyEmailPassword.init({
                     providers: [this.customProvider1],
                 }),
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
             ],
         });
 

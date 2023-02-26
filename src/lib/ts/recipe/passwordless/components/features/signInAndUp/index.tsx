@@ -19,361 +19,430 @@ import * as React from "react";
 import { Fragment } from "react";
 import SignInUpThemeWrapper from "../../themes/signInUp";
 import FeatureWrapper from "../../../../../components/featureWrapper";
-import { clearErrorQueryParam, getQueryParams, getRedirectToPathFromURL } from "../../../../../utils";
+import {
+  clearErrorQueryParam,
+  getQueryParams,
+  getRedirectToPathFromURL,
+} from "../../../../../utils";
 import Recipe from "../../../recipe";
-import { PasswordlessSignInUpAction, SignInUpState, SignInUpChildProps } from "../../../types";
+import {
+  PasswordlessSignInUpAction,
+  SignInUpState,
+  SignInUpChildProps,
+} from "../../../types";
 import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
 import { formatPhoneNumberIntl } from "react-phone-number-input/min";
 import Session from "../../../../session";
+import SessionRecipe from "../../../../session/recipe";
 import { defaultTranslationsPasswordless } from "../../themes/translations";
 import { useMemo } from "react";
 import { useRef } from "react";
 import { useEffect } from "react";
 import { FeatureBaseProps } from "../../../../../types";
-import { RecipeInterface, PasswordlessUser } from "supertokens-web-js/recipe/passwordless";
+import {
+  RecipeInterface,
+  PasswordlessUser,
+} from "supertokens-web-js/recipe/passwordless";
 import { useUserContext } from "../../../../../usercontext";
 import { getLoginAttemptInfo, setLoginAttemptInfo } from "../../../utils";
+import { useRecipeComponentOverrideContext } from "../../../componentOverrideContext";
 
 export const useSuccessInAnotherTabChecker = (
-    state: SignInUpState,
-    dispatch: React.Dispatch<PasswordlessSignInUpAction>,
-    userContext: any
+  state: SignInUpState,
+  dispatch: React.Dispatch<PasswordlessSignInUpAction>,
+  userContext: any
 ) => {
-    const callingConsumeCodeRef = useRef(false);
+  const callingConsumeCodeRef = useRef(false);
 
-    useEffect(() => {
-        // We only need to start checking this if we have an active login attempt
-        if (state.loginAttemptInfo && !state.successInAnotherTab) {
-            const checkSessionIntervalHandle = setInterval(async () => {
-                if (callingConsumeCodeRef.current === false) {
-                    const hasSession = await Session.doesSessionExist({
-                        userContext,
-                    });
-                    if (hasSession) {
-                        dispatch({ type: "successInAnotherTab" });
-                    }
-                }
-            }, 2000);
-
-            return () => {
-                clearInterval(checkSessionIntervalHandle);
-            };
+  useEffect(() => {
+    // We only need to start checking this if we have an active login attempt
+    if (state.loginAttemptInfo && !state.successInAnotherTab) {
+      const checkSessionIntervalHandle = setInterval(async () => {
+        if (callingConsumeCodeRef.current === false) {
+          const hasSession = await Session.doesSessionExist({
+            userContext,
+          });
+          if (hasSession) {
+            dispatch({ type: "successInAnotherTab" });
+          }
         }
-        // Nothing to clean up
-        return;
-    }, [state.loginAttemptInfo, state.successInAnotherTab]);
+      }, 2000);
 
-    return callingConsumeCodeRef;
+      return () => {
+        clearInterval(checkSessionIntervalHandle);
+      };
+    }
+    // Nothing to clean up
+    return;
+  }, [state.loginAttemptInfo, state.successInAnotherTab]);
+
+  return callingConsumeCodeRef;
 };
 
 export const useFeatureReducer = (
-    recipeImpl: RecipeInterface | undefined,
-    userContext: any
+  recipeImpl: RecipeInterface | undefined,
+  userContext: any
 ): [SignInUpState, React.Dispatch<PasswordlessSignInUpAction>] => {
-    const [state, dispatch] = React.useReducer(
-        (oldState: SignInUpState, action: PasswordlessSignInUpAction) => {
-            switch (action.type) {
-                case "load":
-                    return {
-                        loaded: true,
-                        error: action.error,
-                        loginAttemptInfo: action.loginAttemptInfo,
-                        successInAnotherTab: false,
-                    };
-                case "resendCode":
-                    if (!oldState.loginAttemptInfo) {
-                        return oldState;
-                    }
-                    return {
-                        ...oldState,
-                        error: undefined,
-                        loginAttemptInfo: {
-                            ...oldState.loginAttemptInfo,
-                            lastResend: action.timestamp,
-                        },
-                    };
-                case "restartFlow":
-                    return {
-                        ...oldState,
-                        error: action.error,
-                        loginAttemptInfo: undefined,
-                    };
-                case "setError":
-                    return {
-                        ...oldState,
-                        error: action.error,
-                    };
-                case "startLogin":
-                    return {
-                        ...oldState,
-                        loginAttemptInfo: action.loginAttemptInfo,
-                        error: undefined,
-                    };
-                case "successInAnotherTab":
-                    return {
-                        ...oldState,
-                        successInAnotherTab: true,
-                    };
-                default:
-                    return oldState;
-            }
-        },
-        {
-            error: undefined,
-            loaded: false,
-            loginAttemptInfo: undefined,
+  const [state, dispatch] = React.useReducer(
+    (oldState: SignInUpState, action: PasswordlessSignInUpAction) => {
+      switch (action.type) {
+        case "load":
+          return {
+            loaded: true,
+            error: action.error,
+            loginAttemptInfo: action.loginAttemptInfo,
             successInAnotherTab: false,
-        },
-        (initArg) => {
-            let error: string | undefined = undefined;
-            const errorQueryParam = getQueryParams("error");
-            const messageQueryParam = getQueryParams("message");
-            if (errorQueryParam !== null) {
-                if (errorQueryParam === "signin") {
-                    error = "SOMETHING_WENT_WRONG_ERROR";
-                } else if (errorQueryParam === "restart_link") {
-                    error = "ERROR_SIGN_IN_UP_LINK";
-                } else if (errorQueryParam === "custom" && messageQueryParam !== null) {
-                    error = messageQueryParam;
-                }
-            }
-            return {
-                ...initArg,
-                error,
-            };
+          };
+        case "resendCode":
+          if (!oldState.loginAttemptInfo) {
+            return oldState;
+          }
+          return {
+            ...oldState,
+            error: undefined,
+            loginAttemptInfo: {
+              ...oldState.loginAttemptInfo,
+              lastResend: action.timestamp,
+            },
+          };
+        case "restartFlow":
+          return {
+            ...oldState,
+            error: action.error,
+            loginAttemptInfo: undefined,
+          };
+        case "setError":
+          return {
+            ...oldState,
+            error: action.error,
+          };
+        case "startLogin":
+          return {
+            ...oldState,
+            loginAttemptInfo: action.loginAttemptInfo,
+            error: undefined,
+          };
+        case "successInAnotherTab":
+          return {
+            ...oldState,
+            successInAnotherTab: true,
+          };
+        default:
+          return oldState;
+      }
+    },
+    {
+      error: undefined,
+      loaded: false,
+      loginAttemptInfo: undefined,
+      successInAnotherTab: false,
+    },
+    (initArg) => {
+      let error: string | undefined = undefined;
+      const errorQueryParam = getQueryParams("error");
+      const messageQueryParam = getQueryParams("message");
+      if (errorQueryParam !== null) {
+        if (errorQueryParam === "signin") {
+          error = "SOMETHING_WENT_WRONG_ERROR";
+        } else if (errorQueryParam === "restart_link") {
+          error = "ERROR_SIGN_IN_UP_LINK";
+        } else if (errorQueryParam === "custom" && messageQueryParam !== null) {
+          error = messageQueryParam;
         }
-    );
-    useEffect(() => {
-        if (recipeImpl === undefined) {
-            return;
+      }
+      return {
+        ...initArg,
+        error,
+      };
+    }
+  );
+  useEffect(() => {
+    if (recipeImpl === undefined) {
+      return;
+    }
+    async function load() {
+      let error: string | undefined = undefined;
+      const errorQueryParam = getQueryParams("error");
+      const messageQueryParam = getQueryParams("message");
+      if (errorQueryParam !== null) {
+        if (errorQueryParam === "signin") {
+          error = "SOMETHING_WENT_WRONG_ERROR";
+        } else if (errorQueryParam === "restart_link") {
+          error = "ERROR_SIGN_IN_UP_LINK";
+        } else if (errorQueryParam === "custom" && messageQueryParam !== null) {
+          error = messageQueryParam;
         }
-        async function load() {
-            let error: string | undefined = undefined;
-            const errorQueryParam = getQueryParams("error");
-            const messageQueryParam = getQueryParams("message");
-            if (errorQueryParam !== null) {
-                if (errorQueryParam === "signin") {
-                    error = "SOMETHING_WENT_WRONG_ERROR";
-                } else if (errorQueryParam === "restart_link") {
-                    error = "ERROR_SIGN_IN_UP_LINK";
-                } else if (errorQueryParam === "custom" && messageQueryParam !== null) {
-                    error = messageQueryParam;
-                }
-            }
-            const loginAttemptInfo = await getLoginAttemptInfo({
-                recipeImplementation: recipeImpl!,
-                userContext,
-            });
-            // No need to check if the component is unmounting, since this has no effect then.
-            dispatch({ type: "load", loginAttemptInfo, error });
-        }
-        if (state.loaded === false) {
-            void load();
-        }
-    }, [state.loaded, recipeImpl, userContext]);
-    return [state, dispatch];
+      }
+      // READCODE BURI KEB3: it gets loginAttemptInfo and email happens to be a part of it. How it gets I really don't know there is device id part of login info. why? - probably because it wants to sandbox auth from different devices.
+      const loginAttemptInfo = await getLoginAttemptInfo({
+        recipeImplementation: recipeImpl!,
+        userContext,
+      });
+      // READCODE BURI KEB3: it is the only place where load is dispatched. this runs on onLoad right? so it sets the state and that state with login info is passed on to children.
+      // No need to check if the component is unmounting, since this has no effect then.
+      dispatch({ type: "load", loginAttemptInfo, error });
+    }
+    if (state.loaded === false) {
+      void load();
+    }
+  }, [state.loaded, recipeImpl, userContext]);
+  return [state, dispatch];
 };
 
 // We are overloading to explicitly state that if recipe is defined then the return value is defined as well.
 export function useChildProps(
-    recipe: Recipe,
-    dispatch: React.Dispatch<PasswordlessSignInUpAction>,
-    state: SignInUpState,
-    callingConsumeCodeRef: React.MutableRefObject<boolean>,
-    history: any
+  recipe: Recipe,
+  dispatch: React.Dispatch<PasswordlessSignInUpAction>,
+  state: SignInUpState,
+  callingConsumeCodeRef: React.MutableRefObject<boolean>,
+  userContext: any,
+  history: any
 ): SignInUpChildProps;
 export function useChildProps(
-    recipe: Recipe | undefined,
-    dispatch: React.Dispatch<PasswordlessSignInUpAction>,
-    state: SignInUpState,
-    callingConsumeCodeRef: React.MutableRefObject<boolean>,
-    history: any
+  recipe: Recipe | undefined,
+  dispatch: React.Dispatch<PasswordlessSignInUpAction>,
+  state: SignInUpState,
+  callingConsumeCodeRef: React.MutableRefObject<boolean>,
+  userContext: any,
+  history: any
 ): SignInUpChildProps | undefined;
 
 export function useChildProps(
-    recipe: Recipe | undefined,
-    dispatch: React.Dispatch<PasswordlessSignInUpAction>,
-    state: SignInUpState,
-    callingConsumeCodeRef: React.MutableRefObject<boolean>,
-    history: any
+  recipe: Recipe | undefined,
+  dispatch: React.Dispatch<PasswordlessSignInUpAction>,
+  state: SignInUpState,
+  callingConsumeCodeRef: React.MutableRefObject<boolean>,
+  userContext: any,
+  history: any
 ): SignInUpChildProps | undefined {
-    const recipeImplementation = React.useMemo(
-        () => recipe && getModifiedRecipeImplementation(recipe.recipeImpl, dispatch, callingConsumeCodeRef),
-        [recipe]
-    );
+  const recipeImplementation = React.useMemo(
+    () =>
+      recipe &&
+        getModifiedRecipeImplementation(
+        recipe.recipeImpl,
+        dispatch,
+        callingConsumeCodeRef
+      ),
+    [recipe]
+  );
 
-    return useMemo(() => {
-        if (!recipe || !recipeImplementation) {
-            return undefined;
-        }
-        return {
-            onSuccess: (result: { createdUser: boolean; user: PasswordlessUser }) => {
-                const pathFromUrl = getRedirectToPathFromURL();
-
-                return recipe.redirect(
-                    {
-                        action: "SUCCESS",
-                        isNewUser: result.createdUser,
-                        redirectToPath:
-                            pathFromUrl !== undefined ? pathFromUrl : state.loginAttemptInfo?.redirectToPath,
-                    },
-                    history
-                );
+  return useMemo(() => {
+    if (!recipe || !recipeImplementation) {
+      return undefined;
+    }
+    return {
+      // READCODE BURI sysq: what to do after success in submit form of enter-otp form? it is decided here. this is used in onSubmit of FormBase.tsx at the end. This is done based on state
+      onSuccess: (result: {
+        createdNewUser: boolean;
+        user: PasswordlessUser;
+      }) => {
+        return SessionRecipe.getInstanceOrThrow().validateGlobalClaimsAndHandleSuccessRedirection(
+          {
+            rid: recipe.config.recipeId,
+            successRedirectContext: {
+              action: "SUCCESS",
+              isNewUser: result.createdNewUser,
+              // READCODE BURI sysq: notice this will be true for enter-email form so that is how on button click in that form, it will know where to go.
+              redirectToPath: getRedirectToPathFromURL(),
             },
-            recipeImplementation: recipeImplementation,
-            config: recipe.config,
-        };
-    }, [state, recipeImplementation]);
+          },
+          userContext,
+          history
+        );
+      },
+      // READCODE BURI ER3: we attach recipeImplementation which is finally used inside formBase's callAPI for call createCode. 
+      // This is an essential link between recipe's component props and the final api that is called down below.
+      recipeImplementation: recipeImplementation,
+      config: recipe.config,
+    };
+  }, [state, recipeImplementation]);
 }
 
 export const SignInUpFeature: React.FC<
-    FeatureBaseProps & {
-        recipe: Recipe;
-    }
+  FeatureBaseProps & {
+    recipe: Recipe;
+  }
 > = (props) => {
-    const componentOverrides = props.recipe.config.override.components;
-    const userContext = useUserContext();
-    const [state, dispatch] = useFeatureReducer(props.recipe.recipeImpl, userContext);
-    const callingConsumeCodeRef = useSuccessInAnotherTabChecker(state, dispatch, userContext);
-    const childProps = useChildProps(props.recipe, dispatch, state, callingConsumeCodeRef, props.history)!;
+  const recipeComponentOverrides = useRecipeComponentOverrideContext();
+  // READCODE BURI: see here we are getting user info from the context
+  const userContext = useUserContext();
+  const [state, dispatch] = useFeatureReducer(
+    props.recipe.recipeImpl,
+    userContext
+  );
+  // READCODE BURI sysq: follow below; I am not sure but I think it checks if the user is logged in from another tab.
+  const callingConsumeCodeRef = useSuccessInAnotherTabChecker(
+    state,
+    dispatch,
+    userContext
+  );
+  // READCODE BURI sysq: props for the component is formed below. here we set onSuccess which is redirect logic for after submit.
+  const childProps = useChildProps(
+    props.recipe,
+    dispatch,
+    state,
+    callingConsumeCodeRef,
+    userContext,
+    props.history
+  )!;
 
-    return (
-        <ComponentOverrideContext.Provider value={componentOverrides}>
-            <FeatureWrapper
-                useShadowDom={props.recipe.config.useShadowDom}
-                defaultStore={defaultTranslationsPasswordless}>
-                <Fragment>
-                    {/* No custom theme, use default. */}
-                    {props.children === undefined && (
-                        <SignInUpThemeWrapper {...childProps} featureState={state} dispatch={dispatch} />
-                    )}
+  return (
+    <ComponentOverrideContext.Provider value={recipeComponentOverrides}>
+      <FeatureWrapper
+        useShadowDom={props.recipe.config.useShadowDom}
+        defaultStore={defaultTranslationsPasswordless}
+      >
+        <Fragment>
+          {/* No custom theme, use default. */}
+          {props.children === undefined && (
+            <SignInUpThemeWrapper
+              {...childProps}
+              featureState={state}
+              dispatch={dispatch}
+            />
+          )}
 
-                    {/* Otherwise, custom theme is provided, propagate props. */}
-                    {props.children &&
-                        React.Children.map(props.children, (child) => {
-                            if (React.isValidElement(child)) {
-                                return React.cloneElement(child, {
-                                    ...childProps,
-                                    featureState: state,
-                                    dispatch: dispatch,
-                                });
-                            }
-                            return child;
-                        })}
-                </Fragment>
-            </FeatureWrapper>
-        </ComponentOverrideContext.Provider>
-    );
+          {/* Otherwise, custom theme is provided, propagate props. */}
+          {props.children &&
+            React.Children.map(props.children, (child) => {
+              if (React.isValidElement(child)) {
+                return React.cloneElement(child, {
+                  ...childProps,
+                  featureState: state,
+                  dispatch: dispatch,
+                });
+              }
+              return child;
+            })}
+        </Fragment>
+      </FeatureWrapper>
+    </ComponentOverrideContext.Provider>
+  );
 };
 
 export default SignInUpFeature;
 
 function getModifiedRecipeImplementation(
-    originalImpl: RecipeInterface,
-    dispatch: React.Dispatch<PasswordlessSignInUpAction>,
-    callingConsumeCodeRef: React.MutableRefObject<boolean>
+  originalImpl: RecipeInterface,
+  dispatch: React.Dispatch<PasswordlessSignInUpAction>,
+  callingConsumeCodeRef: React.MutableRefObject<boolean>
 ): RecipeInterface {
-    return {
-        ...originalImpl,
-        createCode: async (input) => {
-            let contactInfo;
-            if ("email" in input) {
-                contactInfo = input.email;
-            } else {
-                contactInfo = formatPhoneNumberIntl(input.phoneNumber);
-            }
+  // READCODE BURI sysq: somehow callAPI from inside onFormSubmit from FormBase calls this. So createCode is call on the onSubmit run of enter-email form and consumeCode is the call on onSubmit of enter-otp form. Also notice these are states of the passwordless auth.
 
-            const res = await originalImpl.createCode(input);
-            if (res.status === "OK") {
-                // This contactMethod refers to the one that was used to deliver the login info
-                // This can be an important distinction in case both email and phone are allowed
-                const contactMethod: "EMAIL" | "PHONE" = "email" in input ? "EMAIL" : "PHONE";
-                const loginAttemptInfo = {
-                    deviceId: res.deviceId,
-                    preAuthSessionId: res.preAuthSessionId,
-                    flowType: res.flowType,
-                    lastResend: Date.now(),
-                    contactMethod,
-                    contactInfo,
-                    redirectToPath: getRedirectToPathFromURL(),
-                };
+  return {
+    ...originalImpl,
+    createCode: async (input) => {
+      let contactInfo;
+      if ("email" in input) {
+        contactInfo = input.email;
+      } else {
+        contactInfo = formatPhoneNumberIntl(input.phoneNumber);
+      }
 
-                await setLoginAttemptInfo({
-                    recipeImplementation: originalImpl,
-                    userContext: input.userContext,
-                    attemptInfo: loginAttemptInfo,
-                });
-                dispatch({ type: "startLogin", loginAttemptInfo });
-            }
-            return res;
-        },
-        resendCode: async (input) => {
-            /**
-             * In this case we want the code that is calling resendCode in the
-             * UI to handle STGeneralError so we let this throw
-             */
-            const res = await originalImpl.resendCode(input);
+      const res = await originalImpl.createCode(input);
+      // READCODE BURI sysq: here res is the response from api call on createCode - {status: 'OK', deviceId: 'FK+ev6t9CCQ6bf055jcgLePRtWOVGJfPmnGNP7cUvgw=', flowType: 'USER_INPUT_CODE', preAuthSessionId: '0kJxbAGJQ1292n5hgzvGg9l2lCPE4hE54JKHiQFKjpw=', fetchResponse: Response}
+      if (res.status === "OK") {
+        // This contactMethod refers to the one that was used to deliver the login info
+        // This can be an important distinction in case both email and phone are allowed
+        const contactMethod: "EMAIL" | "PHONE" =
+          "email" in input ? "EMAIL" : "PHONE";
+        const loginAttemptInfo = {
+          deviceId: res.deviceId,
+          preAuthSessionId: res.preAuthSessionId,
+          flowType: res.flowType,
+          lastResend: Date.now(),
+          contactMethod,
+          contactInfo,
+          redirectToPath: getRedirectToPathFromURL(),
+        };
 
-            if (res.status === "OK") {
-                const loginAttemptInfo = await getLoginAttemptInfo({
-                    recipeImplementation: originalImpl,
-                    userContext: input.userContext,
-                });
-                // If it was cleared or overwritten we don't want to save this.
-                // TODO: extend session checker to check for this case as well
-                if (loginAttemptInfo !== undefined && loginAttemptInfo.deviceId === input.deviceId) {
-                    const timestamp = Date.now();
+        await setLoginAttemptInfo({
+          recipeImplementation: originalImpl,
+          userContext: input.userContext,
+          attemptInfo: loginAttemptInfo,
+        });
+        dispatch({ type: "startLogin", loginAttemptInfo });
+      }
+      return res;
+    },
+    resendCode: async (input) => {
+      /**
+       * In this case we want the code that is calling resendCode in the
+       * UI to handle STGeneralError so we let this throw
+       */
+      const res = await originalImpl.resendCode(input);
 
-                    await setLoginAttemptInfo({
-                        recipeImplementation: originalImpl,
-                        userContext: input.userContext,
-                        attemptInfo: {
-                            ...loginAttemptInfo,
-                            lastResend: timestamp,
-                        },
-                    });
-                    dispatch({ type: "resendCode", timestamp });
-                }
-            } else if (res.status === "RESTART_FLOW_ERROR") {
-                await originalImpl.clearLoginAttemptInfo({
-                    userContext: input.userContext,
-                });
+      if (res.status === "OK") {
+        const loginAttemptInfo = await getLoginAttemptInfo({
+          recipeImplementation: originalImpl,
+          userContext: input.userContext,
+        });
+        // If it was cleared or overwritten we don't want to save this.
+        // TODO: extend session checker to check for this case as well
+        if (
+          loginAttemptInfo !== undefined &&
+          loginAttemptInfo.deviceId === input.deviceId
+        ) {
+          const timestamp = Date.now();
 
-                dispatch({ type: "restartFlow", error: "ERROR_SIGN_IN_UP_RESEND_RESTART_FLOW" });
-            }
-            return res;
-        },
+          await setLoginAttemptInfo({
+            recipeImplementation: originalImpl,
+            userContext: input.userContext,
+            attemptInfo: {
+              ...loginAttemptInfo,
+              lastResend: timestamp,
+            },
+          });
+          dispatch({ type: "resendCode", timestamp });
+        }
+      } else if (res.status === "RESTART_FLOW_ERROR") {
+        await originalImpl.clearLoginAttemptInfo({
+          userContext: input.userContext,
+        });
 
-        consumeCode: async (input) => {
-            // We need to call consume code while callingConsume, so we don't detect
-            // the session creation too early and go to successInAnotherTab too early
-            callingConsumeCodeRef.current = true;
+        dispatch({
+          type: "restartFlow",
+          error: "ERROR_SIGN_IN_UP_RESEND_RESTART_FLOW",
+        });
+      }
+      return res;
+    },
 
-            const res = await originalImpl.consumeCode(input);
+    consumeCode: async (input) => {
+      // We need to call consume code while callingConsume, so we don't detect
+      // the session creation too early and go to successInAnotherTab too early
+      callingConsumeCodeRef.current = true;
 
-            if (res.status === "RESTART_FLOW_ERROR") {
-                await originalImpl.clearLoginAttemptInfo({
-                    userContext: input.userContext,
-                });
+      const res = await originalImpl.consumeCode(input);
 
-                dispatch({ type: "restartFlow", error: "ERROR_SIGN_IN_UP_CODE_CONSUME_RESTART_FLOW" });
-            } else if (res.status === "OK") {
-                await originalImpl.clearLoginAttemptInfo({
-                    userContext: input.userContext,
-                });
-            }
+      // READCODE BURI sysq: here res is the response from api call on consumeCode - {status: 'OK', user: {email: 'nilinswap@gmail.com', id: 'f7004ce2-63d6-4d63-b395-bf6d13e9e358', timeJoined: 1661678041972}, createdNewUser: true, preAuthSessionId: '0kJxbAGJQ1292n5hgzvGg9l2lCPE4hE54JKHiQFKjpw=', fetchResponse: Response}
 
-            callingConsumeCodeRef.current = false;
+      if (res.status === "RESTART_FLOW_ERROR") {
+        await originalImpl.clearLoginAttemptInfo({
+          userContext: input.userContext,
+        });
 
-            return res;
-        },
+        dispatch({
+          type: "restartFlow",
+          error: "ERROR_SIGN_IN_UP_CODE_CONSUME_RESTART_FLOW",
+        });
+      } else if (res.status === "OK") {
+        await originalImpl.clearLoginAttemptInfo({
+          userContext: input.userContext,
+        });
+      }
 
-        clearLoginAttemptInfo: async (input) => {
-            await originalImpl.clearLoginAttemptInfo({
-                userContext: input.userContext,
-            });
-            clearErrorQueryParam();
-            dispatch({ type: "restartFlow", error: undefined });
-        },
-    };
+      callingConsumeCodeRef.current = false;
+
+      return res;
+    },
+
+    clearLoginAttemptInfo: async (input) => {
+      await originalImpl.clearLoginAttemptInfo({
+        userContext: input.userContext,
+      });
+      clearErrorQueryParam();
+      dispatch({ type: "restartFlow", error: undefined });
+    },
+  };
 }

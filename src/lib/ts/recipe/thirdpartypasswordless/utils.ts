@@ -17,7 +17,7 @@
  * Imports.
  */
 import { Config, NormalisedConfig } from "./types";
-import { normaliseAuthRecipeWithEmailVerificationConfig } from "../authRecipeWithEmailVerification/utils";
+import { normaliseAuthRecipe } from "../authRecipe/utils";
 import { RecipeInterface as TPPWlessRecipeInterface } from "supertokens-web-js/recipe/thirdpartypasswordless";
 
 export function normaliseThirdPartyPasswordlessConfig(config: Config): NormalisedConfig {
@@ -32,7 +32,6 @@ export function normaliseThirdPartyPasswordlessConfig(config: Config): Normalise
 
     const override: any = {
         functions: (originalImplementation: TPPWlessRecipeInterface) => originalImplementation,
-        components: {},
         ...config.override,
     };
 
@@ -41,13 +40,12 @@ export function normaliseThirdPartyPasswordlessConfig(config: Config): Normalise
             ? {}
             : config?.signInUpFeature.thirdPartyProviderAndEmailOrPhoneFormStyle;
     return {
-        ...normaliseAuthRecipeWithEmailVerificationConfig(config),
+        ...normaliseAuthRecipe(config),
 
         thirdPartyProviderAndEmailOrPhoneFormStyle,
         thirdpartyUserInput: disableThirdParty
             ? undefined
             : {
-                  emailVerificationFeature: config.emailVerificationFeature,
                   getRedirectionURL: config.getRedirectionURL,
                   style: config.style,
                   onHandleEvent: config.onHandleEvent,
@@ -59,9 +57,7 @@ export function normaliseThirdPartyPasswordlessConfig(config: Config): Normalise
                   },
                   oAuthCallbackScreen: config.oAuthCallbackScreen,
                   useShadowDom: config.useShadowDom,
-                  override: {
-                      components: override.components,
-                  },
+                  override: {},
               },
         passwordlessUserInput: disablePasswordless
             ? undefined
@@ -80,9 +76,7 @@ export function normaliseThirdPartyPasswordlessConfig(config: Config): Normalise
                       emailOrPhoneFormStyle: thirdPartyProviderAndEmailOrPhoneFormStyle,
                   },
                   linkClickedScreenFeature: config.linkClickedScreenFeature,
-                  override: {
-                      components: override.components,
-                  },
+                  override: {},
               },
         override,
     };

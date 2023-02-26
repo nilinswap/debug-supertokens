@@ -5,6 +5,8 @@ import { middleware } from "../lib/supertokens-node/lib/ts/framework/express";
 import supertokens from "../lib/supertokens-node/lib/ts";
 import Session from "../lib/supertokens-node/lib/ts/recipe/session";
 import Passwordless from "../lib/supertokens-node/lib/ts/recipe/passwordless";
+import { verifySession } from "../lib/supertokens-node/lib/ts/recipe/session/framework/express";
+import { SessionRequest } from "../lib/supertokens-node/lib/ts/framework/express";
 
 supertokens.init({
   framework: "express",
@@ -40,11 +42,15 @@ app.use(
   })
 );
 
+app.use(express.json());
+
 // IMPORTANT: CORS should be before the below line.
+// READCODE BUNI MW3: all requests are captured
 app.use(middleware());
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
+app.get("/hello", verifySession(), (req: SessionRequest, res) => {
+  let userId = req.session!.getUserId();
+  res.send("Hello " + userId);
 });
 
 app

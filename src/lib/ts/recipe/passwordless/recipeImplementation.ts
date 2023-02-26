@@ -21,7 +21,9 @@ export default function getRecipeImplementation(recipeInput: {
         preAPIHook: recipeInput.preAPIHook,
         postAPIHook: recipeInput.postAPIHook,
     });
-
+    // READCODE BURI ER3: this gets called from recipe and it assigns createCode, consumeCode etc.
+    // having found the implementation, we call the api using supertokens-web-js. That part is in
+    // passwordless's utils.ts `WebJSUtils.createCode(input)` this is the end, api is called finally.
     return {
         createCode: async function (input) {
             const response = await webJsImplementation.createCode.bind(this)(input);
@@ -60,7 +62,7 @@ export default function getRecipeImplementation(recipeInput: {
             } else if (response.status === "OK") {
                 recipeInput.onHandleEvent({
                     action: "SUCCESS",
-                    isNewUser: response.createdUser,
+                    isNewUser: response.createdNewUser,
                     user: response.user,
                 });
             }
