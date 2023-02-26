@@ -56,21 +56,23 @@ export default async function consumeCode(apiImplementation: APIInterface, optio
         });
     }
 
+    const userContext = makeDefaultUserContextFromAPI(options.req);
+    // READCODE BUNI AL3: consumeCode api is called.
     let result = await apiImplementation.consumeCodePOST(
         deviceId !== undefined
             ? {
-                  deviceId,
-                  userInputCode,
-                  preAuthSessionId,
-                  options,
-                  userContext: makeDefaultUserContextFromAPI(options.req),
-              }
+                deviceId,
+                userInputCode,
+                preAuthSessionId,
+                options,
+                userContext,
+            }
             : {
-                  linkCode,
-                  options,
-                  preAuthSessionId,
-                  userContext: makeDefaultUserContextFromAPI(options.req),
-              }
+                linkCode,
+                options,
+                preAuthSessionId,
+                userContext,
+            }
     );
 
     if (result.status === "OK") {

@@ -17,7 +17,9 @@
  */
 import React, { useContext } from "react";
 import { SuperTokensBranding } from "../../../../../components/SuperTokensBranding";
-import StyleContext, { StyleProvider } from "../../../../../styles/styleContext";
+import StyleContext, {
+  StyleProvider,
+} from "../../../../../styles/styleContext";
 import { defaultPalette, hasFontDefined } from "../../../../../styles/styles";
 import UserContextWrapper from "../../../../../usercontext/userContextWrapper";
 import GeneralError from "../../../../emailpassword/components/library/generalError";
@@ -34,70 +36,73 @@ import { UserInputCodeForm } from "./userInputCodeForm";
 import { UserInputCodeFormHeader } from "./userInputCodeFormHeader";
 
 export enum SignInUpScreens {
-    CloseTab,
-    LinkSent,
-    EmailForm,
-    PhoneForm,
-    EmailOrPhoneForm,
-    UserInputCodeForm,
+  CloseTab,
+  LinkSent,
+  EmailForm,
+  PhoneForm,
+  EmailOrPhoneForm,
+  UserInputCodeForm,
 }
 
 /*
  * Component.
  */
-const SignInUpTheme: React.FC<SignInUpProps & { activeScreen: SignInUpScreens }> = ({
-    activeScreen,
-    featureState,
-    ...props
-}) => {
-    const styles = useContext(StyleContext);
+const SignInUpTheme: React.FC<
+  SignInUpProps & { activeScreen: SignInUpScreens }
+> = ({ activeScreen, featureState, ...props }) => {
+  const styles = useContext(StyleContext);
 
-    const commonProps = {
-        recipeImplementation: props.recipeImplementation,
-        config: props.config,
-        clearError: () => props.dispatch({ type: "setError", error: undefined }),
-        onError: (error: string) => props.dispatch({ type: "setError", error }),
-        error: featureState.error,
-    };
+  const commonProps = {
+    recipeImplementation: props.recipeImplementation,
+    config: props.config,
+    clearError: () => props.dispatch({ type: "setError", error: undefined }),
+    onError: (error: string) => props.dispatch({ type: "setError", error }),
+    error: featureState.error,
+  };
 
-    return activeScreen === SignInUpScreens.CloseTab ? (
-        <CloseTabScreen {...commonProps} />
-    ) : activeScreen === SignInUpScreens.LinkSent ? (
-        <LinkSent {...commonProps} loginAttemptInfo={featureState.loginAttemptInfo!} />
-    ) : (
-        <div data-supertokens="container" css={styles.container}>
-            <div data-supertokens="row" css={styles.row}>
-                {featureState.loaded && (
-                    <React.Fragment>
-                        {activeScreen === SignInUpScreens.UserInputCodeForm ? (
-                            <UserInputCodeFormHeader
-                                {...commonProps}
-                                loginAttemptInfo={featureState.loginAttemptInfo!}
-                            />
-                        ) : (
-                            <SignInUpHeader />
-                        )}
-                        {featureState.error !== undefined && <GeneralError error={featureState.error} />}
-                        {activeScreen === SignInUpScreens.EmailForm ? (
-                            <EmailForm {...commonProps} />
-                        ) : activeScreen === SignInUpScreens.PhoneForm ? (
-                            <PhoneForm {...commonProps} />
-                                    ) : activeScreen === SignInUpScreens.EmailOrPhoneForm ? (
-                                            // READCODE BURI sysq: on auth page for passwordless, we come here before the component for taking email is rendered
-                            <EmailOrPhoneForm {...commonProps} />
-                        ) : activeScreen === SignInUpScreens.UserInputCodeForm ? (
-                            <UserInputCodeForm
-                                {...commonProps}
-                                loginAttemptInfo={featureState.loginAttemptInfo!}
-                                onSuccess={props.onSuccess}
-                            />
-                        ) : null}
-                    </React.Fragment>
-                )}
-            </div>
-            <SuperTokensBranding />
-        </div>
-    );
+  return activeScreen === SignInUpScreens.CloseTab ? (
+    <CloseTabScreen {...commonProps} />
+  ) : activeScreen === SignInUpScreens.LinkSent ? (
+    <LinkSent
+      {...commonProps}
+      loginAttemptInfo={featureState.loginAttemptInfo!}
+    />
+  ) : (
+    <div data-supertokens="container" css={styles.container}>
+      <div data-supertokens="row" css={styles.row}>
+        {featureState.loaded && (
+          <React.Fragment>
+            {activeScreen === SignInUpScreens.UserInputCodeForm ? (
+              <UserInputCodeFormHeader
+                {...commonProps}
+                loginAttemptInfo={featureState.loginAttemptInfo!}
+              />
+            ) : (
+              <SignInUpHeader />
+            )}
+            {featureState.error !== undefined && (
+              <GeneralError error={featureState.error} />
+            )}
+            {activeScreen === SignInUpScreens.EmailForm ? (
+              <EmailForm {...commonProps} />
+            ) : activeScreen === SignInUpScreens.PhoneForm ? (
+              <PhoneForm {...commonProps} />
+            ) : activeScreen === SignInUpScreens.EmailOrPhoneForm ? (
+              // READCODE BURI sysq: on auth page for passwordless, we come here before the component for taking email is rendered
+              <EmailOrPhoneForm {...commonProps} />
+            ) : activeScreen === SignInUpScreens.UserInputCodeForm ? (
+              <UserInputCodeForm
+                {...commonProps}
+                loginAttemptInfo={featureState.loginAttemptInfo!}
+                onSuccess={props.onSuccess}
+              />
+            ) : null}
+          </React.Fragment>
+        )}
+      </div>
+      <SuperTokensBranding />
+    </div>
+  );
 };
 
 function SignInUpThemeWrapper(props: SignInUpProps): JSX.Element {
@@ -120,7 +125,7 @@ function SignInUpThemeWrapper(props: SignInUpProps): JSX.Element {
   } else if (activeScreen === SignInUpScreens.EmailOrPhoneForm) {
     activeStyle = props.config.signInUpFeature.emailOrPhoneFormStyle;
   }
-  // READCODE BURI: In default case for SignInUpScreens, it is always below one that is executed
+
   return (
     <UserContextWrapper userContext={props.userContext}>
       <ThemeBase loadDefaultFont={!hasFont}>
@@ -131,7 +136,7 @@ function SignInUpThemeWrapper(props: SignInUpProps): JSX.Element {
           rootStyleFromInit={props.config.rootStyle}
           getDefaultStyles={getStyles}
         >
-            <SignInUpTheme {...props} activeScreen={activeScreen!} />
+          <SignInUpTheme {...props} activeScreen={activeScreen!} />
         </StyleProvider>
       </ThemeBase>
     </UserContextWrapper>
@@ -140,19 +145,24 @@ function SignInUpThemeWrapper(props: SignInUpProps): JSX.Element {
 
 export default SignInUpThemeWrapper;
 
-export function getActiveScreen(props: Pick<SignInUpProps, "featureState" | "config">) {
-    if (props.featureState.successInAnotherTab) {
-        return SignInUpScreens.CloseTab;
-    } else if (props.featureState.loginAttemptInfo && props.featureState.loginAttemptInfo.flowType === "MAGIC_LINK") {
-        return SignInUpScreens.LinkSent;
-    } else if (props.featureState.loginAttemptInfo) {
-        return SignInUpScreens.UserInputCodeForm;
-    } else if (props.config.contactMethod === "EMAIL") {
-        return SignInUpScreens.EmailForm;
-    } else if (props.config.contactMethod === "PHONE") {
-        return SignInUpScreens.PhoneForm;
-    } else if (props.config.contactMethod === "EMAIL_OR_PHONE") {
-        return SignInUpScreens.EmailOrPhoneForm;
-    }
-    throw new Error("Couldn't choose active screen; Should never happen");
+export function getActiveScreen(
+  props: Pick<SignInUpProps, "featureState" | "config">
+) {
+  if (props.featureState.successInAnotherTab) {
+    return SignInUpScreens.CloseTab;
+  } else if (
+    props.featureState.loginAttemptInfo &&
+    props.featureState.loginAttemptInfo.flowType === "MAGIC_LINK"
+  ) {
+    return SignInUpScreens.LinkSent;
+  } else if (props.featureState.loginAttemptInfo) {
+    return SignInUpScreens.UserInputCodeForm;
+  } else if (props.config.contactMethod === "EMAIL") {
+    return SignInUpScreens.EmailForm;
+  } else if (props.config.contactMethod === "PHONE") {
+    return SignInUpScreens.PhoneForm;
+  } else if (props.config.contactMethod === "EMAIL_OR_PHONE") {
+    return SignInUpScreens.EmailOrPhoneForm;
+  }
+  throw new Error("Couldn't choose active screen; Should never happen");
 }

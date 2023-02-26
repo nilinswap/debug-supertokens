@@ -17,14 +17,19 @@
  * Imports.
  */
 
-import { CreateRecipeFunction, RecipeFeatureComponentMap, NormalisedAppInfo, FeatureBaseProps } from "../../types";
 import {
-    GetRedirectionURLContext,
-    OnHandleEventContext,
-    PreAndPostAPIHookAction,
-    Config,
-    NormalisedConfig,
-    UserInput,
+  CreateRecipeFunction,
+  RecipeFeatureComponentMap,
+  NormalisedAppInfo,
+  FeatureBaseProps,
+} from "../../types";
+import {
+  GetRedirectionURLContext,
+  OnHandleEventContext,
+  PreAndPostAPIHookAction,
+  Config,
+  NormalisedConfig,
+  UserInput,
 } from "./types";
 import { isTest, matchRecipeIdUsingQueryParams } from "../../utils";
 import { normalisePasswordlessConfig } from "./utils";
@@ -44,136 +49,160 @@ import UserContextWrapper from "../../usercontext/userContextWrapper";
  * Class.
  */
 export default class Passwordless extends AuthRecipe<
+  GetRedirectionURLContext,
+  PreAndPostAPIHookAction,
+  OnHandleEventContext,
+  NormalisedConfig
+> {
+  static instance?: Passwordless;
+  static RECIPE_ID = "passwordless";
+
+  recipeImpl: RecipeInterface;
+
+  constructor(config: Config) {
+    super(normalisePasswordlessConfig(config));
+    // READCODE BURI ER3: we give a recipe implementation based on recipe that is being sent around in props. This becomes the carrier of createCode, consumeCode etc which gets called eventually.
+
+    const builder = new OverrideableBuilder(
+      RecipeImplementation({
+        appInfo: this.config.appInfo,
+        recipeId: this.config.recipeId,
+        onHandleEvent: this.config.onHandleEvent,
+        preAPIHook: this.config.preAPIHook,
+        postAPIHook: this.config.postAPIHook,
+      })
+    );
+    this.recipeImpl = builder.override(this.config.override.functions).build();
+  }
+
+  getFeatures = (): RecipeFeatureComponentMap => {
+    const features: RecipeFeatureComponentMap = {};
+    // READCODE BURI sysq(this is random id to follow a thread): exact component that must be rendered on auth is extracted here.
+    if (this.config.signInUpFeature.disableDefaultUI !== true) {
+      const normalisedFullPath = this.config.appInfo.websiteBasePath.appendPath(
+        new NormalisedURLPath("/")
+      );
+      features[normalisedFullPath.getAsStringDangerous()] = {
+        // READCODE BURI: this is where we register on what path the auth widget should show up in.
+
+        matches: matchRecipeIdUsingQueryParams(this.config.recipeId),
+        component: (props) => this.getFeatureComponent("signInUp", props),
+      };
+    }
+    // READCODE BURI: this is where we are adding <your auth page path>/ and <your auth page path>/verify
+    if (this.config.linkClickedScreenFeature.disableDefaultUI !== true) {
+      const normalisedFullPath = this.config.appInfo.websiteBasePath.appendPath(
+        new NormalisedURLPath("/verify")
+      );
+      features[normalisedFullPath.getAsStringDangerous()] = {
+        matches: matchRecipeIdUsingQueryParams(this.config.recipeId),
+        component: (props) =>
+          this.getFeatureComponent("linkClickedScreen", props),
+      };
+    }
+
+    return features;
+  };
+
+  getDefaultRedirectionURL = async (
+    context: GetRedirectionURLContext
+  ): Promise<string> => {
+    return this.getAuthRecipeDefaultRedirectionURL(context);
+  };
+
+  getFeatureComponent = (
+    componentName: "signInUp" | "linkClickedScreen",
+    props: FeatureBaseProps & {
+      redirectOnSessionExists?: boolean;
+      userContext?: any;
+    }
+  ): JSX.Element => {
+    if (componentName === "signInUp") {
+      if (props.redirectOnSessionExists !== false) {
+        return (
+          <UserContextWrapper userContext={props.userContext}>
+            <AuthWidgetWrapper<
+              GetRedirectionURLContext,
+              PreAndPostAPIHookAction,
+              OnHandleEventContext,
+              NormalisedConfig
+            >
+              authRecipe={this}
+              history={props.history}
+            >
+              <SignInUp recipe={this} {...props} />
+            </AuthWidgetWrapper>
+          </UserContextWrapper>
+        );
+      } else {
+        return (
+          <UserContextWrapper userContext={props.userContext}>
+            <SignInUp recipe={this} {...props} />
+          </UserContextWrapper>
+        );
+      }
+    }
+    if (componentName === "linkClickedScreen") {
+      return (
+        <UserContextWrapper userContext={props.userContext}>
+          <LinkClickedScreen recipe={this} {...props} />
+        </UserContextWrapper>
+      );
+    } else {
+      throw new Error("Should never come here.");
+    }
+  };
+
+  static init(
+    config: UserInput
+  ): CreateRecipeFunction<
     GetRedirectionURLContext,
     PreAndPostAPIHookAction,
     OnHandleEventContext,
     NormalisedConfig
-> {
-    static instance?: Passwordless;
-    static RECIPE_ID = "passwordless";
-
-    recipeImpl: RecipeInterface;
-
-    constructor(config: Config) {
-        super(normalisePasswordlessConfig(config));
-
-        const builder = new OverrideableBuilder(
-            RecipeImplementation({
-                appInfo: this.config.appInfo,
-                recipeId: this.config.recipeId,
-                onHandleEvent: this.config.onHandleEvent,
-                preAPIHook: this.config.preAPIHook,
-                postAPIHook: this.config.postAPIHook,
-            })
-        );
-        this.recipeImpl = builder.override(this.config.override.functions).build();
-    }
-
-    getFeatures = (): RecipeFeatureComponentMap => {
-        const features: RecipeFeatureComponentMap = {};
-        // READCODE BURI sysq(this is random id to follow a thread): exact component that must be rendered on auth is extracted here.
-        if (this.config.signInUpFeature.disableDefaultUI !== true) {
-            const normalisedFullPath = this.config.appInfo.websiteBasePath.appendPath(new NormalisedURLPath("/"));
-            features[normalisedFullPath.getAsStringDangerous()] = {
-                // READCODE BURI: this is where we register on what path the auth widget should show up in. 
-                matches: matchRecipeIdUsingQueryParams(this.config.recipeId),
-                component: (props) => this.getFeatureComponent("signInUp", props),
-            };
-        }
-        // READCODE BURI: this is where we are adding <your auth page path>/ and <your auth page path>/verify
-        if (this.config.linkClickedScreenFeature.disableDefaultUI !== true) {
-            const normalisedFullPath = this.config.appInfo.websiteBasePath.appendPath(new NormalisedURLPath("/verify"));
-            features[normalisedFullPath.getAsStringDangerous()] = {
-                matches: matchRecipeIdUsingQueryParams(this.config.recipeId),
-                component: (props) => this.getFeatureComponent("linkClickedScreen", props),
-            };
-        }
-
-        return features;
+  > {
+    return (
+      appInfo: NormalisedAppInfo
+    ): RecipeModule<
+      GetRedirectionURLContext,
+      PreAndPostAPIHookAction,
+      OnHandleEventContext,
+      NormalisedConfig
+    > => {
+      Passwordless.instance = new Passwordless({
+        ...config,
+        appInfo,
+        recipeId: Passwordless.RECIPE_ID,
+      });
+      return Passwordless.instance;
     };
+  }
 
-    getDefaultRedirectionURL = async (context: GetRedirectionURLContext): Promise<string> => {
-        return this.getAuthRecipeDefaultRedirectionURL(context);
-    };
+  static getInstanceOrThrow(): Passwordless {
+    if (Passwordless.instance === undefined) {
+      let error =
+        "No instance of Passwordless found. Make sure to call the Passwordless.init method." +
+        "See https://supertokens.io/docs/passwordless/quick-setup/frontend";
 
-    getFeatureComponent = (
-        componentName: "signInUp" | "linkClickedScreen",
-        props: FeatureBaseProps & { redirectOnSessionExists?: boolean; userContext?: any }
-    ): JSX.Element => {
-        if (componentName === "signInUp") {
-            if (props.redirectOnSessionExists !== false) {
-                return (
-                    <UserContextWrapper userContext={props.userContext}>
-                        <AuthWidgetWrapper<
-                            GetRedirectionURLContext,
-                            PreAndPostAPIHookAction,
-                            OnHandleEventContext,
-                            NormalisedConfig
-                        >
-                            authRecipe={this}
-                            history={props.history}>
-                            <SignInUp recipe={this} {...props} />
-                        </AuthWidgetWrapper>
-                    </UserContextWrapper>
-                );
-            } else {
-                return (
-                    <UserContextWrapper userContext={props.userContext}>
-                        <SignInUp recipe={this} {...props} />
-                    </UserContextWrapper>
-                );
-            }
-        }
-        if (componentName === "linkClickedScreen") {
-            return (
-                <UserContextWrapper userContext={props.userContext}>
-                    <LinkClickedScreen recipe={this} {...props} />
-                </UserContextWrapper>
-            );
-        }
-        return <div>Not implemented</div>;
-    };
-
-    static init(
-        config: UserInput
-    ): CreateRecipeFunction<GetRedirectionURLContext, PreAndPostAPIHookAction, OnHandleEventContext, NormalisedConfig> {
-        return (
-            appInfo: NormalisedAppInfo
-        ): RecipeModule<GetRedirectionURLContext, PreAndPostAPIHookAction, OnHandleEventContext, NormalisedConfig> => {
-            Passwordless.instance = new Passwordless({
-                ...config,
-                appInfo,
-                recipeId: Passwordless.RECIPE_ID,
-            });
-            return Passwordless.instance;
-        };
+      // eslint-disable-next-line supertokens-auth-react/no-direct-window-object
+      if (typeof window === "undefined") {
+        error = error + SSR_ERROR;
+      }
+      throw Error(error);
     }
 
-    static getInstanceOrThrow(): Passwordless {
-        if (Passwordless.instance === undefined) {
-            let error =
-                "No instance of Passwordless found. Make sure to call the Passwordless.init method." +
-                "See https://supertokens.io/docs/passwordless/quick-setup/frontend";
+    return Passwordless.instance;
+  }
 
-            // eslint-disable-next-line supertokens-auth-react/no-direct-window-object
-            if (typeof window === "undefined") {
-                error = error + SSR_ERROR;
-            }
-            throw Error(error);
-        }
-
-        return Passwordless.instance;
+  /*
+   * Tests methods.
+   */
+  static reset(): void {
+    if (!isTest()) {
+      return;
     }
 
-    /*
-     * Tests methods.
-     */
-    static reset(): void {
-        if (!isTest()) {
-            return;
-        }
-
-        Passwordless.instance = undefined;
-        return;
-    }
+    Passwordless.instance = undefined;
+    return;
+  }
 }

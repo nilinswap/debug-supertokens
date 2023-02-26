@@ -23,7 +23,9 @@ import { RoutingComponent } from "./routingComponent";
  * Component.
  */
 
-export function getSuperTokensRoutesForReactRouterDomV6(supertokensInstance: SuperTokens): JSX.Element[] {
+export function getSuperTokensRoutesForReactRouterDomV6(
+  supertokensInstance: SuperTokens
+): JSX.Element[] {
   const routerInfo = supertokensInstance.getReactRouterDomWithCustomHistory();
   if (routerInfo === undefined) {
     return [];

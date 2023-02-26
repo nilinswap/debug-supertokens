@@ -22,11 +22,14 @@ import EmailVerificationTheme from "./components/themes/emailVerification";
 import { GetRedirectionURLContext, PreAPIHookContext, OnHandleEventContext } from "./types";
 import { getNormalisedUserContext } from "../../utils";
 import { RecipeFunctionOptions, RecipeInterface } from "supertokens-web-js/recipe/emailverification";
+import { RecipeComponentsOverrideContextProvider } from "./componentOverrideContext";
 
 export default class Wrapper {
     static EmailVerification = (prop?: any) =>
         EmailVerificationRecipe.getInstanceOrThrow().getFeatureComponent("emailverification", prop);
     static EmailVerificationTheme = EmailVerificationTheme;
+
+    static EmailVerificationClaim = EmailVerificationRecipe.EmailVerificationClaim;
 
     static init(config: UserInput) {
         return EmailVerificationRecipe.init(config);
@@ -69,6 +72,8 @@ export default class Wrapper {
             userContext: getNormalisedUserContext(input?.userContext),
         });
     }
+
+    static ComponentsOverrideProvider = RecipeComponentsOverrideContextProvider;
 }
 
 const init = Wrapper.init;
@@ -77,6 +82,8 @@ const verifyEmail = Wrapper.verifyEmail;
 const sendVerificationEmail = Wrapper.sendVerificationEmail;
 const EmailVerification = Wrapper.EmailVerification;
 const getEmailVerificationTokenFromURL = Wrapper.getEmailVerificationTokenFromURL;
+const EmailVerificationComponentsOverrideProvider = Wrapper.ComponentsOverrideProvider;
+const EmailVerificationClaim = EmailVerificationRecipe.EmailVerificationClaim;
 
 export {
     init,
@@ -86,9 +93,11 @@ export {
     getEmailVerificationTokenFromURL,
     EmailVerification,
     EmailVerificationTheme,
+    EmailVerificationComponentsOverrideProvider,
     GetRedirectionURLContext,
     PreAPIHookContext as PreAPIHookContext,
     OnHandleEventContext,
     UserInput,
     RecipeInterface,
+    EmailVerificationClaim,
 };

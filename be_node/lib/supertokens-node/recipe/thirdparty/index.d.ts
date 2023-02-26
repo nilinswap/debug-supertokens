@@ -1,8 +1,3 @@
-// @ts-nocheck
-// @ts-nocheck
-// @ts-nocheck
-// @ts-nocheck
-// @ts-nocheck
 export * from "../../lib/build/recipe/thirdparty";
 /**
  * 'export *' does not re-export a default.

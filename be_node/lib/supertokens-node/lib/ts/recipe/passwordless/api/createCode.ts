@@ -87,13 +87,12 @@ export default async function createCode(apiImplementation: APIInterface, option
             phoneNumber = parsedPhoneNumber.format("E.164");
         }
     }
-
+    // READCODE BUNI MW3 AL3: calling api below
     let result = await apiImplementation.createCodePOST(
         email !== undefined
             ? { email, options, userContext: makeDefaultUserContextFromAPI(options.req) }
             : { phoneNumber: phoneNumber!, options, userContext: makeDefaultUserContextFromAPI(options.req) }
     );
-    
     // READCODE BUNI AL3: here we are setting response in place.
     send200Response(options.res, result);
     return true;

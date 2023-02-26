@@ -1,5 +1,6 @@
 import { APIInterface } from "../";
 import { logDebugMessage } from "../../../logger";
+import EmailVerification from "../../emailverification/recipe";
 import Session from "../../session";
 
 export default function getAPIImplementation(): APIInterface {
@@ -9,18 +10,18 @@ export default function getAPIImplementation(): APIInterface {
             let response = await input.options.recipeImplementation.consumeCode(
                 "deviceId" in input
                     ? {
-                          preAuthSessionId: input.preAuthSessionId,
-                          deviceId: input.deviceId,
-                          userInputCode: input.userInputCode,
-                          userContext: input.userContext,
-                      }
+                        preAuthSessionId: input.preAuthSessionId,
+                        deviceId: input.deviceId,
+                        userInputCode: input.userInputCode,
+                        userContext: input.userContext,
+                    }
                     : {
-                          preAuthSessionId: input.preAuthSessionId,
-                          linkCode: input.linkCode,
-                          userContext: input.userContext,
-                      }
+                        preAuthSessionId: input.preAuthSessionId,
+                        linkCode: input.linkCode,
+                        userContext: input.userContext,
+                    }
             );
-        
+
             // READCODE BUNI AL3: if response.status is not ok like otp expired etc, then don't call createNewSession and don't set cookie. 
             if (response.status !== "OK") {
                 return response;
@@ -28,7 +29,35 @@ export default function getAPIImplementation(): APIInterface {
 
             let user = response.user;
 
-            const session = await Session.createNewSession(input.options.res, user.id, {}, {}, input.userContext);
+            if (user.email !== undefined) {
+                const emailVerificationInstance = EmailVerification.getInstance();
+                if (emailVerificationInstance) {
+                    const tokenResponse = await emailVerificationInstance.recipeInterfaceImpl.createEmailVerificationToken(
+                        {
+                            userId: user.id,
+                            email: user.email,
+                            userContext: input.userContext,
+                        }
+                    );
+
+                    if (tokenResponse.status === "OK") {
+                        await emailVerificationInstance.recipeInterfaceImpl.verifyEmailUsingToken({
+                            token: tokenResponse.token,
+                            userContext: input.userContext,
+                        });
+                    }
+                }
+            }
+
+            const session = await Session.createNewSession(
+                input.options.req,
+                input.options.res,
+                user.id,
+                {},
+                {},
+                input.userContext
+            );
+
             return {
                 status: "OK",
                 createdNewUser: response.createdNewUser,
@@ -41,21 +70,21 @@ export default function getAPIImplementation(): APIInterface {
             let response = await input.options.recipeImplementation.createCode(
                 "email" in input
                     ? {
-                          userContext: input.userContext,
-                          email: input.email,
-                          userInputCode:
-                              input.options.config.getCustomUserInputCode === undefined
-                                  ? undefined
-                                  : await input.options.config.getCustomUserInputCode(input.userContext),
-                      }
+                        userContext: input.userContext,
+                        email: input.email,
+                        userInputCode:
+                            input.options.config.getCustomUserInputCode === undefined
+                                ? undefined
+                                : await input.options.config.getCustomUserInputCode(input.userContext),
+                    }
                     : {
-                          userContext: input.userContext,
-                          phoneNumber: input.phoneNumber,
-                          userInputCode:
-                              input.options.config.getCustomUserInputCode === undefined
-                                  ? undefined
-                                  : await input.options.config.getCustomUserInputCode(input.userContext),
-                      }
+                        userContext: input.userContext,
+                        phoneNumber: input.phoneNumber,
+                        userInputCode:
+                            input.options.config.getCustomUserInputCode === undefined
+                                ? undefined
+                                : await input.options.config.getCustomUserInputCode(input.userContext),
+                    }
             );
 
             // now we send the email / text message.
@@ -64,16 +93,9 @@ export default function getAPIImplementation(): APIInterface {
             const flowType = input.options.config.flowType;
             if (flowType === "MAGIC_LINK" || flowType === "USER_INPUT_CODE_AND_MAGIC_LINK") {
                 magicLink =
-                    (await input.options.config.getLinkDomainAndPath(
-                        "phoneNumber" in input
-                            ? {
-                                  phoneNumber: input.phoneNumber!,
-                              }
-                            : {
-                                  email: input.email,
-                              },
-                        input.userContext
-                    )) +
+                    input.options.appInfo.websiteDomain.getAsStringDangerous() +
+                    input.options.appInfo.websiteBasePath.getAsStringDangerous() +
+                    "/verify" +
                     "?rid=" +
                     input.options.recipeId +
                     "&preAuthSessionId=" +
@@ -103,8 +125,8 @@ export default function getAPIImplementation(): APIInterface {
                     userContext: input.userContext,
                 });
             } else {
+                //READCODE BUNI AL3: this is where we send email. userInputCode is the otp
                 logDebugMessage(`Sending passwordless login email to ${(input as any).email}`);
-                //READCODE BUNI AL3: this is where we send email
                 await input.options.emailDelivery.ingredientInterfaceImpl.sendEmail({
                     type: "PASSWORDLESS_LOGIN",
                     email: (input as any).email!,
@@ -195,16 +217,9 @@ export default function getAPIImplementation(): APIInterface {
                     const flowType = input.options.config.flowType;
                     if (flowType === "MAGIC_LINK" || flowType === "USER_INPUT_CODE_AND_MAGIC_LINK") {
                         magicLink =
-                            (await input.options.config.getLinkDomainAndPath(
-                                deviceInfo.email === undefined
-                                    ? {
-                                          phoneNumber: deviceInfo.phoneNumber!,
-                                      }
-                                    : {
-                                          email: deviceInfo.email,
-                                      },
-                                input.userContext
-                            )) +
+                            input.options.appInfo.websiteDomain.getAsStringDangerous() +
+                            input.options.appInfo.websiteBasePath.getAsStringDangerous() +
+                            "/verify" +
                             "?rid=" +
                             input.options.recipeId +
                             "&preAuthSessionId=" +

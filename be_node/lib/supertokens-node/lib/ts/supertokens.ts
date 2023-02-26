@@ -13,9 +13,15 @@
  * under the License.
  */
 
-import { TypeInput, NormalisedAppinfo, HTTPMethod } from "./types";
+import { TypeInput, NormalisedAppinfo, HTTPMethod, SuperTokensInfo } from "./types";
 import axios from "axios";
-import { normaliseInputAppInfoOrThrowError, maxVersion, normaliseHttpMethod, sendNon200Response } from "./utils";
+import {
+    normaliseInputAppInfoOrThrowError,
+    maxVersion,
+    normaliseHttpMethod,
+    sendNon200ResponseWithMessage,
+    getRidFromHeader,
+} from "./utils";
 import { Querier } from "./querier";
 import RecipeModule from "./recipeModule";
 import { HEADER_RID, HEADER_FDI } from "./constants";
@@ -25,6 +31,7 @@ import { BaseRequest, BaseResponse } from "./framework";
 import { TypeFramework } from "./framework/types";
 import STError from "./error";
 import { logDebugMessage } from "./logger";
+import { PostSuperTokensInitCallbacks } from "./postSuperTokensInitCallbacks";
 
 export default class SuperTokens {
     private static instance: SuperTokens | undefined;
@@ -37,6 +44,8 @@ export default class SuperTokens {
 
     recipeModules: RecipeModule[];
 
+    supertokens: undefined | SuperTokensInfo;
+
     constructor(config: TypeInput) {
         logDebugMessage("Started SuperTokens with debug logging (supertokens.init called)");
         logDebugMessage("appInfo: " + JSON.stringify(config.appInfo));
@@ -44,6 +53,7 @@ export default class SuperTokens {
         this.framework = config.framework !== undefined ? config.framework : "express";
         logDebugMessage("framework: " + this.framework);
         this.appInfo = normaliseInputAppInfoOrThrowError(config.appInfo);
+        this.supertokens = config.supertokens;
 
         Querier.init(
             config.supertokens?.connectionURI
@@ -99,7 +109,7 @@ export default class SuperTokens {
             }
             await axios({
                 method: "POST",
-                url: "https://api.supertokens.io/0/st/telemetry",
+                url: "https://api.supertokens.com/0/st/telemetry",
                 data: {
                     appName: this.appInfo.appName,
                     websiteDomain: this.appInfo.websiteDomain.getAsStringDangerous(),
@@ -109,12 +119,13 @@ export default class SuperTokens {
                     "api-version": 2,
                 },
             });
-        } catch (ignored) {}
+        } catch (ignored) { }
     };
 
     static init(config: TypeInput) {
         if (SuperTokens.instance === undefined) {
             SuperTokens.instance = new SuperTokens(config);
+            PostSuperTokensInitCallbacks.runPostInitCallbacks();
         }
     }
 
@@ -231,13 +242,13 @@ export default class SuperTokens {
         force?: boolean;
     }): Promise<
         | {
-              status: "OK" | "UNKNOWN_SUPERTOKENS_USER_ID_ERROR";
-          }
+            status: "OK" | "UNKNOWN_SUPERTOKENS_USER_ID_ERROR";
+        }
         | {
-              status: "USER_ID_MAPPING_ALREADY_EXISTS_ERROR";
-              doesSuperTokensUserIdExist: boolean;
-              doesExternalUserIdExist: boolean;
-          }
+            status: "USER_ID_MAPPING_ALREADY_EXISTS_ERROR";
+            doesSuperTokensUserIdExist: boolean;
+            doesExternalUserIdExist: boolean;
+        }
     > {
         let querier = Querier.getNewInstanceOrThrowError(undefined);
         let cdiVersion = await querier.getAPIVersion();
@@ -259,14 +270,14 @@ export default class SuperTokens {
         userIdType?: "SUPERTOKENS" | "EXTERNAL" | "ANY";
     }): Promise<
         | {
-              status: "OK";
-              superTokensUserId: string;
-              externalUserId: string;
-              externalUserIdInfo: string | undefined;
-          }
+            status: "OK";
+            superTokensUserId: string;
+            externalUserId: string;
+            externalUserIdInfo: string | undefined;
+        }
         | {
-              status: "UNKNOWN_MAPPING_ERROR";
-          }
+            status: "UNKNOWN_MAPPING_ERROR";
+        }
     > {
         let querier = Querier.getNewInstanceOrThrowError(undefined);
         let cdiVersion = await querier.getAPIVersion();
@@ -333,22 +344,21 @@ export default class SuperTokens {
         if (!path.startsWith(this.appInfo.apiBasePath)) {
             logDebugMessage(
                 "middleware: Not handling because request path did not start with config path. Request path: " +
-                    path.getAsStringDangerous()
+                path.getAsStringDangerous()
             );
             return false;
         }
 
-        let requestRID = request.getHeaderValue(HEADER_RID);
+        let requestRID = getRidFromHeader(request);
         logDebugMessage("middleware: requestRID is: " + requestRID);
         if (requestRID === "anti-csrf") {
             // see https://github.com/supertokens/supertokens-node/issues/202
             requestRID = undefined;
         }
         if (requestRID !== undefined) {
-            // READCODE BUNI: Here use use requestRID to find which recipe to call method on. It is like implmenting abstraction (concept of abstract class) across the app (frontend and backend)
-
             let matchedRecipe: RecipeModule | undefined = undefined;
 
+            // READCODE BUNI: Here we use requestRID to find which recipe to call method on. It is like implmenting abstraction (concept of abstract class) across the app (frontend and backend)
             // we loop through all recipe modules to find the one with the matching rId
             for (let i = 0; i < this.recipeModules.length; i++) {
                 logDebugMessage("middleware: Checking recipe ID for match: " + this.recipeModules[i].getRecipeId());
@@ -365,14 +375,14 @@ export default class SuperTokens {
             }
             logDebugMessage("middleware: Matched with recipe ID: " + matchedRecipe.getRecipeId());
 
-            // READCODE BUNI: for a recipe, if the path is the one that is expected. this is checked below.
+            // READCODE BUNI: for a recipe, if the path is the one that is expected (should be handled by the middleware). this is checked below.
             let id = matchedRecipe.returnAPIIdIfCanHandleRequest(path, method);
             if (id === undefined) {
                 logDebugMessage(
                     "middleware: Not handling because recipe doesn't handle request path or method. Request path: " +
-                        path.getAsStringDangerous() +
-                        ", request method: " +
-                        method
+                    path.getAsStringDangerous() +
+                    ", request method: " +
+                    method
                 );
                 // the matched recipe doesn't handle this path and http method
                 return false;
@@ -422,7 +432,7 @@ export default class SuperTokens {
             logDebugMessage("errorHandler: Error is from SuperTokens recipe. Message: " + err.message);
             if (err.type === STError.BAD_INPUT_ERROR) {
                 logDebugMessage("errorHandler: Sending 400 status code response");
-                return sendNon200Response(response, err.message, 400);
+                return sendNon200ResponseWithMessage(response, err.message, 400);
             }
 
             for (let i = 0; i < this.recipeModules.length; i++) {

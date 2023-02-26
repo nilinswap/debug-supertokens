@@ -58,6 +58,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
             },
             recipeList: [
                 Session.init({
+                    getTokenTransferMethod: () => "cookie",
                     override: {
                         apis: (oI) => {
                             return {
@@ -76,7 +77,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         app.use(KoaFramework.middleware());
 
         router.post("/create", async (ctx, next) => {
-            await Session.createNewSession(ctx, "", {}, {});
+            await Session.createNewSession(ctx, ctx, "", {}, {});
             ctx.body = "";
         });
 
@@ -101,7 +102,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let res2 = await new Promise((resolve) =>
             request(this.server)
                 .post("/auth/session/refresh")
-                .set("Cookie", ["sRefreshToken=" + res.refreshToken, "sIdRefreshToken=" + res.idRefreshTokenFromCookie])
+                .set("Cookie", ["sRefreshToken=" + res.refreshToken])
                 .set("anti-csrf", res.antiCsrf)
                 .end((err, res) => {
                     if (err) {
@@ -130,6 +131,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
             },
             recipeList: [
                 Session.init({
+                    getTokenTransferMethod: () => "cookie",
                     override: {
                         apis: (oI) => {
                             return {
@@ -148,7 +150,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         app.use(KoaFramework.middleware());
 
         router.post("/create", async (ctx, next) => {
-            await Session.createNewSession(ctx, "", {}, {});
+            await Session.createNewSession(ctx, ctx, "", {}, {});
             ctx.body = "";
         });
 
@@ -184,7 +186,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
     });
 
     //- check for token theft detection
-    it("express token theft detection", async function () {
+    it("koa token theft detection", async function () {
         await startST();
         SuperTokens.init({
             framework: "koa",
@@ -198,6 +200,14 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
             },
             recipeList: [
                 Session.init({
+                    errorHandlers: {
+                        onTokenTheftDetected: async (sessionHandle, userId, request, response) => {
+                            response.sendJSONResponse({
+                                success: true,
+                            });
+                        },
+                    },
+                    getTokenTransferMethod: () => "cookie",
                     antiCsrf: "VIA_TOKEN",
                     override: {
                         apis: (oI) => {
@@ -215,7 +225,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         const router = new Router();
         app.use(KoaFramework.middleware());
         router.post("/create", async (ctx, next) => {
-            await Session.createNewSession(ctx, "", {}, {});
+            await Session.createNewSession(ctx, ctx, "", {}, {});
             ctx.body = "";
         });
 
@@ -225,14 +235,8 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         });
 
         router.post("/auth/session/refresh", async (ctx, next) => {
-            try {
-                await Session.refreshSession(ctx, ctx);
-                ctx.body = { success: false };
-            } catch (err) {
-                ctx.body = {
-                    success: err.type === Session.Error.TOKEN_THEFT_DETECTED,
-                };
-            }
+            await Session.refreshSession(ctx, ctx);
+            ctx.body = { success: false };
         });
 
         app.use(router.routes());
@@ -257,10 +261,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
             await new Promise((resolve) =>
                 request(this.server)
                     .post("/auth/session/refresh")
-                    .set("Cookie", [
-                        "sRefreshToken=" + res.refreshToken,
-                        "sIdRefreshToken=" + res.idRefreshTokenFromCookie,
-                    ])
+                    .set("Cookie", ["sRefreshToken=" + res.refreshToken])
                     .set("anti-csrf", res.antiCsrf)
                     .end((err, res) => {
                         if (err) {
@@ -275,9 +276,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         await new Promise((resolve) =>
             request(this.server)
                 .post("/session/verify")
-                .set("Cookie", [
-                    "sAccessToken=" + res2.accessToken + ";sIdRefreshToken=" + res2.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + res2.accessToken])
                 .set("anti-csrf", res2.antiCsrf)
                 .end((err, res) => {
                     resolve();
@@ -287,7 +286,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let res3 = await new Promise((resolve) =>
             request(this.server)
                 .post("/auth/session/refresh")
-                .set("Cookie", ["sRefreshToken=" + res.refreshToken, "sIdRefreshToken=" + res.idRefreshTokenFromCookie])
+                .set("Cookie", ["sRefreshToken=" + res.refreshToken])
                 .set("anti-csrf", res.antiCsrf)
                 .end((err, res) => {
                     if (err) {
@@ -303,18 +302,14 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         assert.strictEqual(cookies.antiCsrf, undefined);
         assert.strictEqual(cookies.accessToken, "");
         assert.strictEqual(cookies.refreshToken, "");
-        assert.strictEqual(cookies.idRefreshTokenFromHeader, "remove");
-        assert.strictEqual(cookies.idRefreshTokenFromCookie, "");
         assert.strictEqual(cookies.accessTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert.strictEqual(cookies.idRefreshTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
         assert.strictEqual(cookies.refreshTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(cookies.accessTokenDomain === undefined);
         assert(cookies.refreshTokenDomain === undefined);
-        assert(cookies.idRefreshTokenDomain === undefined);
     });
 
     //- check for token theft detection
-    it("express token theft detection with auto refresh middleware", async function () {
+    it("koa token theft detection with auto refresh middleware", async function () {
         await startST();
         SuperTokens.init({
             framework: "koa",
@@ -326,11 +321,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
                 appName: "SuperTokens",
                 websiteDomain: "http://supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         let app = new Koa();
@@ -338,7 +329,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         app.use(KoaFramework.middleware());
 
         router.post("/create", async (ctx, _) => {
-            await Session.createNewSession(ctx, "", {}, {});
+            await Session.createNewSession(ctx, ctx, "", {}, {});
             ctx.body = "";
         });
 
@@ -368,10 +359,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
             await new Promise((resolve) =>
                 request(this.server)
                     .post("/auth/session/refresh")
-                    .set("Cookie", [
-                        "sRefreshToken=" + res.refreshToken,
-                        "sIdRefreshToken=" + res.idRefreshTokenFromCookie,
-                    ])
+                    .set("Cookie", ["sRefreshToken=" + res.refreshToken])
                     .set("anti-csrf", res.antiCsrf)
                     .end((err, res) => {
                         if (err) {
@@ -386,9 +374,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         await new Promise((resolve) =>
             request(this.server)
                 .post("/session/verify")
-                .set("Cookie", [
-                    "sAccessToken=" + res2.accessToken + ";sIdRefreshToken=" + res2.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + res2.accessToken])
                 .set("anti-csrf", res2.antiCsrf)
                 .end((err, res) => {
                     resolve();
@@ -398,7 +384,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let res3 = await new Promise((resolve) =>
             request(this.server)
                 .post("/auth/session/refresh")
-                .set("Cookie", ["sRefreshToken=" + res.refreshToken, "sIdRefreshToken=" + res.idRefreshTokenFromCookie])
+                .set("Cookie", ["sRefreshToken=" + res.refreshToken])
                 .set("anti-csrf", res.antiCsrf)
                 .end((err, res) => {
                     if (err) {
@@ -415,10 +401,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         assert.strictEqual(cookies.antiCsrf, undefined);
         assert.strictEqual(cookies.accessToken, "");
         assert.strictEqual(cookies.refreshToken, "");
-        assert.strictEqual(cookies.idRefreshTokenFromHeader, "remove");
-        assert.strictEqual(cookies.idRefreshTokenFromCookie, "");
         assert.strictEqual(cookies.accessTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert.strictEqual(cookies.idRefreshTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
         assert.strictEqual(cookies.refreshTokenExpiry, "Thu, 01 Jan 1970 00:00:00 GMT");
     });
 
@@ -435,11 +418,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
                 appName: "SuperTokens",
                 websiteDomain: "http://supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         let app = new Koa();
@@ -447,7 +426,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         app.use(KoaFramework.middleware());
 
         router.post("/create", async (ctx, next) => {
-            await Session.createNewSession(ctx, "", {}, {});
+            await Session.createNewSession(ctx, ctx, "", {}, {});
             ctx.body = "";
         });
 
@@ -485,14 +464,12 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
 
         assert(res.accessToken !== undefined);
         assert(res.antiCsrf !== undefined);
-        assert(res.idRefreshTokenFromCookie !== undefined);
-        assert(res.idRefreshTokenFromHeader !== undefined);
         assert(res.refreshToken !== undefined);
 
         await new Promise((resolve) =>
             request(this.server)
                 .post("/session/verify")
-                .set("Cookie", ["sAccessToken=" + res.accessToken + ";sIdRefreshToken=" + res.idRefreshTokenFromCookie])
+                .set("Cookie", ["sAccessToken=" + res.accessToken])
                 .set("anti-csrf", res.antiCsrf)
                 .end((err, res) => {
                     if (err) {
@@ -510,10 +487,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
             await new Promise((resolve) =>
                 request(this.server)
                     .post("/auth/session/refresh")
-                    .set("Cookie", [
-                        "sRefreshToken=" + res.refreshToken,
-                        "sIdRefreshToken=" + res.idRefreshTokenFromCookie,
-                    ])
+                    .set("Cookie", ["sRefreshToken=" + res.refreshToken])
                     .set("anti-csrf", res.antiCsrf)
                     .end((err, res) => {
                         if (err) {
@@ -527,17 +501,13 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
 
         assert(res2.accessToken !== undefined);
         assert(res2.antiCsrf !== undefined);
-        assert(res2.idRefreshTokenFromCookie !== undefined);
-        assert(res2.idRefreshTokenFromHeader !== undefined);
         assert(res2.refreshToken !== undefined);
 
         let res3 = extractInfoFromResponse(
             await new Promise((resolve) =>
                 request(this.server)
                     .post("/session/verify")
-                    .set("Cookie", [
-                        "sAccessToken=" + res2.accessToken + ";sIdRefreshToken=" + res2.idRefreshTokenFromCookie,
-                    ])
+                    .set("Cookie", ["sAccessToken=" + res2.accessToken])
                     .set("anti-csrf", res2.antiCsrf)
                     .end((err, res) => {
                         if (err) {
@@ -557,9 +527,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         await new Promise((resolve) =>
             request(this.server)
                 .post("/session/verify")
-                .set("Cookie", [
-                    "sAccessToken=" + res3.accessToken + ";sIdRefreshToken=" + res3.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + res3.accessToken])
                 .set("anti-csrf", res2.antiCsrf)
                 .end((err, res) => {
                     if (err) {
@@ -575,9 +543,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let sessionRevokedResponse = await new Promise((resolve) =>
             request(this.server)
                 .post("/session/revoke")
-                .set("Cookie", [
-                    "sAccessToken=" + res3.accessToken + ";sIdRefreshToken=" + res3.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + res3.accessToken])
                 .set("anti-csrf", res2.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -591,11 +557,8 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let sessionRevokedResponseExtracted = extractInfoFromResponse(sessionRevokedResponse);
         assert(sessionRevokedResponseExtracted.accessTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.refreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.accessToken === "");
         assert(sessionRevokedResponseExtracted.refreshToken === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromCookie === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromHeader === "remove");
     });
 
     it("test signout API works", async function () {
@@ -610,18 +573,14 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
                 appName: "SuperTokens",
                 websiteDomain: "http://supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
         let app = new Koa();
         const router = new Router();
         app.use(KoaFramework.middleware());
 
         router.post("/create", async (ctx, next) => {
-            await Session.createNewSession(ctx, "", {}, {});
+            await Session.createNewSession(ctx, ctx, "", {}, {});
             ctx.body = "";
         });
 
@@ -646,7 +605,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let sessionRevokedResponse = await new Promise((resolve) =>
             request(this.server)
                 .post("/auth/signout")
-                .set("Cookie", ["sAccessToken=" + res.accessToken + ";sIdRefreshToken=" + res.idRefreshTokenFromCookie])
+                .set("Cookie", ["sAccessToken=" + res.accessToken])
                 .set("anti-csrf", res.antiCsrf)
                 .end((err, res) => {
                     if (err) {
@@ -660,11 +619,8 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let sessionRevokedResponseExtracted = extractInfoFromResponse(sessionRevokedResponse);
         assert(sessionRevokedResponseExtracted.accessTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.refreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.accessToken === "");
         assert(sessionRevokedResponseExtracted.refreshToken === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromCookie === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromHeader === "remove");
     });
 
     //check basic usage of session
@@ -682,11 +638,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
                 websiteDomain: "http://supertokens.io",
                 apiBasePath: "/",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         let app = new Koa();
@@ -694,7 +646,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         app.use(KoaFramework.middleware());
 
         router.post("/create", async (ctx, next) => {
-            await Session.createNewSession(ctx, "", {}, {});
+            await Session.createNewSession(ctx, ctx, "", {}, {});
             ctx.body = "";
         });
 
@@ -728,14 +680,12 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
 
         assert(res.accessToken !== undefined);
         assert(res.antiCsrf !== undefined);
-        assert(res.idRefreshTokenFromCookie !== undefined);
-        assert(res.idRefreshTokenFromHeader !== undefined);
         assert(res.refreshToken !== undefined);
 
         await new Promise((resolve) =>
             request(this.server)
                 .post("/session/verify")
-                .set("Cookie", ["sAccessToken=" + res.accessToken + ";sIdRefreshToken=" + res.idRefreshTokenFromCookie])
+                .set("Cookie", ["sAccessToken=" + res.accessToken])
                 .set("anti-csrf", res.antiCsrf)
                 .end((err, res) => {
                     if (err) {
@@ -753,10 +703,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
             await new Promise((resolve) =>
                 request(this.server)
                     .post("/session/refresh")
-                    .set("Cookie", [
-                        "sRefreshToken=" + res.refreshToken,
-                        "sIdRefreshToken=" + res.idRefreshTokenFromCookie,
-                    ])
+                    .set("Cookie", ["sRefreshToken=" + res.refreshToken])
                     .set("anti-csrf", res.antiCsrf)
                     .end((err, res) => {
                         if (err) {
@@ -770,17 +717,13 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
 
         assert(res2.accessToken !== undefined);
         assert(res2.antiCsrf !== undefined);
-        assert(res2.idRefreshTokenFromCookie !== undefined);
-        assert(res2.idRefreshTokenFromHeader !== undefined);
         assert(res2.refreshToken !== undefined);
 
         let res3 = extractInfoFromResponse(
             await new Promise((resolve) =>
                 request(this.server)
                     .post("/session/verify")
-                    .set("Cookie", [
-                        "sAccessToken=" + res2.accessToken + ";sIdRefreshToken=" + res2.idRefreshTokenFromCookie,
-                    ])
+                    .set("Cookie", ["sAccessToken=" + res2.accessToken])
                     .set("anti-csrf", res2.antiCsrf)
                     .end((err, res) => {
                         if (err) {
@@ -800,9 +743,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         await new Promise((resolve) =>
             request(this.server)
                 .post("/session/verify")
-                .set("Cookie", [
-                    "sAccessToken=" + res3.accessToken + ";sIdRefreshToken=" + res3.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + res3.accessToken])
                 .set("anti-csrf", res2.antiCsrf)
                 .end((err, res) => {
                     if (err) {
@@ -818,9 +759,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let sessionRevokedResponse = await new Promise((resolve) =>
             request(this.server)
                 .post("/session/revoke")
-                .set("Cookie", [
-                    "sAccessToken=" + res3.accessToken + ";sIdRefreshToken=" + res3.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + res3.accessToken])
                 .set("anti-csrf", res2.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -834,11 +773,8 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let sessionRevokedResponseExtracted = extractInfoFromResponse(sessionRevokedResponse);
         assert(sessionRevokedResponseExtracted.accessTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.refreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.accessToken === "");
         assert(sessionRevokedResponseExtracted.refreshToken === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromCookie === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromHeader === "remove");
     });
 
     //check session verify for with / without anti-csrf present
@@ -854,18 +790,14 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
                 appName: "SuperTokens",
                 websiteDomain: "http://supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         let app = new Koa();
         const router = new Router();
         app.use(KoaFramework.middleware());
         router.post("/create", async (ctx, next) => {
-            await Session.createNewSession(ctx, "id1", {}, {});
+            await Session.createNewSession(ctx, ctx, "id1", {}, {});
             ctx.body = "";
         });
 
@@ -900,7 +832,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let res2 = await new Promise((resolve) =>
             request(this.server)
                 .post("/session/verify")
-                .set("Cookie", ["sAccessToken=" + res.accessToken + ";sIdRefreshToken=" + res.idRefreshTokenFromCookie])
+                .set("Cookie", ["sAccessToken=" + res.accessToken])
                 .set("anti-csrf", res.antiCsrf)
                 .end((err, res) => {
                     if (err) {
@@ -915,7 +847,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let res3 = await new Promise((resolve) =>
             request(this.server)
                 .post("/session/verifyAntiCsrfFalse")
-                .set("Cookie", ["sAccessToken=" + res.accessToken + ";sIdRefreshToken=" + res.idRefreshTokenFromCookie])
+                .set("Cookie", ["sAccessToken=" + res.accessToken])
                 .set("anti-csrf", res.antiCsrf)
                 .end((err, res) => {
                     if (err) {
@@ -941,11 +873,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
                 appName: "SuperTokens",
                 websiteDomain: "http://supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         let app = new Koa();
@@ -953,7 +881,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         app.use(KoaFramework.middleware());
 
         router.post("/create", async (ctx, next) => {
-            await Session.createNewSession(ctx, "id1", {}, {});
+            await Session.createNewSession(ctx, ctx, "id1", {}, {});
             ctx.body = "";
         });
 
@@ -993,7 +921,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let response2 = await new Promise((resolve) =>
             request(this.server)
                 .post("/session/verifyAntiCsrfFalse")
-                .set("Cookie", ["sAccessToken=" + res.accessToken + ";sIdRefreshToken=" + res.idRefreshTokenFromCookie])
+                .set("Cookie", ["sAccessToken=" + res.accessToken])
                 .end((err, res) => {
                     if (err) {
                         resolve(undefined);
@@ -1007,7 +935,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let response = await new Promise((resolve) =>
             request(this.server)
                 .post("/session/verify")
-                .set("Cookie", ["sAccessToken=" + res.accessToken + ";sIdRefreshToken=" + res.idRefreshTokenFromCookie])
+                .set("Cookie", ["sAccessToken=" + res.accessToken])
                 .end((err, res) => {
                     if (err) {
                         resolve(undefined);
@@ -1032,21 +960,17 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
                 appName: "SuperTokens",
                 websiteDomain: "http://supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
         let app = new Koa();
         const router = new Router();
         app.use(KoaFramework.middleware());
         router.post("/create", async (ctx, _) => {
-            await Session.createNewSession(ctx, "", {}, {});
+            await Session.createNewSession(ctx, ctx, "", {}, {});
             ctx.body = "";
         });
         router.post("/usercreate", async (ctx, _) => {
-            await Session.createNewSession(ctx, "someUniqueUserId", {}, {});
+            await Session.createNewSession(ctx, ctx, "someUniqueUserId", {}, {});
             ctx.body = "";
         });
         router.post("/session/revoke", async (ctx, _) => {
@@ -1086,9 +1010,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let sessionRevokedResponse = await new Promise((resolve) =>
             request(this.server)
                 .post("/session/revoke")
-                .set("Cookie", [
-                    "sAccessToken=" + response.accessToken + ";sIdRefreshToken=" + response.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + response.accessToken])
                 .set("anti-csrf", response.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -1102,11 +1024,8 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let sessionRevokedResponseExtracted = extractInfoFromResponse(sessionRevokedResponse);
         assert(sessionRevokedResponseExtracted.accessTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.refreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenExpiry === "Thu, 01 Jan 1970 00:00:00 GMT");
         assert(sessionRevokedResponseExtracted.accessToken === "");
         assert(sessionRevokedResponseExtracted.refreshToken === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromCookie === "");
-        assert(sessionRevokedResponseExtracted.idRefreshTokenFromHeader === "remove");
 
         await new Promise((resolve) =>
             request(this.server)
@@ -1138,12 +1057,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         await new Promise((resolve) =>
             request(this.server)
                 .post("/session/revokeUserid")
-                .set("Cookie", [
-                    "sAccessToken=" +
-                        userCreateResponse.accessToken +
-                        ";sIdRefreshToken=" +
-                        userCreateResponse.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + userCreateResponse.accessToken])
                 .set("anti-csrf", userCreateResponse.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -1182,18 +1096,14 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
                 appName: "SuperTokens",
                 websiteDomain: "http://supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
 
         let app = new Koa();
         const router = new Router();
         app.use(KoaFramework.middleware());
         router.post("/create", async (ctx, _) => {
-            await Session.createNewSession(ctx, "", {}, {});
+            await Session.createNewSession(ctx, ctx, "", {}, {});
             ctx.body = "";
         });
         router.post("/updateSessionData", async (ctx, _) => {
@@ -1240,9 +1150,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         await new Promise((resolve) =>
             request(this.server)
                 .post("/updateSessionData")
-                .set("Cookie", [
-                    "sAccessToken=" + response.accessToken + ";sIdRefreshToken=" + response.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + response.accessToken])
                 .set("anti-csrf", response.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -1258,9 +1166,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let response2 = await new Promise((resolve) =>
             request(this.server)
                 .post("/getSessionData")
-                .set("Cookie", [
-                    "sAccessToken=" + response.accessToken + ";sIdRefreshToken=" + response.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + response.accessToken])
                 .set("anti-csrf", response.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -1279,9 +1185,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         await new Promise((resolve) =>
             request(this.server)
                 .post("/updateSessionData2")
-                .set("Cookie", [
-                    "sAccessToken=" + response.accessToken + ";sIdRefreshToken=" + response.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + response.accessToken])
                 .set("anti-csrf", response.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -1296,9 +1200,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         response2 = await new Promise((resolve) =>
             request(this.server)
                 .post("/getSessionData")
-                .set("Cookie", [
-                    "sAccessToken=" + response.accessToken + ";sIdRefreshToken=" + response.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + response.accessToken])
                 .set("anti-csrf", response.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -1317,9 +1219,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let invalidSessionResponse = await new Promise((resolve) =>
             request(this.server)
                 .post("/updateSessionDataInvalidSessionHandle")
-                .set("Cookie", [
-                    "sAccessToken=" + response.accessToken + ";sIdRefreshToken=" + response.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + response.accessToken])
                 .set("anti-csrf", response.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -1346,17 +1246,13 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
                 appName: "SuperTokens",
                 websiteDomain: "http://supertokens.io",
             },
-            recipeList: [
-                Session.init({
-                    antiCsrf: "VIA_TOKEN",
-                }),
-            ],
+            recipeList: [Session.init({ getTokenTransferMethod: () => "cookie", antiCsrf: "VIA_TOKEN" })],
         });
         let app = new Koa();
         const router = new Router();
         app.use(KoaFramework.middleware());
         router.post("/create", async (ctx, _) => {
-            await Session.createNewSession(ctx, "user1", {}, {});
+            await Session.createNewSession(ctx, ctx, "user1", {}, {});
             ctx.body = "";
         });
         router.post("/updateAccessTokenPayload", async (ctx, _) => {
@@ -1414,12 +1310,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
             await new Promise((resolve) =>
                 request(this.server)
                     .post("/updateAccessTokenPayload")
-                    .set("Cookie", [
-                        "sAccessToken=" +
-                            response.accessToken +
-                            ";sIdRefreshToken=" +
-                            response.idRefreshTokenFromCookie,
-                    ])
+                    .set("Cookie", ["sAccessToken=" + response.accessToken])
                     .set("anti-csrf", response.antiCsrf)
                     .expect(200)
                     .end((err, res) => {
@@ -1440,12 +1331,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let response2 = await new Promise((resolve) =>
             request(this.server)
                 .post("/getAccessTokenPayload")
-                .set("Cookie", [
-                    "sAccessToken=" +
-                        updatedResponse.accessToken +
-                        ";sIdRefreshToken=" +
-                        response.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + updatedResponse.accessToken])
                 .set("anti-csrf", response.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -1464,12 +1350,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
             await new Promise((resolve) =>
                 request(this.server)
                     .post("/auth/session/refresh")
-                    .set("Cookie", [
-                        "sRefreshToken=" +
-                            response.refreshToken +
-                            ";sIdRefreshToken=" +
-                            response.idRefreshTokenFromCookie,
-                    ])
+                    .set("Cookie", ["sRefreshToken=" + response.refreshToken])
                     .set("anti-csrf", response.antiCsrf)
                     .expect(200)
                     .end((err, res) => {
@@ -1491,12 +1372,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
             await new Promise((resolve) =>
                 request(this.server)
                     .post("/updateAccessTokenPayload2")
-                    .set("Cookie", [
-                        "sAccessToken=" +
-                            response2.accessToken +
-                            ";sIdRefreshToken=" +
-                            response2.idRefreshTokenFromCookie,
-                    ])
+                    .set("Cookie", ["sAccessToken=" + response2.accessToken])
                     .set("anti-csrf", response2.antiCsrf)
                     .expect(200)
                     .end((err, res) => {
@@ -1517,12 +1393,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         response2 = await new Promise((resolve) =>
             request(this.server)
                 .post("/getAccessTokenPayload")
-                .set("Cookie", [
-                    "sAccessToken=" +
-                        updatedResponse2.accessToken +
-                        ";sIdRefreshToken=" +
-                        response2.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + updatedResponse2.accessToken])
                 .set("anti-csrf", response2.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -1540,12 +1411,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
         let invalidSessionResponse = await new Promise((resolve) =>
             request(this.server)
                 .post("/updateAccessTokenPayloadInvalidSessionHandle")
-                .set("Cookie", [
-                    "sAccessToken=" +
-                        updatedResponse2.accessToken +
-                        ";sIdRefreshToken=" +
-                        response.idRefreshTokenFromCookie,
-                ])
+                .set("Cookie", ["sAccessToken=" + updatedResponse2.accessToken])
                 .set("anti-csrf", response.antiCsrf)
                 .expect(200)
                 .end((err, res) => {
@@ -1588,7 +1454,7 @@ describe(`Koa: ${printPath("[test/framework/koa.test.js]")}`, function () {
                         },
                     },
                 }),
-                Session.init(),
+                Session.init({ getTokenTransferMethod: () => "cookie" }),
             ],
         });
 

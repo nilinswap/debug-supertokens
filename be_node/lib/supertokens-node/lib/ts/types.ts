@@ -31,16 +31,20 @@ export type NormalisedAppinfo = {
     appName: string;
     websiteDomain: NormalisedURLDomain;
     apiDomain: NormalisedURLDomain;
+    topLevelAPIDomain: string;
+    topLevelWebsiteDomain: string;
     apiBasePath: NormalisedURLPath;
     apiGatewayPath: NormalisedURLPath;
     websiteBasePath: NormalisedURLPath;
 };
 
+export type SuperTokensInfo = {
+    connectionURI: string;
+    apiKey?: string;
+};
+
 export type TypeInput = {
-    supertokens?: {
-        connectionURI: string;
-        apiKey?: string;
-    };
+    supertokens?: SuperTokensInfo;
     framework?: TypeFramework;
     appInfo: AppInfo;
     recipeList: RecipeListFunction[];
@@ -59,6 +63,12 @@ export type APIHandled = {
 
 export type HTTPMethod = "post" | "get" | "delete" | "put" | "options" | "trace";
 
+export type JSONPrimitive = string | number | boolean | null;
+export type JSONArray = Array<JSONValue>;
+export type JSONValue = JSONPrimitive | JSONObject | JSONArray | undefined;
+export interface JSONObject {
+    [ind: string]: JSONValue;
+}
 export type GeneralErrorResponse = {
     status: "GENERAL_ERROR";
     message: string;

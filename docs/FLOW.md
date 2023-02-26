@@ -5,6 +5,12 @@
 
 (**Shit over here is written after fact checking through debugger** so be careful if you challenge)
 
+## Guide to read this doc 
+- Divided in levels of understanding. lower level supports upper level. like that
+- This doc is not meant to explain full flow. It provides seemingly important breakpoints, one has to drill down and understand herself. basically, there are important dots in the graph but path and other dots are upto you to figure out.
+- In code comments, are just landmarks and they are not navigation route. 
+They would be navigation route if I had marked serial number to the comments but that is fine. You need to walk through the code everytime but good thing, if you get stuck, you can use landmark to deduct.
+- because in-code comments are just landmark, it can not be used solely for code reading. A good way is to pick a landmark and try to understand when code reaches there and in the way find other points. (it is a good idea to keep marking the points to cross off)
 
 # Level 1
 
@@ -16,7 +22,7 @@ To see it in action, while you run both servers - go to http://localhost:1234/in
 
 to highlight
 
-S1.SAR2. for frontend, We inited a supertokens instance. we wrapped our main app with `SuperTokensWrapper` and extended routes `{getSuperTokensRoutesForReactRouterDom(reactRouterDom)}`  and wrap the component that wants auth with `PasswordlessAuth`.
+S1.SAR2. for frontend, We inited a supertokens instance. we wrapped our main app with `SuperTokensWrapper` and extended routes `{getSuperTokensRoutesForReactRouterDom(reactRouterDom)}`  and wrap the component that wants auth with `SessionAuth`.
 
 S1.SN2. for backend, we inited a supertokens instance. we then allowed our domain for cors and we added a middleware.
 if we want to secure a backend api, we add verifySession middleware. 
@@ -38,7 +44,7 @@ S1.SC2. There is a backend core called supertokens-core. -> unimplemented()
 
 What behaviour are we going to understand?
 
-- the component which has PasswordlessAuth wrapper around it, would not be opened without auth. other routes are allowed to be opened 
+- the component which has SessionAuth wrapper around it, would not be opened without auth. other routes are allowed to be opened 
 - /auth would lead to the signinup page. so technically, authed component redirects to /auth. 
 - you can enter your email-id and on click of submit button, you are awaited for the response from backend to tell it was successful to send otp. You are redirected to accept_otp page
 - you enter otp and you are redirected to the page which you landed on the first time you came. so redirectTo was preserved in the whole process. Your cookies are set with sRefreshToken and sAccessToken. 
@@ -53,10 +59,14 @@ Below are components to understand for this
 S1.SAR2.STN3 - singleton pattern -> use of supertokens.init to initialize config and even config values are singletoned
 S1.SAR2.RTL3 - redirection to auth if wrapper wraps the component otherwise just render
 S1.SAR2.ER3 - extending routes with auth routes
-S1.SAR2.sysq3 - Components and onSubmit
+S1.SAR2.sysq - Components and onSubmit
 S1.SAR2.SES3 - read from session and decide if one wants to send to auth or just deliver the children 
 S1.SAR2.KEB3 - If I am logged out, it knows the email from before when I come back to it and asks me just send otp to the email. 
 S1.SAR2.AAPIC3 - actual api calls are made from supertokens. 
+next url?
+redirection back?
+stale otp?
+remembers my creds?
 
 ## S1.SN2 supertokens-node
 
@@ -86,16 +96,17 @@ I don't know why actual api calls are made from another library supertokens-web-
 
 ## S1.SAR2.STN3
 
-Notice we just define supertokens.init(...) but we don't seem to use it anywhere directly. We don't use it but supertokens library does.. by importing supertokens and getting its instance. This instance is the same one that we inited so how does library get that instance? - it is because supertokens is a singleton. Otherwise we will have to import it everywhere unnecessarily. even config values are created singleton. it is because in places in library, we are also using those config values directly (don't know why.)
+Notice we just define supertokens.init(...) but we don't seem to use it anywhere directly. We don't use it but supertokens library does.. by importing supertokens and getting its instance. This instance is the same one that we inited so how does library get that instance? - it is because supertokens is a singleton. Otherwise lib will have to import it everywhere unnecessarily. even config values are created singleton. it is because in places in library, we are also using those config values directly (don't know why.)
 
 ## S1.SAR2.RTL3
 
-See src/lib/ts/recipe/session/sessionAuth.tsx 's setInitialContextAndMaybeRedirect() - there we are calling redirectToLogin() if the session does not exist otherwise we are returning the children under auth HLC. SessionAuth is the nth-level inner component of actual  HLC that we use in index.tsx (`PasswordlessAuth`)
+See src/lib/ts/recipe/session/sessionAuth.tsx 's setInitialContextAndMaybeRedirect() - there we are calling redirectToLogin() if the session does not exist otherwise we are returning the children under auth HLC. SessionAuth is the nth-level inner component of actual HLC that we use in index.tsx (`SessionAuth`)
 ``` react
 <SessionContext.Provider value={{ ...actualContext, isDefault: false }}>
   {children}
 </SessionContext.Provider>
 ```
+
 
 ## S1.SAR2.ER3
 
@@ -109,26 +120,24 @@ return (
     />
 );
 ```
-these paths are appended on top of config's websitePath. like for passwordless recipe it is / and /verify and you can find that happening in 
-`src/lib/ts/recipe/passwordless/recipe.tsx` in getFeatures() method.
+these paths are appended on top of config's websitePath. like for passwordless recipe it is / and /verify and you can find that happening in a
+`src/lib/ts/recipe/passwordless/recipe.tsx` in getFeatures() method. and it leads to what component to be rendered
 
 We decide when to resend code and when to refresh login attempt (RESTART_FLOW) in src/lib/ts/recipe/passwordless/components/features/signInAndUp/index.tsx only under differnt state handling like consumeCode.
 
 here, this `Route` is imported in index.tsx and passed deep down all the way to the bottom until superTokensRouteV6 where it is used. why is it done?
 
 
-## S1.SAR2.sysq3
+## S1.SAR2.sysq
 
 It tells the process of rendering right component on /auth (based on recipe) and where onSubmit is handled and how onSubmit redirects to enter-otp page (for passwordless) and how the onSubmit of that is handled and how onSubmit redirects to the final path. 
 
-search the code by `sysq` to see that thread. 
-
-I swear there is something wrong with this codebase. it is super convoluted.
+I swear there is something wrong with this codebase. It is super convoluted.
 
 
 ## S1.SAR2.SES3
 
-We wrap our authed components in PasswordlessAuth which is an hlc that leads to SessionAuth in  `src/lib/ts/recipe/session/sessionAuth.tsx` has everything related to how session-exists is checked and what to do next.
+We wrap our authed components in SessionAuth which is an hlc that leads to SessionAuth in  `src/lib/ts/recipe/session/sessionAuth.tsx` has everything related to how session-exists is checked and what to do next.
 
 
 ## S1.SAR2.KEB3
@@ -197,7 +206,7 @@ So Frontend calls `/auth/api/session/refresh` when AT or RT expired. with recipe
 
   - this api is only called after some interval and on hitting the page. not sure what the interval exactly is.
 
-  - Preflight request is basically and OPTIONS call. with a header `Access-Control-Request-Method: POST`
+  - Preflight request is basically an OPTIONS call. with a header `Access-Control-Request-Method: POST`
   - response has following headers which is pretty much the point of pre-flight.
 
 ```
@@ -212,15 +221,14 @@ Access-Control-Allow-Origin: http://localhost:1234
     - what is the deal sIRTFrontend cookie? - I don't see any response setting it and it is set after the first hit. not sure what to do with it.
 
 - auth/api/signinup/code
-
   - this runs when I enter my email id for otp
   - again preflight and post, I guess it is natural for no domain.
-  - send my email id in payload so somewhere an email is triggered at the back.
+  - send my email id in payload so somewhere an email is triggered at the back. 
 
 - auth/api/signinup/code/consume
 
   - this runs when I entered the otp
-  - payload
+  - request payload
 
 ```json
 {
@@ -326,3 +334,6 @@ names play a very important role on how readable the code is. At meta level, e.g
 1. what is the role of sIRTfrontend cookie?
 2. If I go to the localhost:1234/inner after long time so I was kinda logged out, it directly took me Enter OTP page and it knew my email id. There was no network call. email, it got from data in local storage. where is the logic for this?
 3. 
+
+## Search by
+'custom theme' - user-defined themes

@@ -19,7 +19,6 @@ import { Fragment, useContext } from "react";
 import { useTranslation } from "../../../../..";
 import { withOverride } from "../../../../../components/componentOverride/withOverride";
 import StyleContext from "../../../../../styles/styleContext";
-// import * as React from "react";
 
 /*
  * Component.

@@ -15,12 +15,11 @@
 /*
  * Imports.
  */
-// import * as React from "react";
-import React, { Fragment } from "react";
+import * as React from "react";
+import { Fragment } from "react";
 import { FeatureBaseProps } from "../../../../../types";
 import FeatureWrapper from "../../../../../components/featureWrapper";
 import Recipe from "../../../recipe";
-import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
 import SignInUpTheme from "../../themes/signInUp";
 import { defaultTranslationsThirdPartyPasswordless } from "../../themes/translations";
 import {
@@ -36,6 +35,8 @@ import {
 import { ThirdPartySignInUpActions } from "../../../../thirdparty/types";
 import { PasswordlessSignInUpAction } from "../../../../passwordless/types";
 import { useUserContext } from "../../../../../usercontext";
+import { ComponentOverrideContext } from "../../../../../components/componentOverride/componentOverrideContext";
+import { useRecipeComponentOverrideContext } from "../../../componentOverrideContext";
 
 type PropType = FeatureBaseProps & {
     recipe: Recipe;
@@ -48,6 +49,8 @@ const SignInAndUp: React.FC<PropType> = (props) => {
         props.recipe.passwordlessRecipe?.recipeImpl,
         userContext
     );
+
+    const recipeComponentOverrides = useRecipeComponentOverrideContext();
 
     const [combinedState, dispatch] = React.useReducer(
         (state: { error: string | undefined }, action: ThirdPartySignInUpActions | PasswordlessSignInUpAction) => {
@@ -124,10 +127,10 @@ const SignInAndUp: React.FC<PropType> = (props) => {
         combinedPwlessDispatch,
         pwlessState,
         callingConsumeCodeRef,
+        userContext,
         props.history
     )!;
 
-    const componentOverrides = props.recipe.config.override.components;
     const childProps = {
         passwordlessRecipe: props.recipe.passwordlessRecipe,
         thirdPartyRecipe: props.recipe.thirdPartyRecipe,
@@ -143,7 +146,7 @@ const SignInAndUp: React.FC<PropType> = (props) => {
     };
 
     return (
-        <ComponentOverrideContext.Provider value={componentOverrides}>
+        <ComponentOverrideContext.Provider value={recipeComponentOverrides}>
             <FeatureWrapper
                 useShadowDom={props.recipe.config.useShadowDom}
                 defaultStore={defaultTranslationsThirdPartyPasswordless}>

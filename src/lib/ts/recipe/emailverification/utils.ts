@@ -20,7 +20,7 @@ import { RecipeInterface } from "supertokens-web-js/recipe/emailverification";
 
 export function normaliseEmailVerificationFeature(config: Config): NormalisedConfig {
     const disableDefaultUI = config.disableDefaultUI === true;
-    const mode = config.mode === undefined ? "OFF" : config.mode;
+    const mode = config.mode === undefined ? "REQUIRED" : config.mode;
 
     const sendVerifyEmailScreenStyle =
         config.sendVerifyEmailScreen !== undefined && config.sendVerifyEmailScreen.style !== undefined
@@ -42,7 +42,6 @@ export function normaliseEmailVerificationFeature(config: Config): NormalisedCon
 
     const override = {
         functions: (originalImplementation: RecipeInterface) => originalImplementation,
-        components: {},
         ...config.override,
     };
 
@@ -52,9 +51,6 @@ export function normaliseEmailVerificationFeature(config: Config): NormalisedCon
         mode,
         sendVerifyEmailScreen,
         verifyEmailLinkClickedScreen,
-        signOut: config.signOut,
-        postVerificationRedirect: config.postVerificationRedirect,
-        redirectToSignIn: config.redirectToSignIn,
         override,
     };
 }

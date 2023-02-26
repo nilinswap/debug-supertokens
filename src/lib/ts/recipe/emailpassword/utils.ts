@@ -16,7 +16,6 @@
 import { FormField, FormFieldBaseConfig, NormalisedFormField } from "../../types";
 import { MANDATORY_FORM_FIELDS_ID_ARRAY } from "./constants";
 import OverrideableBuilder from "supertokens-js-override";
-import { ComponentOverrideMap } from "./types";
 
 import {
     Config,
@@ -38,7 +37,7 @@ import {
     defaultPasswordValidator,
     defaultValidate,
 } from "./validators";
-import { normaliseAuthRecipeWithEmailVerificationConfig } from "../authRecipeWithEmailVerification/utils";
+import { normaliseAuthRecipe } from "../authRecipe/utils";
 import { RecipeInterface } from "supertokens-web-js/recipe/emailpassword";
 
 export function normaliseEmailPasswordConfig(config: Config): NormalisedConfig {
@@ -70,15 +69,13 @@ export function normaliseEmailPasswordConfig(config: Config): NormalisedConfig {
             originalImplementation: RecipeInterface,
             builder?: OverrideableBuilder<RecipeInterface>
         ) => RecipeInterface;
-        components: ComponentOverrideMap;
     } = {
         functions: (originalImplementation: RecipeInterface) => originalImplementation,
-        components: {},
         ...config.override,
     };
 
     return {
-        ...normaliseAuthRecipeWithEmailVerificationConfig(config),
+        ...normaliseAuthRecipe(config),
         signInAndUpFeature,
         resetPasswordUsingTokenFeature,
         override,

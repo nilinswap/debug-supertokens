@@ -49,8 +49,7 @@ import {
     Config as AuthRecipeModuleConfig,
     NormalisedConfig as NormalisedAuthRecipeModuleConfig,
     UserInput as AuthRecipeModuleUserInput,
-    UserInputOverride as AuthRecipeUserInputOverride,
-} from "../authRecipeWithEmailVerification/types";
+} from "../authRecipe/types";
 import PWlessRecipe from "../passwordless/recipe";
 import TPRecipe from "../thirdparty/recipe";
 import OverrideableBuilder from "supertokens-js-override";
@@ -71,7 +70,7 @@ type WithRenamedOptionalProp<T, K extends keyof T, L extends string> = Omit<T, K
 };
 
 export type ComponentOverrideMap = Omit<PasswordlessOverrideMap, "PasswordlessSignInUpHeader_Override"> &
-    Omit<ThirdPartyOverrideMap, "ThirdPartySignUpFooter_Override" | "ThirdPartySignUpHeader_Override"> & {
+    Omit<ThirdPartyOverrideMap, "ThirdPartySignUpFooter_Override" | "ThirdPartySignInAndUpHeader_Override"> & {
         ThirdPartyPasswordlessHeader_Override?: ComponentOverride<typeof Header>;
     };
 
@@ -123,8 +122,7 @@ export type UserInput = (
             originalImplementation: RecipeInterface,
             builder?: OverrideableBuilder<RecipeInterface>
         ) => RecipeInterface;
-        components?: ComponentOverrideMap;
-    } & AuthRecipeUserInputOverride;
+    };
     linkClickedScreenFeature?: PasswordlessFeatureBaseConfig;
     oAuthCallbackScreen?: FeatureBaseConfig;
     disablePasswordless?: boolean;
@@ -144,7 +142,6 @@ export type NormalisedConfig = {
             originalImplementation: RecipeInterface,
             builder?: OverrideableBuilder<RecipeInterface>
         ) => RecipeInterface;
-        components: ComponentOverrideMap;
     };
 } & NormalisedAuthRecipeModuleConfig<GetRedirectionURLContext, PreAndPostAPIHookAction, OnHandleEventContext>;
 

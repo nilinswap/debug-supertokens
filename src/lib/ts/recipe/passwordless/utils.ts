@@ -43,7 +43,6 @@ export function normalisePasswordlessConfig(config: Config): NormalisedConfig {
 
     const override: any = {
         functions: (originalImplementation: RecipeInterface) => originalImplementation,
-        components: {},
         ...config.override,
     };
 
@@ -217,7 +216,6 @@ export async function createCode(
     flowType: PasswordlessFlowType;
     fetchResponse: Response;
 }> {
-    // READCODE BUNI AL3: then when does this get called? (because passwordless's getRecipeInterface's createCode is called to generate code )
     return WebJSUtils.createCode(input);
 }
 
@@ -248,7 +246,7 @@ export async function consumeCode(
 ): Promise<
     | {
           status: "OK";
-          createdUser: boolean;
+          createdNewUser: boolean;
           user: PasswordlessUser;
           fetchResponse: Response;
       }

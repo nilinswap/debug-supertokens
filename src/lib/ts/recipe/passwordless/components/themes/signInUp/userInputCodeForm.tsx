@@ -138,7 +138,7 @@ export const UserInputCodeForm = withOverride(
                       ) {
                         throw new STGeneralError("GENERAL_ERROR_OTP_UNDEFINED");
                       }
-                      // READCODE BURI: this is the where we call supertokens-web-js's lib/ts/recipe/passwordless/recipeImplementation.ts's consumeCode where we call the actual apis. 
+                      // READCODE BURI: this is the where we call supertokens-web-js's lib/ts/recipe/passwordless/recipeImplementation.ts's consumeCode where we call the actual apis.
                       const response =
                         await props.recipeImplementation.consumeCode({
                           deviceId: props.loginAttemptInfo.deviceId,

@@ -13,15 +13,14 @@
  * under the License.
  */
 import { getInfoFromAccessToken, sanitizeNumberInput } from "./accessToken";
-import { getPayloadWithoutVerifiying } from "./jwt";
+import { ParsedJWTInfo } from "./jwt";
 import STError from "./error";
 import { PROCESS_STATE, ProcessState } from "../../processState";
-import { CreateOrRefreshAPIResponse, SessionInformation } from "./types";
+import { CreateOrRefreshAPIResponse, SessionInformation, TokenTransferMethod } from "./types";
 import NormalisedURLPath from "../../normalisedURLPath";
 import { Helpers } from "./recipeImplementation";
 import { maxVersion } from "../../utils";
 import { logDebugMessage } from "../../logger";
-import { handleNonErrorInstance } from "./utils";
 
 /**
  * @description call this to "login" a user.
@@ -29,11 +28,13 @@ import { handleNonErrorInstance } from "./utils";
 export async function createNewSession(
     helpers: Helpers,
     userId: string,
+    disableAntiCsrf: boolean,
     accessTokenPayload: any = {},
     sessionData: any = {}
 ): Promise<CreateOrRefreshAPIResponse> {
     accessTokenPayload = accessTokenPayload === null || accessTokenPayload === undefined ? {} : accessTokenPayload;
     sessionData = sessionData === null || sessionData === undefined ? {} : sessionData;
+
     let requestBody: {
         userId: string;
         userDataInJWT: any;
@@ -46,7 +47,7 @@ export async function createNewSession(
     };
 
     let handShakeInfo = await helpers.getHandshakeInfo();
-    requestBody.enableAntiCsrf = handShakeInfo.antiCsrf === "VIA_TOKEN";
+    requestBody.enableAntiCsrf = !disableAntiCsrf && handShakeInfo.antiCsrf === "VIA_TOKEN";
     let response = await helpers.querier.sendPostRequest(new NormalisedURLPath("/recipe/session"), requestBody);
     helpers.updateJwtSigningPublicKeyInfo(
         response.jwtSigningPublicKeyList,
@@ -66,7 +67,7 @@ export async function createNewSession(
  */
 export async function getSession(
     helpers: Helpers,
-    accessToken: string,
+    parsedAccessToken: ParsedJWTInfo,
     antiCsrfToken: string | undefined,
     doAntiCsrfCheck: boolean,
     containsCustomHeader: boolean
@@ -94,7 +95,7 @@ export async function getSession(
              */
             // READCODE BUNI: for jwt payload verification
             accessTokenInfo = await getInfoFromAccessToken(
-                accessToken,
+                parsedAccessToken,
                 key.publicKey,
                 handShakeInfo.antiCsrf === "VIA_TOKEN" && doAntiCsrfCheck
             );
@@ -104,50 +105,40 @@ export async function getSession(
              * if error type is not TRY_REFRESH_TOKEN, we return the
              * error to the user
              */
-            const timeCreated = handleNonErrorInstance(err, async (err: any) => {
-                if (err.type !== STError.TRY_REFRESH_TOKEN) {
-                    throw err;
-                }
-                /**
-                 * if it comes here, it means token verification has failed.
-                 * It may be due to:
-                 *  - signing key was updated and this token was signed with new key
-                 *  - access token is actually expired
-                 *  - access token was signed with the older signing key
-                 *
-                 * if access token is actually expired, we don't need to call core and
-                 * just return TRY_REFRESH_TOKEN to the client
-                 *
-                 * if access token creation time is after this signing key was created
-                 * we need to call core as there are chances that the token
-                 * was signed with the updated signing key
-                 *
-                 * if access token creation time is before oldest signing key was created,
-                 * so if foundASigningKeyThatIsOlderThanTheAccessToken is still false after
-                 * the loop we just return TRY_REFRESH_TOKEN
-                 */
-                let payload;
-                try {
-                    payload = getPayloadWithoutVerifiying(accessToken);
-                } catch (_) {
-                    throw err;
-                }
-                if (payload === undefined) {
-                    throw err;
-                }
+            if (err.type !== STError.TRY_REFRESH_TOKEN) {
+                throw err;
+            }
+            /**
+             * if it comes here, it means token verification has failed.
+             * It may be due to:
+             *  - signing key was updated and this token was signed with new key
+             *  - access token is actually expired
+             *  - access token was signed with the older signing key
+             *
+             * if access token is actually expired, we don't need to call core and
+             * just return TRY_REFRESH_TOKEN to the client
+             *
+             * if access token creation time is after this signing key was created
+             * we need to call core as there are chances that the token
+             * was signed with the updated signing key
+             *
+             * if access token creation time is before oldest signing key was created,
+             * so if foundASigningKeyThatIsOlderThanTheAccessToken is still false after
+             * the loop we just return TRY_REFRESH_TOKEN
+             */
+            let payload = parsedAccessToken.payload;
 
-                const timeCreated = sanitizeNumberInput(payload.timeCreated);
-                const expiryTime = sanitizeNumberInput(payload.expiryTime);
+            const timeCreated = sanitizeNumberInput(payload.timeCreated);
+            const expiryTime = sanitizeNumberInput(payload.expiryTime);
 
-                if (expiryTime === undefined || expiryTime < Date.now()) {
-                    throw err;
-                }
+            if (expiryTime === undefined || expiryTime < Date.now()) {
+                throw err;
+            }
 
-                if (timeCreated === undefined) {
-                    throw err;
-                }
-                return timeCreated;
-            });
+            if (timeCreated === undefined) {
+                throw err;
+            }
+
             // If we reached a key older than the token and failed to validate the token,
             // that means it was signed by a key newer than the cached list.
             // In this case we go to the server.
@@ -230,12 +221,12 @@ export async function getSession(
         doAntiCsrfCheck: boolean;
         enableAntiCsrf?: boolean;
     } = {
-        accessToken,
+        accessToken: parsedAccessToken.rawTokenString,
         antiCsrfToken,
         doAntiCsrfCheck,
         enableAntiCsrf: handShakeInfo.antiCsrf === "VIA_TOKEN",
     };
-
+    
     // READCODE BUNI MW3: but why do we verify only when AT is not there. What if AT is not valid anymore?. This is only called for the jwt case. I verified from core
     let response = await helpers.querier.sendPostRequest(new NormalisedURLPath("/recipe/session/verify"), requestBody);
     if (response.status === "OK") {
@@ -270,7 +261,7 @@ export async function getSession(
             // we force update the signing keys...
             await helpers.getHandshakeInfo(true);
         }
-        logDebugMessage("getSession: Returning TRY_REFRESH_TOKEN because of core response");
+        logDebugMessage("getSession: Returning TRY_REFRESH_TOKEN because of core response.");
         throw new STError({
             message: response.message,
             type: STError.TRY_REFRESH_TOKEN,
@@ -318,7 +309,8 @@ export async function refreshSession(
     helpers: Helpers,
     refreshToken: string,
     antiCsrfToken: string | undefined,
-    containsCustomHeader: boolean
+    containsCustomHeader: boolean,
+    transferMethod: TokenTransferMethod
 ): Promise<CreateOrRefreshAPIResponse> {
     let handShakeInfo = await helpers.getHandshakeInfo();
 
@@ -329,22 +321,22 @@ export async function refreshSession(
     } = {
         refreshToken,
         antiCsrfToken,
-        enableAntiCsrf: handShakeInfo.antiCsrf === "VIA_TOKEN",
+        enableAntiCsrf: transferMethod === "cookie" && handShakeInfo.antiCsrf === "VIA_TOKEN",
     };
 
-    if (handShakeInfo.antiCsrf === "VIA_CUSTOM_HEADER") {
+    if (handShakeInfo.antiCsrf === "VIA_CUSTOM_HEADER" && transferMethod === "cookie") {
         if (!containsCustomHeader) {
             logDebugMessage("refreshSession: Returning UNAUTHORISED because custom header (rid) was not passed");
             throw new STError({
                 message: "anti-csrf check failed. Please pass 'rid: \"session\"' header in the request.",
                 type: STError.UNAUTHORISED,
                 payload: {
-                    clearCookies: false, // see https://github.com/supertokens/supertokens-node/issues/141
+                    clearTokens: false, // see https://github.com/supertokens/supertokens-node/issues/141
                 },
             });
         }
     }
-    // READCODE BUNI RSL3: here is where the core is called to refresh the session. so we don't rely on supertokens-web-js or another lib for calling refresh session api. we directly call from backend server
+    // READCODE BUNI RSL3: here is where the core is called to refresh the session. notice unlike react app, we don't rely on supertokens-web-js or another lib for calling supertokens-core api. we directly call from backend server
     let response = await helpers.querier.sendPostRequest(new NormalisedURLPath("/recipe/session/refresh"), requestBody);
     if (response.status === "OK") {
         delete response.status;

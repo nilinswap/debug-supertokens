@@ -34,7 +34,6 @@ type FieldState = {
     value: string;
 };
 
-
 // READCODE BURI: this is where the basic form html is found
 export const FormBase: React.FC<FormBaseProps<any>> = (props) => {
     const { footer, buttonLabel, showLabels, validateOnBlur, formFields } = props;
@@ -60,7 +59,7 @@ export const FormBase: React.FC<FormBaseProps<any>> = (props) => {
                 if (field === undefined) {
                     return [...os, update({ id, value: "" })];
                 }
-    
+
                 return os.filter((f) => f !== field).concat(update(field));
             });
         },
@@ -102,81 +101,92 @@ export const FormBase: React.FC<FormBaseProps<any>> = (props) => {
 
     const onFormSubmit = useCallback(
         async (e: FormEvent): Promise<void> => {
-            // Prevent default event propagation. 
-            e.preventDefault();
+          // READCODE BURI sysq: it is the common form for enter email form and submit otp form. this is run on both therefore
 
-            // READCODE BURI sysq: it is the common form for enter email form and submit otp form. this is run on both therefore
+          // Prevent default event propagation.
+          e.preventDefault();
 
-            // Set loading state.
-            setIsLoading(true);
+          // Set loading state.
+          setIsLoading(true);
 
-            setFieldStates((os) => os.map((fs) => ({ ...fs, error: undefined })));
+          setFieldStates((os) => os.map((fs) => ({ ...fs, error: undefined })));
 
-            // Get the fields values from form.
-            const apiFields = formFields.map((field) => {
-                const fieldState = fieldStates.find((fs) => fs.id === field.id);
-                return {
-                    id: field.id,
-                    value: fieldState === undefined ? "" : fieldState.value,
-                };
-            });
+          // Get the fields values from form.
+          const apiFields = formFields.map((field) => {
+            const fieldState = fieldStates.find((fs) => fs.id === field.id);
+            return {
+              id: field.id,
+              value: fieldState === undefined ? "" : fieldState.value,
+            };
+          });
 
-            const fieldUpdates: FieldState[] = [];
-            // Call API.
+          const fieldUpdates: FieldState[] = [];
+          // Call API.
+          try {
+            let result;
+            let generalError: STGeneralError | undefined;
             try {
-                let result;
-                let generalError: STGeneralError | undefined;
-                try {
-                  // READCODE BURI: this is where the api call is made. it calls api based on RecipeInterface's state value. i.e. if it createCode, consumeCode
-                  result = await props.callAPI(apiFields, (id, value) =>
-                    fieldUpdates.push({ id, value })
-                  );
-                } catch (e) {
-                    if (STGeneralError.isThisError(e)) {
-                        generalError = e;
-                    } else {
-                        throw e;
-                    }
-                }
-                if (unmounting.current.signal.aborted) {
-                    return;
-                }
-
-                for (const field of formFields) {
-                    const update = fieldUpdates.find((f) => f.id === field.id);
-                    if (update || field.clearOnSubmit === true) {
-                        // We can do these one by one, it's almost never more than one field
-                        updateFieldState(field.id, (os) => ({ ...os, value: update ? update.value : "" }));
-                    }
-                }
-
-                if (generalError !== undefined) {
-                    props.onError(generalError.message);
-                } else {
-                    // If successful
-                    if (result.status === "OK") {
-                      setIsLoading(false);
-                      props.clearError();
-                      // READCODE BURI sysq: onSuccess is undefined for enter-email form. somehow createCode from `src/lib/ts/recipe/passwordless/components/features/signInAndUp/index.tsx` takes care of it. 
-                      if (props.onSuccess !== undefined) {
-                        props.onSuccess(result);
-                      }
-                    }
-
-                    // If field error.
-                    if (result.status === "FIELD_ERROR") {
-                        const errorFields = result.formFields;
-
-                        setFieldStates((os) =>
-                            os.map((fs) => ({ ...fs, error: errorFields.find((ef: any) => ef.id === fs.id)?.error }))
-                        );
-                    }
-                }
+              // READCODE BURI: this is where the api call is made. it calls api based on RecipeInterface's state value. i.e. if it createCode, consumeCode
+              result = await props.callAPI(apiFields, (id, value) =>
+                fieldUpdates.push({ id, value })
+              );
             } catch (e) {
-                props.onError("SOMETHING_WENT_WRONG_ERROR");
-            } finally {
-                setIsLoading(false);
+              if (STGeneralError.isThisError(e)) {
+                generalError = e;
+              } else {
+                throw e;
+              }
             }
+            if (unmounting.current.signal.aborted) {
+              return;
+            }
+
+            for (const field of formFields) {
+              const update = fieldUpdates.find((f) => f.id === field.id);
+              if (update || field.clearOnSubmit === true) {
+                // We can do these one by one, it's almost never more than one field
+                updateFieldState(field.id, (os) => ({
+                  ...os,
+                  value: update ? update.value : "",
+                }));
+              }
+            }
+
+            if (generalError !== undefined) {
+              props.onError(generalError.message);
+            } else {
+              // If successful
+              if (result.status === "OK") {
+                setIsLoading(false);
+                props.clearError();
+                // READCODE BURI sysq: onSuccess is undefined for enter-email form. somehow createCode from `src/lib/ts/recipe/passwordless/components/features/signInAndUp/index.tsx` takes care of it.
+                if (props.onSuccess !== undefined) {
+                  props.onSuccess(result);
+                }
+              }
+
+              if (unmounting.current.signal.aborted) {
+                return;
+              }
+
+              // If field error.
+              if (result.status === "FIELD_ERROR") {
+                const errorFields = result.formFields;
+
+                setFieldStates((os) =>
+                  os.map((fs) => ({
+                    ...fs,
+                    error: errorFields.find((ef: any) => ef.id === fs.id)
+                      ?.error,
+                  }))
+                );
+              }
+            }
+          } catch (e) {
+            props.onError("SOMETHING_WENT_WRONG_ERROR");
+          } finally {
+            setIsLoading(false);
+          }
         },
         [setIsLoading, setFieldStates, props, formFields, fieldStates]
     );

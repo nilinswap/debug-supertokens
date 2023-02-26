@@ -16,8 +16,7 @@
 /*
  * Imports.
  */
-import * as React from "react";
-import { useContext } from "react";
+import React, { useContext } from "react";
 import StyleContext, { StyleProvider } from "../../../../../styles/styleContext";
 import { ThirdPartyEmailPasswordSignInAndUpThemeProps } from "../../../types";
 import { ThemeBase } from "../themeBase";
@@ -33,7 +32,6 @@ import { SignInForm } from "../../../../emailpassword/components/themes/signInAn
 import { SignUpForm } from "../../../../emailpassword/components/themes/signInAndUp/signUpForm";
 import { SignInFooter } from "../../../../emailpassword/components/themes/signInAndUp/signInFooter";
 import UserContextWrapper from "../../../../../usercontext/userContextWrapper";
-
 
 const SignInAndUpTheme: React.FC<ThirdPartyEmailPasswordSignInAndUpThemeProps> = (props) => {
     const t = useTranslation();

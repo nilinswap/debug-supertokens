@@ -19,6 +19,7 @@ import { NormalisedAppinfo, APIHandled, RecipeListFunction, HTTPMethod } from ".
 import STError from "./error";
 import { validateAndNormaliseUserInput } from "./utils";
 import NormalisedURLPath from "../../normalisedURLPath";
+import EmailVerificationRecipe from "../emailverification/recipe";
 import RecipeImplementation from "./recipeImplementation";
 import APIImplementation from "./api/implementation";
 import { Querier } from "../../querier";
@@ -39,6 +40,8 @@ import {
 import EmailDeliveryIngredient from "../../ingredients/emaildelivery";
 import { TypePasswordlessEmailDeliveryInput, TypePasswordlessSmsDeliveryInput } from "./types";
 import SmsDeliveryIngredient from "../../ingredients/smsdelivery";
+import { GetEmailForUserIdFunc } from "../emailverification/types";
+import { PostSuperTokensInitCallbacks } from "../../postSuperTokensInitCallbacks";
 
 export default class Recipe extends RecipeModule {
     private static instance: Recipe | undefined = undefined;
@@ -92,6 +95,13 @@ export default class Recipe extends RecipeModule {
             ingredients.smsDelivery === undefined
                 ? new SmsDeliveryIngredient(this.config.getSmsDeliveryConfig())
                 : ingredients.smsDelivery;
+
+        PostSuperTokensInitCallbacks.addPostInitCallback(() => {
+            const emailVerificationRecipe = EmailVerificationRecipe.getInstance();
+            if (emailVerificationRecipe !== undefined) {
+                emailVerificationRecipe.addGetEmailForUserIdFunc(this.getEmailForUserId.bind(this));
+            }
+        });
     }
 
     static getInstanceOrThrowError(): Recipe {
@@ -125,6 +135,7 @@ export default class Recipe extends RecipeModule {
     // abstract instance functions below...............
 
     getAPIsHandled = (): APIHandled[] => {
+        // READCODE BUNI MW3 AL3: this attaches id to the pathWithoutApiBasePath and method. see id value is similar to path
         return [
             {
                 id: CONSUME_CODE_API,
@@ -166,6 +177,9 @@ export default class Recipe extends RecipeModule {
         _: NormalisedURLPath,
         __: HTTPMethod
     ): Promise<boolean> => {
+        // READCODE BUNI MW3 AL3: the options that we are passing here has recipeImplementation. 
+        // this contains createCodePost, consumeCode etc which eventually calls apis.
+        // Notice how similar it is to role of props in react library. both have exactly same class and object name
         const options = {
             config: this.config,
             recipeId: this.getRecipeId(),
@@ -175,6 +189,7 @@ export default class Recipe extends RecipeModule {
             res,
             emailDelivery: this.emailDelivery,
             smsDelivery: this.smsDelivery,
+            appInfo: this.getAppInfo(),
         };
         // READCODE BUNI MW3 AL3: this is where we decide which API to call. createCode is send otp
         if (id === CONSUME_CODE_API) {
@@ -207,13 +222,13 @@ export default class Recipe extends RecipeModule {
     createMagicLink = async (
         input:
             | {
-                  email: string;
-                  userContext?: any;
-              }
+                email: string;
+                userContext?: any;
+            }
             | {
-                  phoneNumber: string;
-                  userContext?: any;
-              }
+                phoneNumber: string;
+                userContext?: any;
+            }
     ): Promise<string> => {
         let userInputCode =
             this.config.getCustomUserInputCode !== undefined
@@ -223,28 +238,23 @@ export default class Recipe extends RecipeModule {
         const codeInfo = await this.recipeInterfaceImpl.createCode(
             "email" in input
                 ? {
-                      email: input.email,
-                      userInputCode,
-                      userContext: input.userContext,
-                  }
+                    email: input.email,
+                    userInputCode,
+                    userContext: input.userContext,
+                }
                 : {
-                      phoneNumber: input.phoneNumber,
-                      userInputCode,
-                      userContext: input.userContext,
-                  }
+                    phoneNumber: input.phoneNumber,
+                    userInputCode,
+                    userContext: input.userContext,
+                }
         );
 
+        const appInfo = this.getAppInfo();
+
         let magicLink =
-            (await this.config.getLinkDomainAndPath(
-                "phoneNumber" in input
-                    ? {
-                          phoneNumber: input.phoneNumber!,
-                      }
-                    : {
-                          email: input.email,
-                      },
-                input.userContext
-            )) +
+            appInfo.websiteDomain.getAsStringDangerous() +
+            appInfo.websiteBasePath.getAsStringDangerous() +
+            "/verify" +
             "?rid=" +
             this.getRecipeId() +
             "&preAuthSessionId=" +
@@ -258,39 +268,39 @@ export default class Recipe extends RecipeModule {
     signInUp = async (
         input:
             | {
-                  email: string;
-                  userContext?: any;
-              }
+                email: string;
+                userContext?: any;
+            }
             | {
-                  phoneNumber: string;
-                  userContext?: any;
-              }
+                phoneNumber: string;
+                userContext?: any;
+            }
     ) => {
         let codeInfo = await this.recipeInterfaceImpl.createCode(
             "email" in input
                 ? {
-                      email: input.email,
-                      userContext: input.userContext,
-                  }
+                    email: input.email,
+                    userContext: input.userContext,
+                }
                 : {
-                      phoneNumber: input.phoneNumber,
-                      userContext: input.userContext,
-                  }
+                    phoneNumber: input.phoneNumber,
+                    userContext: input.userContext,
+                }
         );
 
         let consumeCodeResponse = await this.recipeInterfaceImpl.consumeCode(
             this.config.flowType === "MAGIC_LINK"
                 ? {
-                      preAuthSessionId: codeInfo.preAuthSessionId,
-                      linkCode: codeInfo.linkCode,
-                      userContext: input.userContext,
-                  }
+                    preAuthSessionId: codeInfo.preAuthSessionId,
+                    linkCode: codeInfo.linkCode,
+                    userContext: input.userContext,
+                }
                 : {
-                      preAuthSessionId: codeInfo.preAuthSessionId,
-                      deviceId: codeInfo.deviceId,
-                      userInputCode: codeInfo.userInputCode,
-                      userContext: input.userContext,
-                  }
+                    preAuthSessionId: codeInfo.preAuthSessionId,
+                    deviceId: codeInfo.deviceId,
+                    userInputCode: codeInfo.userInputCode,
+                    userContext: input.userContext,
+                }
         );
 
         if (consumeCodeResponse.status === "OK") {
@@ -302,5 +312,24 @@ export default class Recipe extends RecipeModule {
         } else {
             throw new Error("Failed to create user. Please retry");
         }
+    };
+
+    // helper functions...
+    getEmailForUserId: GetEmailForUserIdFunc = async (userId, userContext) => {
+        let userInfo = await this.recipeInterfaceImpl.getUserById({ userId, userContext });
+        if (userInfo !== undefined) {
+            if (userInfo.email !== undefined) {
+                return {
+                    status: "OK",
+                    email: userInfo.email,
+                };
+            }
+            return {
+                status: "EMAIL_DOES_NOT_EXIST_ERROR",
+            };
+        }
+        return {
+            status: "UNKNOWN_USER_ID_ERROR",
+        };
     };
 }
